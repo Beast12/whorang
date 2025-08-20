@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.11-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.12-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -327,7 +327,11 @@ When reporting bugs, please include:
 
 ## Changelog
 
-## v1.0.11 (Latest)
+## v1.0.12 (Latest)
+- Added complete repository metadata for Home Assistant addon discovery
+- Fixed repository.yaml to include addon version information
+
+## v1.0.11
 - Fixed Docker image name in config.yaml to match actual build output
 - Corrected image reference from doorbell-face-recognition to whorang-doorbell-addon
 
