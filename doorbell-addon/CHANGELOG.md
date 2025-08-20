@@ -5,11 +5,13 @@ All notable changes to the Doorbell Face Recognition add-on will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - 2024-08-20
+## [1.0.5] - 2024-08-20
 
 ### Fixed
+- Docker registry authentication for ghcr.io/beast12 namespace
+- GitHub Actions workflow Docker login with correct username
+- BUILD_ARCH variable in Dockerfile (changed to TARGETARCH)
 - Version consistency across all configuration files
-- Updated requirements.txt, config.py, README.md, and documentation
 - All mypy type checking errors resolved
 - Black code formatting applied
 - Import sorting with isort
