@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.10-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.11-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -8,16 +8,16 @@ AI-powered doorbell with face recognition capabilities for Home Assistant. This 
 
 ## Features
 
-- 🎯 **AI-Powered Face Recognition** - Uses the face_recognition library for accurate face detection and identification
-- 📹 **Real-time Camera Monitoring** - Continuous monitoring of your doorbell camera feed
-- 🏠 **Home Assistant Integration** - Native integration with sensors, notifications, and automations
-- 🖥️ **Web Interface** - Beautiful, responsive web UI for managing faces and viewing events
-- 🔒 **Privacy-Focused** - All processing happens locally, no cloud dependencies
-- 📱 **Multi-Platform Support** - Works on amd64, arm64, armv7, and other architectures
-- 🗄️ **Local Storage** - SQLite database with optional encryption
-- 🔔 **Flexible Notifications** - Home Assistant notifications and webhook support
-- 📊 **Event Gallery** - Browse and manage doorbell events with filtering
-- ⚙️ **Configurable Settings** - Adjustable confidence thresholds and retention policies
+- **AI-Powered Face Recognition** - Uses the face_recognition library for accurate face detection and identification
+- **Real-time Camera Monitoring** - Continuous monitoring of your doorbell camera feed
+- **Home Assistant Integration** - Native integration with sensors, notifications, and automations
+- **Web Interface** - Beautiful, responsive web UI for managing faces and viewing events
+- **Privacy-Focused** - All processing happens locally, no cloud dependencies
+- **Multi-Platform Support** - Works on amd64, arm64, armv7, and other architectures
+- **Local Storage** - SQLite database with optional encryption
+- **Flexible Notifications** - Home Assistant notifications and webhook support
+- **Event Gallery** - Browse and manage doorbell events with filtering
+- **Configurable Settings** - Adjustable confidence thresholds and retention policies
 
 ## Screenshots
 
@@ -282,7 +282,7 @@ View logs in Home Assistant:
 ```bash
 git clone https://github.com/Beast12/whorang.git
 cd whorang/doorbell-addon
-docker build -t doorbell-face-recognition .
+docker build -t whorang-doorbell-addon .
 ```
 
 ### Contributing
@@ -327,17 +327,13 @@ When reporting bugs, please include:
 
 ## Changelog
 
-### Version 1.0.10 (2024-08-20)
+## v1.0.11 (Latest)
+- Fixed Docker image name in config.yaml to match actual build output
+- Corrected image reference from doorbell-face-recognition to whorang-doorbell-addon
 
-- Initial release
-- Face recognition using face_recognition library
-- Web interface for face management
-- Home Assistant integration
-- Multi-architecture support
-- SQLite database with optional encryption
-- Real-time camera monitoring
-- Event gallery and filtering
-- Configurable settings and notifications
+## v1.0.10
+- Fixed repository metadata update detached HEAD issue
+- Improved git push logic to avoid empty commits
 
 ## License
 
