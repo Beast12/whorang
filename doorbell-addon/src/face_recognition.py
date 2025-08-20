@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-import face_recognition
+import face_recognition  # type: ignore
 
 from .config import settings
 from .database import db
@@ -60,17 +60,17 @@ class FaceRecognitionManager:
         """
         try:
             # Load image
-            image = face_recognition.load_image_from_file(image_path)
+            image = face_recognition.load_image_from_file(image_path)  # type: ignore
 
-            # Find face locations and encodings
-            face_locations = face_recognition.face_locations(image)
-            face_encodings = face_recognition.face_encodings(image, face_locations)
+            # Get face locations and encodings
+            face_locations = face_recognition.face_locations(image)  # type: ignore
+            face_encodings = face_recognition.face_encodings(image, face_locations)  # type: ignore
 
             results = []
 
             for face_encoding, face_location in zip(face_encodings, face_locations):
                 # Check if face matches any known faces
-                matches = face_recognition.compare_faces(
+                matches = face_recognition.compare_faces(  # type: ignore
                     self.known_face_encodings,
                     face_encoding,
                     tolerance=1.0 - settings.face_confidence_threshold,
@@ -85,10 +85,10 @@ class FaceRecognitionManager:
                     name = self.known_face_names[first_match_index]
 
                     # Calculate confidence based on face distance
-                    face_distances = face_recognition.face_distance(
-                        [self.known_face_encodings[first_match_index]], face_encoding
+                    face_distances = face_recognition.face_distance(  # type: ignore
+                        self.known_face_encodings, face_encoding
                     )
-                    confidence = 1.0 - face_distances[0]
+                    confidence = 1.0 - face_distances[first_match_index]
 
                 results.append((name, confidence, face_location))
 
@@ -188,18 +188,20 @@ class FaceRecognitionManager:
                 person = db.add_person(person_name)
 
             # Load image and extract face encoding
-            image = face_recognition.load_image_from_file(image_path)
+            image = face_recognition.load_image_from_file(image_path)  # type: ignore
 
             if face_location:
                 # Use specific face location
-                face_encodings = face_recognition.face_encodings(image, [face_location])
+                face_encodings = face_recognition.face_encodings(  # type: ignore
+                    image, [face_location]
+                )
             else:
                 # Find all faces and use the first one
-                face_locations = face_recognition.face_locations(image)
+                face_locations = face_recognition.face_locations(image)  # type: ignore
                 if not face_locations:
                     print(f"No faces found in {image_path}")
                     return False
-                face_encodings = face_recognition.face_encodings(image, face_locations)
+                face_encodings = face_recognition.face_encodings(image, face_locations)  # type: ignore
 
             if not face_encodings:
                 print(f"Could not extract face encoding from {image_path}")
@@ -260,7 +262,7 @@ class FaceRecognitionManager:
             return False
 
     def get_face_similarity(
-        self, encoding1: np.ndarray, encoding2: np.ndarray
+        self, known_encodings: List[np.ndarray], unknown_encoding: np.ndarray
     ) -> float:
         """
         Calculate similarity between two face encodings.
@@ -268,8 +270,8 @@ class FaceRecognitionManager:
         Returns:
             Similarity score (0.0 to 1.0, higher is more similar)
         """
-        distance = face_recognition.face_distance([encoding1], encoding2)[0]
-        return 1.0 - distance
+        distances = face_recognition.face_distance(known_encodings, unknown_encoding)  # type: ignore
+        return 1.0 - distances[0]
 
 
 class CameraManager:

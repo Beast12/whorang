@@ -258,7 +258,12 @@ async def add_face_to_person(
         face_location = None
         if all(v is not None for v in [face_x, face_y, face_width, face_height]):
             # Convert to face_recognition format (top, right, bottom, left)
-            face_location = (face_y, face_x + face_width, face_y + face_height, face_x)
+            face_location = (
+                face_y,
+                (face_x or 0) + (face_width or 0),
+                (face_y or 0) + (face_height or 0),
+                face_x or 0,
+            )
 
         # Add face encoding
         success = face_manager.add_face_for_person(

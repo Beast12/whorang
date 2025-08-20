@@ -105,9 +105,11 @@ class HomeAssistantIntegration:
         }
 
         # Remove None values
-        entity_data["attributes"] = {
-            k: v for k, v in entity_data["attributes"].items() if v is not None
-        }
+        attributes = entity_data["attributes"]
+        if isinstance(attributes, dict):
+            entity_data["attributes"] = {
+                k: v for k, v in attributes.items() if v is not None
+            }
 
         await self.ha_api.update_sensor(
             entity["entity_id"],

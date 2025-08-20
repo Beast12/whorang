@@ -30,7 +30,7 @@ class FaceEncoding:
 
     id: Optional[int] = None
     person_id: int = 0
-    encoding: np.ndarray = None
+    encoding: Optional[np.ndarray] = None
     confidence: float = 0.0
     created_at: Optional[datetime] = None
 
@@ -40,7 +40,7 @@ class DoorbellEvent:
     """Doorbell event model."""
 
     id: Optional[int] = None
-    timestamp: datetime = None
+    timestamp: Optional[datetime] = None
     image_path: str = ""
     person_id: Optional[int] = None
     confidence: Optional[float] = None
