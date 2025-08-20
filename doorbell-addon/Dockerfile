@@ -11,7 +11,7 @@ ARG DOORBELL_VERSION
 LABEL \
     io.hass.name="Doorbell Face Recognition" \
     io.hass.description="AI-powered doorbell with face recognition capabilities" \
-    io.hass.arch="${BUILD_ARCH}" \
+    io.hass.arch="${TARGETARCH}" \
     io.hass.type="addon" \
     io.hass.version=${DOORBELL_VERSION} \
     maintainer="Beast12" \
