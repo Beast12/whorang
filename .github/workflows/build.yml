@@ -1,0 +1,338 @@
+name: Build and Publish Doorbell Face Recognition Addon
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: doorbell-face-recognition
+
+jobs:
+  version-check:
+    name: Version Consistency Check
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      is_release: ${{ steps.check_release.outputs.is_release }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if this is a release
+        id: check_release
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate version consistency
+        if: steps.check_release.outputs.is_release == 'true'
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          
+          # Check config.yaml
+          CONFIG_VERSION=$(grep "version:" doorbell-addon/config.yaml | cut -d'"' -f2)
+          if [ "$CONFIG_VERSION" != "$VERSION" ]; then
+            echo "❌ Version mismatch in config.yaml: $CONFIG_VERSION != $VERSION"
+            exit 1
+          fi
+          
+          # Check build.yaml
+          BUILD_VERSION=$(grep "org.opencontainers.image.version:" doorbell-addon/build.yaml | cut -d'"' -f2)
+          if [ "$BUILD_VERSION" != "$VERSION" ]; then
+            echo "❌ Version mismatch in build.yaml: $BUILD_VERSION != $VERSION"
+            exit 1
+          fi
+          
+          # Check requirements.txt
+          if ! grep -q "# Version: $VERSION" doorbell-addon/requirements.txt; then
+            echo "❌ Version not found in requirements.txt"
+            exit 1
+          fi
+          
+          echo "✅ All version checks passed for v$VERSION"
+
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    needs: version-check
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+          pip install -r doorbell-addon/requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          flake8 doorbell-addon/src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 doorbell-addon/src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Check code formatting with black
+        run: |
+          black --check doorbell-addon/src/
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only doorbell-addon/src/
+
+      - name: Type checking with mypy
+        run: |
+          mypy doorbell-addon/src/ --ignore-missing-imports
+
+      - name: Validate addon configuration
+        run: |
+          python -c "
+          import yaml
+          import json
+          
+          # Validate config.yaml
+          with open('doorbell-addon/config.yaml', 'r') as f:
+              config = yaml.safe_load(f)
+              print('✅ config.yaml is valid')
+          
+          # Validate build.yaml
+          with open('doorbell-addon/build.yaml', 'r') as f:
+              build = yaml.safe_load(f)
+              print('✅ build.yaml is valid')
+          
+          # Check required fields
+          required_fields = ['name', 'version', 'slug', 'description', 'arch']
+          for field in required_fields:
+              if field not in config:
+                  raise ValueError(f'Missing required field: {field}')
+          
+          print('✅ All configuration validations passed')
+          "
+
+  build:
+    name: Build Multi-Architecture Images
+    runs-on: ubuntu-latest
+    needs: [version-check, lint-and-test]
+    if: always() && needs.lint-and-test.result == 'success'
+    strategy:
+      matrix:
+        arch: [amd64, aarch64, armhf, armv7, i386]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: needs.version-check.outputs.is_release == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./doorbell-addon
+          platforms: linux/${{ matrix.arch }}
+          push: ${{ needs.version-check.outputs.is_release == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DOORBELL_VERSION=${{ needs.version-check.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [version-check, build]
+    if: needs.version-check.outputs.is_release == 'true'
+    strategy:
+      matrix:
+        arch: [amd64, aarch64]
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-${{ matrix.arch }}:${{ needs.version-check.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.arch }}.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results-${{ matrix.arch }}.sarif'
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [version-check, build, security-scan]
+    if: needs.version-check.outputs.is_release == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -2 | tail -1)
+          CURRENT_TAG=${{ github.ref_name }}
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          
+          # Generate changelog
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG)
+          
+          # Create changelog file
+          cat > CHANGELOG.md << EOF
+          # Changelog for $CURRENT_TAG
+          
+          ## Changes
+          $CHANGELOG
+          
+          ## Docker Images
+          
+          The following multi-architecture Docker images are available:
+          
+          - \`ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-amd64:${{ needs.version-check.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-aarch64:${{ needs.version-check.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-armhf:${{ needs.version-check.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-armv7:${{ needs.version-check.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}-i386:${{ needs.version-check.outputs.version }}\`
+          
+          ## Installation
+          
+          1. Add this repository to your Home Assistant Add-on Store
+          2. Install the "Doorbell Face Recognition" add-on
+          3. Configure your camera URL and settings
+          4. Start the add-on
+          
+          ## Features
+          
+          - AI-powered face recognition using face_recognition library
+          - Real-time doorbell monitoring
+          - Web interface for face labeling and gallery
+          - Home Assistant integration with sensors and notifications
+          - Multi-architecture support (amd64, arm64, armv7, etc.)
+          - Encrypted local storage option
+          - Configurable retention policies
+          
+          EOF
+          
+          echo "changelog_file=CHANGELOG.md" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Doorbell Face Recognition ${{ needs.version-check.outputs.version }}
+          body_path: ${{ steps.changelog.outputs.changelog_file }}
+          draft: false
+          prerelease: false
+          files: |
+            doorbell-addon/config.yaml
+            doorbell-addon/README.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-repository:
+    name: Update Repository Metadata
+    runs-on: ubuntu-latest
+    needs: [version-check, create-release]
+    if: needs.version-check.outputs.is_release == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update repository.yaml
+        run: |
+          VERSION=${{ needs.version-check.outputs.version }}
+          
+          # Update repository.yaml with latest version info
+          cat > repository.yaml << EOF
+          # https://developers.home-assistant.io/docs/add-ons/repository
+          name: "Doorbell Face Recognition Add-on Repository"
+          url: "https://github.com/${{ github.repository }}"
+          maintainer: "${{ github.repository_owner }}"
+          
+          # Latest release information
+          latest_version: "$VERSION"
+          release_date: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          
+          # Add-on information
+          addons:
+            doorbell_face_recognition:
+              name: "Doorbell Face Recognition"
+              description: "AI-powered doorbell with face recognition capabilities"
+              version: "$VERSION"
+              slug: "doorbell_face_recognition"
+              url: "https://github.com/${{ github.repository }}/tree/main/doorbell-addon"
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add repository.yaml
+          git commit -m "Update repository metadata for v${{ needs.version-check.outputs.version }}" || exit 0
+          git push
+
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [version-check, create-release, update-repository]
+    if: needs.version-check.outputs.is_release == 'true'
+    steps:
+      - name: Notify successful release
+        run: |
+          echo "🎉 Successfully released Doorbell Face Recognition v${{ needs.version-check.outputs.version }}"
+          echo "📦 Multi-architecture Docker images published to GHCR"
+          echo "📋 GitHub release created with changelog"
+          echo "🏠 Repository metadata updated for Home Assistant"
+          echo ""
+          echo "Installation URL: https://github.com/${{ github.repository }}"
