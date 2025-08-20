@@ -1,0 +1,82 @@
+# Changelog
+
+All notable changes to the Doorbell Face Recognition add-on will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2024-08-19
+
+### Added
+- Initial release of Doorbell Face Recognition add-on
+- AI-powered face recognition using face_recognition library
+- Real-time doorbell camera monitoring with RTSP/HTTP support
+- Beautiful, responsive web interface for face management
+- Home Assistant integration with sensors and notifications
+- Multi-architecture Docker support (amd64, arm64, armv7, armhf, i386)
+- SQLite database with optional encryption for face data
+- Event gallery with filtering and search capabilities
+- Configurable confidence thresholds and retention policies
+- Automated cleanup of old events and images
+- RESTful API for external integrations
+- WebSocket support for real-time updates
+- Comprehensive logging and error handling
+- Security scanning and vulnerability management
+- GitHub Actions CI/CD pipeline with automated builds
+- Version consistency validation across all configuration files
+- Automated changelog generation and release management
+
+### Features
+- **Face Recognition**: Accurate face detection and identification
+- **Privacy-First**: All processing happens locally, no cloud dependencies
+- **Web Interface**: Modern UI with dashboard, gallery, and settings pages
+- **Home Assistant Integration**: Native sensors, events, and automation support
+- **Storage Management**: Configurable retention with automatic cleanup
+- **Multi-Platform**: Support for various architectures and camera types
+- **Security**: Optional database encryption and secure API endpoints
+- **Notifications**: Home Assistant notifications and webhook support
+- **Performance**: Optimized for resource-constrained environments
+
+### Technical Details
+- FastAPI backend with async support
+- SQLite database with encrypted storage option
+- Bootstrap 5 responsive frontend
+- Docker multi-stage builds for optimized images
+- Comprehensive test coverage and linting
+- Type hints throughout Python codebase
+- Structured logging with configurable levels
+- Health checks and monitoring endpoints
+
+### Documentation
+- Comprehensive README with installation and configuration guide
+- API documentation with examples
+- Troubleshooting guide with common issues
+- Performance optimization recommendations
+- Security best practices
+- Development setup instructions
+
+### Infrastructure
+- GitHub Actions workflow for automated builds
+- Multi-architecture container images
+- Automated security scanning with Trivy
+- Version consistency validation
+- Automated release management
+- Container registry publishing to GHCR
+
+## [Unreleased]
+
+### Planned Features
+- Mobile app notifications
+- Advanced face recognition models
+- Cloud backup options
+- Integration with additional camera brands
+- Machine learning model training interface
+- Advanced analytics and reporting
+- Multi-language support
+- Dark mode theme
+- Voice notifications
+- Integration with smart locks
+
+---
+
+For more details about each release, see the [GitHub Releases](https://github.com/Beast12/whorang/releases) page.

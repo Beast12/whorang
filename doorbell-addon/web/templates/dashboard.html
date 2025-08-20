@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Doorbell Face Recognition{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Events</h6>
+                        <h3 id="total-events">{{ recent_events|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-camera-video fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Known Faces</h6>
+                        <h3 id="known-faces">{{ recent_events|selectattr("is_known")|list|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-person-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Unknown Faces</h6>
+                        <h3 id="unknown-faces">{{ recent_events|rejectattr("is_known")|list|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-person-question fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Registered People</h6>
+                        <h3 id="total-persons">{{ persons|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Events -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Events
+                </h5>
+                <a href="/gallery" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_events %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Image</th>
+                                    <th>Person</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in recent_events[:10] %}
+                                <tr>
+                                    <td>
+                                        <small>{{ event.timestamp.strftime('%m/%d %H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <img src="/api/images/{{ event.image_path.split('/')[-1] }}" 
+                                             alt="Event image" 
+                                             class="img-thumbnail" 
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    </td>
+                                    <td>
+                                        {% if event.is_known %}
+                                            <span class="badge bg-success">
+                                                {% for person in persons %}
+                                                    {% if person.id == event.person_id %}{{ person.name }}{% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.confidence %}
+                                            <span class="badge bg-info">{{ "%.1f"|format(event.confidence * 100) }}%</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not event.is_known %}
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="labelEvent({{ event.id }})">
+                                                <i class="bi bi-tag"></i> Label
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-camera-video-off fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">No events recorded yet</p>
+                        <button class="btn btn-primary" onclick="captureFrame()">
+                            <i class="bi bi-camera"></i> Capture First Frame
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- People Management -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-people"></i> People
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Person Form -->
+                <form id="add-person-form" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               id="person-name" 
+                               placeholder="Enter person name"
+                               required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- People List -->
+                <div id="people-list">
+                    {% if persons %}
+                        {% for person in persons %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <strong>{{ person.name }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Added {{ person.created_at.strftime('%m/%d/%Y') if person.created_at else 'Unknown' }}
+                                </small>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="addFaceModal({{ person.id }}, '{{ person.name }}')">
+                                    <i class="bi bi-plus-circle"></i> Add Face
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-person-plus fs-1 text-muted"></i>
+                            <p class="mt-2 text-muted">No people registered yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Storage Info -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-hdd"></i> Storage Usage
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2">
+                    <div class="progress-bar" 
+                         role="progressbar" 
+                         style="width: {{ storage_info.usage_percent }}%"
+                         aria-valuenow="{{ storage_info.usage_percent }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <small class="text-muted">
+                    {{ "%.1f"|format(storage_info.used_gb) }} GB / {{ "%.1f"|format(storage_info.total_gb) }} GB used
+                    ({{ "%.1f"|format(storage_info.usage_percent) }}%)
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Label Event Modal -->
+<div class="modal fade" id="labelEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Label Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="label-event-form">
+                    <input type="hidden" id="label-event-id">
+                    <div class="mb-3">
+                        <label for="label-person-select" class="form-label">Select Person:</label>
+                        <select class="form-select" id="label-person-select" required>
+                            <option value="">Choose a person...</option>
+                            {% for person in persons %}
+                            <option value="{{ person.id }}">{{ person.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Or add new person:</label>
+                        <input type="text" class="form-control" id="label-new-person" placeholder="New person name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitLabel()">Label Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Face Modal -->
+<div class="modal fade" id="addFaceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Face for <span id="face-person-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-face-form" enctype="multipart/form-data">
+                    <input type="hidden" id="face-person-id">
+                    <div class="mb-3">
+                        <label for="face-image" class="form-label">Upload Image:</label>
+                        <input type="file" class="form-control" id="face-image" accept="image/*" required>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            Upload a clear image of the person's face. The system will automatically detect and extract the face.
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddFace()">Add Face</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-refresh dashboard every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+
+// Add person form handler
+document.getElementById('add-person-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('person-name').value.trim();
+    if (!name) return;
+    
+    try {
+        const formData = new FormData();
+        formData.append('name', name);
+        
+        const response = await fetch('/api/persons', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error adding person: ' + error.message);
+    }
+});
+
+// Label event functions
+function labelEvent(eventId) {
+    document.getElementById('label-event-id').value = eventId;
+    new bootstrap.Modal(document.getElementById('labelEventModal')).show();
+}
+
+async function submitLabel() {
+    const eventId = document.getElementById('label-event-id').value;
+    const personId = document.getElementById('label-person-select').value;
+    const newPersonName = document.getElementById('label-new-person').value.trim();
+    
+    try {
+        let finalPersonId = personId;
+        
+        // Create new person if specified
+        if (newPersonName && !personId) {
+            const formData = new FormData();
+            formData.append('name', newPersonName);
+            
+            const personResponse = await fetch('/api/persons', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (personResponse.ok) {
+                const person = await personResponse.json();
+                finalPersonId = person.id;
+            } else {
+                throw new Error('Failed to create new person');
+            }
+        }
+        
+        if (!finalPersonId) {
+            alert('Please select or create a person');
+            return;
+        }
+        
+        // Label the event
+        const formData = new FormData();
+        formData.append('person_id', finalPersonId);
+        
+        const response = await fetch(`/api/events/${eventId}/label`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('labelEventModal')).hide();
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error labeling event: ' + error.message);
+    }
+}
+
+// Add face functions
+function addFaceModal(personId, personName) {
+    document.getElementById('face-person-id').value = personId;
+    document.getElementById('face-person-name').textContent = personName;
+    new bootstrap.Modal(document.getElementById('addFaceModal')).show();
+}
+
+async function submitAddFace() {
+    const personId = document.getElementById('face-person-id').value;
+    const imageFile = document.getElementById('face-image').files[0];
+    
+    if (!imageFile) {
+        alert('Please select an image file');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        const response = await fetch(`/api/persons/${personId}/faces`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addFaceModal')).hide();
+            alert('Face added successfully!');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error adding face: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

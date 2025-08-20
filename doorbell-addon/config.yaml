@@ -1,0 +1,39 @@
+# https://developers.home-assistant.io/docs/add-ons/configuration
+name: "Doorbell Face Recognition"
+version: "1.0.0"
+slug: "doorbell_face_recognition"
+description: "AI-powered doorbell with face recognition capabilities"
+url: "https://github.com/Beast12/whorang"
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+startup: services
+boot: auto
+init: false
+map:
+  - "share:rw"
+  - "ssl"
+  - "media:rw"
+options:
+  camera_url: "rtsp://192.168.1.100:554/stream"
+  storage_path: "/share/doorbell"
+  retention_days: 30
+  face_confidence_threshold: 0.6
+  notification_webhook: ""
+  database_encryption: false
+schema:
+  camera_url: "str"
+  storage_path: "str"
+  retention_days: "int(1,365)"
+  face_confidence_threshold: "float(0.1,1.0)"
+  notification_webhook: "str?"
+  database_encryption: "bool"
+ports:
+  "8099/tcp": 8099
+ports_description:
+  "8099/tcp": "Web interface"
+# For local development, comment out the image line to build locally
+# image: "ghcr.io/beast12/doorbell-face-recognition-{arch}"

@@ -1,0 +1,4 @@
+# https://developers.home-assistant.io/docs/add-ons/repository
+name: "Doorbell Face Recognition Add-on Repository"
+url: "https://github.com/Beast12/whorang"
+maintainer: "Beast12"

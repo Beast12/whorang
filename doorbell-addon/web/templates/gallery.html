@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery - Doorbell Face Recognition{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-images"></i> Event Gallery</h2>
+        <p class="text-muted">Browse and manage doorbell events</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="filterEvents('all')">
+                All Events
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="filterEvents('known')">
+                Known Faces
+            </button>
+            <button type="button" class="btn btn-outline-warning" onclick="filterEvents('unknown')">
+                Unknown Faces
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <label for="person-filter" class="form-label">Filter by Person:</label>
+                <select class="form-select" id="person-filter" onchange="applyFilters()">
+                    <option value="">All People</option>
+                    {% for person in persons %}
+                    <option value="{{ person.id }}">{{ person.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="date-from" class="form-label">From Date:</label>
+                <input type="date" class="form-control" id="date-from" onchange="applyFilters()">
+            </div>
+            <div class="col-md-4">
+                <label for="date-to" class="form-label">To Date:</label>
+                <input type="date" class="form-control" id="date-to" onchange="applyFilters()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Events Grid -->
+<div id="events-container">
+    {% if events %}
+        <div class="row" id="events-grid">
+            {% for event in events %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4 event-item" 
+                 data-known="{{ event.is_known|lower }}" 
+                 data-person-id="{{ event.person_id or '' }}"
+                 data-date="{{ event.timestamp.strftime('%Y-%m-%d') }}">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <img src="/api/images/{{ event.image_path.split('/')[-1] }}" 
+                             class="card-img-top" 
+                             style="height: 200px; object-fit: cover;"
+                             alt="Event image"
+                             onclick="viewImageModal('{{ event.image_path.split('/')[-1] }}', {{ event.id }})">
+                        
+                        <!-- Status Badge -->
+                        <div class="position-absolute top-0 end-0 m-2">
+                            {% if event.is_known %}
+                                <span class="badge bg-success">
+                                    {% for person in persons %}
+                                        {% if person.id == event.person_id %}{{ person.name }}{% endif %}
+                                    {% endfor %}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">Unknown</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Confidence Badge -->
+                        {% if event.confidence %}
+                        <div class="position-absolute bottom-0 start-0 m-2">
+                            <span class="badge bg-info">{{ "%.1f"|format(event.confidence * 100) }}%</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="bi bi-clock"></i>
+                            {{ event.timestamp.strftime('%m/%d/%Y %H:%M') }}
+                        </h6>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Event #{{ event.id }}
+                            </small>
+                            
+                            {% if not event.is_known %}
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    onclick="labelEventFromGallery({{ event.id }})">
+                                <i class="bi bi-tag"></i> Label
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Load More Button -->
+        <div class="text-center mt-4">
+            <button class="btn btn-outline-primary" id="load-more-btn" onclick="loadMoreEvents()">
+                <i class="bi bi-arrow-down-circle"></i> Load More Events
+            </button>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-camera-video-off fs-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">No Events Found</h4>
+            <p class="text-muted">Start monitoring your doorbell to see events here</p>
+            <button class="btn btn-primary" onclick="captureFrame()">
+                <i class="bi bi-camera"></i> Capture Frame
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Image View Modal -->
+<div class="modal fade" id="imageViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Event Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image">
+                <div id="modal-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="modal-label-btn" onclick="labelEventFromModal()">
+                    <i class="bi bi-tag"></i> Label This Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Label Event Modal -->
+<div class="modal fade" id="labelEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Label Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="label-event-form">
+                    <input type="hidden" id="label-event-id">
+                    <div class="mb-3">
+                        <label for="label-person-select" class="form-label">Select Person:</label>
+                        <select class="form-select" id="label-person-select" required>
+                            <option value="">Choose a person...</option>
+                            {% for person in persons %}
+                            <option value="{{ person.id }}">{{ person.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Or add new person:</label>
+                        <input type="text" class="form-control" id="label-new-person" placeholder="New person name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitLabel()">Label Event</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentEventId = null;
+let currentOffset = {{ events|length }};
+let isLoading = false;
+
+// Filter functions
+function filterEvents(type) {
+    const items = document.querySelectorAll('.event-item');
+    
+    items.forEach(item => {
+        const isKnown = item.dataset.known === 'true';
+        let show = false;
+        
+        switch(type) {
+            case 'all':
+                show = true;
+                break;
+            case 'known':
+                show = isKnown;
+                break;
+            case 'unknown':
+                show = !isKnown;
+                break;
+        }
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+    
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function applyFilters() {
+    const personFilter = document.getElementById('person-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+    
+    const items = document.querySelectorAll('.event-item');
+    
+    items.forEach(item => {
+        let show = true;
+        
+        // Person filter
+        if (personFilter && item.dataset.personId !== personFilter) {
+            show = false;
+        }
+        
+        // Date filters
+        const itemDate = item.dataset.date;
+        if (dateFrom && itemDate < dateFrom) {
+            show = false;
+        }
+        if (dateTo && itemDate > dateTo) {
+            show = false;
+        }
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Image viewing
+function viewImageModal(imageName, eventId) {
+    currentEventId = eventId;
+    
+    document.getElementById('modal-image').src = `/api/images/${imageName}`;
+    
+    // Get event details
+    fetch(`/api/events?limit=1000`)
+        .then(response => response.json())
+        .then(data => {
+            const event = data.events.find(e => e.id === eventId);
+            if (event) {
+                const details = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Time:</strong> ${new Date(event.timestamp).toLocaleString()}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong> 
+                            ${event.is_known ? 
+                                `<span class="badge bg-success">${event.person_name}</span>` : 
+                                `<span class="badge bg-warning">Unknown</span>`
+                            }
+                        </div>
+                        ${event.confidence ? `
+                        <div class="col-md-6 mt-2">
+                            <strong>Confidence:</strong> ${(event.confidence * 100).toFixed(1)}%
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                document.getElementById('modal-details').innerHTML = details;
+                
+                // Show/hide label button
+                const labelBtn = document.getElementById('modal-label-btn');
+                labelBtn.style.display = event.is_known ? 'none' : 'inline-block';
+            }
+        });
+    
+    new bootstrap.Modal(document.getElementById('imageViewModal')).show();
+}
+
+// Load more events
+async function loadMoreEvents() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    const loadBtn = document.getElementById('load-more-btn');
+    loadBtn.disabled = true;
+    loadBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Loading...';
+    
+    try {
+        const response = await fetch(`/api/events?limit=20&offset=${currentOffset}`);
+        const data = await response.json();
+        
+        if (data.events.length > 0) {
+            // Add new events to the grid
+            const grid = document.getElementById('events-grid');
+            
+            data.events.forEach(event => {
+                const eventHtml = createEventCard(event);
+                grid.insertAdjacentHTML('beforeend', eventHtml);
+            });
+            
+            currentOffset += data.events.length;
+        } else {
+            loadBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading more events:', error);
+        alert('Error loading more events');
+    } finally {
+        isLoading = false;
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = '<i class="bi bi-arrow-down-circle"></i> Load More Events';
+    }
+}
+
+function createEventCard(event) {
+    const personName = event.person_name || 'Unknown';
+    const statusBadge = event.is_known ? 
+        `<span class="badge bg-success">${personName}</span>` :
+        `<span class="badge bg-warning">Unknown</span>`;
+    
+    const confidenceBadge = event.confidence ? 
+        `<div class="position-absolute bottom-0 start-0 m-2">
+            <span class="badge bg-info">${(event.confidence * 100).toFixed(1)}%</span>
+        </div>` : '';
+    
+    const labelButton = !event.is_known ? 
+        `<button class="btn btn-sm btn-outline-primary" onclick="labelEventFromGallery(${event.id})">
+            <i class="bi bi-tag"></i> Label
+        </button>` : '';
+    
+    return `
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4 event-item" 
+             data-known="${event.is_known}" 
+             data-person-id="${event.person_id || ''}"
+             data-date="${event.timestamp.split('T')[0]}">
+            <div class="card h-100">
+                <div class="position-relative">
+                    <img src="/api/images/${event.image_path.split('/').pop()}" 
+                         class="card-img-top" 
+                         style="height: 200px; object-fit: cover;"
+                         alt="Event image"
+                         onclick="viewImageModal('${event.image_path.split('/').pop()}', ${event.id})">
+                    
+                    <div class="position-absolute top-0 end-0 m-2">
+                        ${statusBadge}
+                    </div>
+                    
+                    ${confidenceBadge}
+                </div>
+                
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-clock"></i>
+                        ${new Date(event.timestamp).toLocaleDateString()} ${new Date(event.timestamp).toLocaleTimeString()}
+                    </h6>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Event #${event.id}
+                        </small>
+                        ${labelButton}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Label event functions
+function labelEventFromGallery(eventId) {
+    currentEventId = eventId;
+    document.getElementById('label-event-id').value = eventId;
+    new bootstrap.Modal(document.getElementById('labelEventModal')).show();
+}
+
+function labelEventFromModal() {
+    bootstrap.Modal.getInstance(document.getElementById('imageViewModal')).hide();
+    setTimeout(() => {
+        document.getElementById('label-event-id').value = currentEventId;
+        new bootstrap.Modal(document.getElementById('labelEventModal')).show();
+    }, 300);
+}
+
+async function submitLabel() {
+    const eventId = document.getElementById('label-event-id').value;
+    const personId = document.getElementById('label-person-select').value;
+    const newPersonName = document.getElementById('label-new-person').value.trim();
+    
+    try {
+        let finalPersonId = personId;
+        
+        // Create new person if specified
+        if (newPersonName && !personId) {
+            const formData = new FormData();
+            formData.append('name', newPersonName);
+            
+            const personResponse = await fetch('/api/persons', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (personResponse.ok) {
+                const person = await personResponse.json();
+                finalPersonId = person.id;
+            } else {
+                throw new Error('Failed to create new person');
+            }
+        }
+        
+        if (!finalPersonId) {
+            alert('Please select or create a person');
+            return;
+        }
+        
+        // Label the event
+        const formData = new FormData();
+        formData.append('person_id', finalPersonId);
+        
+        const response = await fetch(`/api/events/${eventId}/label`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('labelEventModal')).hide();
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error labeling event: ' + error.message);
+    }
+}
+
+// Set default date range (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    document.getElementById('date-to').value = today.toISOString().split('T')[0];
+    document.getElementById('date-from').value = thirtyDaysAgo.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}
