@@ -190,6 +190,13 @@ jobs:
     needs: [version-check, build]
     if: needs.version-check.outputs.is_release == 'true'
     steps:
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: beast12
+          password: ${{ secrets.GHCR_PAT }}
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
