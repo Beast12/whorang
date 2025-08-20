@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.6-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -327,7 +327,7 @@ When reporting bugs, please include:
 
 ## Changelog
 
-### Version 1.0.5 (2024-08-20)
+### Version 1.0.6 (2024-08-20)
 
 - Initial release
 - Face recognition using face_recognition library
