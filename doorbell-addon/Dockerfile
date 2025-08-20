@@ -6,6 +6,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Build arguments
 ARG DOORBELL_VERSION
+ARG TARGETARCH
 
 # Labels
 LABEL \
