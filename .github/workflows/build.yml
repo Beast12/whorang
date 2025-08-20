@@ -276,6 +276,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GHCR_PAT }}
+          ref: main
 
       - name: Update repository.yaml
         run: |
@@ -307,8 +308,12 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add repository.yaml
-          git commit -m "Update repository metadata for v${{ needs.version-check.outputs.version }}" || exit 0
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update repository metadata for v${{ needs.version-check.outputs.version }}"
+            git push origin main
+          fi
 
   notify:
     name: Notify Success
