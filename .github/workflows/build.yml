@@ -138,7 +138,7 @@ jobs:
     if: always() && needs.lint-and-test.result == 'success'
     strategy:
       matrix:
-        arch: [amd64, aarch64, armhf, armv7, i386]
+        arch: [amd64, aarch64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
