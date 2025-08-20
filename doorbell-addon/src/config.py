@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     supervisor_token: Optional[str] = os.getenv("SUPERVISOR_TOKEN")
 
     # Application settings
-    app_version: str = "1.0.0"
+    app_version: str = "1.0.3"
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     @property

@@ -9,9 +9,9 @@ labels:
   org.opencontainers.image.title: "Doorbell Face Recognition"
   org.opencontainers.image.description: "AI-powered doorbell with face recognition capabilities"
   org.opencontainers.image.source: "https://github.com/Beast12/whorang"
-  org.opencontainers.image.version: "1.0.2"
+  org.opencontainers.image.version: "1.0.3"
   org.opencontainers.image.created: "2024-01-01T00:00:00Z"
   org.opencontainers.image.authors: "Beast12"
   org.opencontainers.image.licenses: "MIT"
 args:
-  DOORBELL_VERSION: "1.0.2"
+  DOORBELL_VERSION: "1.0.3"
