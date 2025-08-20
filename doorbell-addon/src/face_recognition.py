@@ -7,9 +7,10 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import cv2
-import face_recognition
 import numpy as np
 from PIL import Image
+
+import face_recognition
 
 from .config import settings
 from .database import db

@@ -100,7 +100,7 @@ jobs:
 
       - name: Check import sorting with isort
         run: |
-          isort --check-only doorbell-addon/src/
+          isort --check-only --profile black doorbell-addon/src/
 
       - name: Type checking with mypy
         run: |

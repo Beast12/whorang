@@ -15,9 +15,13 @@ from fastapi.templating import Jinja2Templates
 from .config import settings
 from .database import db
 from .ha_integration import ha_integration
-from .utils import (ensure_directories, get_storage_usage,
-                    notification_manager, sanitize_filename,
-                    validate_image_file)
+from .utils import (
+    ensure_directories,
+    get_storage_usage,
+    notification_manager,
+    sanitize_filename,
+    validate_image_file,
+)
 
 # Setup logger first
 logger = structlog.get_logger()
