@@ -264,7 +264,7 @@ jobs:
             doorbell-addon/config.yaml
             doorbell-addon/README.md
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GHCR_PAT }}
 
   update-repository:
     name: Update Repository Metadata
@@ -275,7 +275,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GHCR_PAT }}
 
       - name: Update repository.yaml
         run: |
