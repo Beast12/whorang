@@ -4,14 +4,14 @@ url: "https://github.com/Beast12/whorang"
 maintainer: "Beast12"
 
 # Latest release information
-latest_version: "1.0.13"
-release_date: "2025-08-22T07:03:00Z"
+latest_version: "1.0.14"
+release_date: "2025-08-22T09:07:00Z"
 
 # Add-on information
 addons:
   doorbell_face_recognition:
     name: "Doorbell Face Recognition"
     description: "AI-powered doorbell with face recognition capabilities"
-    version: "1.0.13"
+    version: "1.0.14"
     slug: "doorbell_face_recognition"
     url: "https://github.com/Beast12/whorang/tree/main/doorbell-addon"

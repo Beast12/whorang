@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.14] - 2024-08-22
+
+### Fixed
+- Main branch synchronization issue preventing proper version updates
+- Corrected workflow to update files → push to main → create tag → push tag
+
+## [1.0.13] - 2024-08-22
+
+### Fixed
+- Fixed Docker image name in config.yaml to match actual build output
+- Corrected image reference from doorbell-face-recognition to whorang-doorbell-addon
+
 ## [1.0.11] - 2024-08-20
 
 ### Fixed
