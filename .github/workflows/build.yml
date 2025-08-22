@@ -266,59 +266,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GHCR_PAT }}
 
-  update-repository:
-    name: Update Repository Metadata
-    runs-on: ubuntu-latest
-    needs: [version-check, create-release]
-    if: needs.version-check.outputs.is_release == 'true'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GHCR_PAT }}
-          ref: main
-
-      - name: Update repository.yaml
-        run: |
-          VERSION=${{ needs.version-check.outputs.version }}
-          
-          # Update repository.yaml with latest version info
-          cat > repository.yaml << EOF
-          # https://developers.home-assistant.io/docs/add-ons/repository
-          name: "Doorbell Face Recognition Add-on Repository"
-          url: "https://github.com/${{ github.repository }}"
-          maintainer: "${{ github.repository_owner }}"
-          
-          # Latest release information
-          latest_version: "$VERSION"
-          release_date: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          
-          # Add-on information
-          addons:
-            doorbell_face_recognition:
-              name: "Doorbell Face Recognition"
-              description: "AI-powered doorbell with face recognition capabilities"
-              version: "$VERSION"
-              slug: "doorbell_face_recognition"
-              url: "https://github.com/${{ github.repository }}/tree/main/doorbell-addon"
-          EOF
-
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add repository.yaml
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update repository metadata for v${{ needs.version-check.outputs.version }}"
-            git push origin main
-          fi
 
   notify:
     name: Notify Success
     runs-on: ubuntu-latest
-    needs: [version-check, create-release, update-repository]
+    needs: [version-check, create-release]
     if: needs.version-check.outputs.is_release == 'true'
     steps:
       - name: Notify successful release
@@ -326,6 +278,5 @@ jobs:
           echo "🎉 Successfully released Doorbell Face Recognition v${{ needs.version-check.outputs.version }}"
           echo "📦 Multi-architecture Docker images published to GHCR"
           echo "📋 GitHub release created with changelog"
-          echo "🏠 Repository metadata updated for Home Assistant"
           echo ""
           echo "Installation URL: https://github.com/${{ github.repository }}"
