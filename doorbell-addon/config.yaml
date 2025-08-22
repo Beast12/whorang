@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "Doorbell Face Recognition"
-version: "1.0.14"
+version: "1.0.16"
 slug: "doorbell_face_recognition"
 description: "AI-powered doorbell with face recognition capabilities"
 url: "https://github.com/Beast12/whorang"
@@ -15,6 +15,7 @@ map:
   - "ssl"
   - "media:rw"
 options:
+  camera_entity: ""
   camera_url: "rtsp://192.168.1.100:554/stream"
   storage_path: "/share/doorbell"
   retention_days: 30
@@ -22,6 +23,7 @@ options:
   notification_webhook: ""
   database_encryption: false
 schema:
+  camera_entity: "str?"
   camera_url: "str"
   storage_path: "str"
   retention_days: "int(1,365)"
