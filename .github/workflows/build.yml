@@ -104,7 +104,7 @@ jobs:
 
       - name: Type checking with mypy
         run: |
-          mypy doorbell-addon/src/ --ignore-missing-imports
+          mypy doorbell-addon/src/ --config-file doorbell-addon/mypy.ini
 
       - name: Validate addon configuration
         run: |
