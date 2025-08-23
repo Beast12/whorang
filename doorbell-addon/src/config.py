@@ -1,9 +1,9 @@
 """Configuration management for the doorbell face recognition addon."""
 
 import os
-from typing import Optional
+from typing import ClassVar, Optional
 
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     supervisor_token: Optional[str] = os.getenv("SUPERVISOR_TOKEN")
 
     # Application settings
-    app_version = "1.0.16"
+    app_version: ClassVar[str] = "1.0.16"
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     @property
