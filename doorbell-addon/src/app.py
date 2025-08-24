@@ -14,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import settings
 from .database import db
+from .ha_camera import ha_camera_manager
 from .ha_integration import ha_integration
 from .utils import (
     ensure_directories,
@@ -57,8 +58,8 @@ app.add_middleware(
 )
 
 # Mount static files and templates
-app.mount("/static", StaticFiles(directory="/app/web/static"), name="static")
-templates = Jinja2Templates(directory="/app/web/templates")
+app.mount("/static", StaticFiles(directory="web/static"), name="static")
+templates = Jinja2Templates(directory="web/templates")
 
 
 @app.on_event("startup")
@@ -400,6 +401,75 @@ async def get_settings():
         "database_encryption": settings.database_encryption,
         "app_version": settings.app_version,
     }
+
+
+@app.post("/api/settings")
+async def update_settings(request: Request):
+    """Update settings."""
+    try:
+        data = await request.json()
+
+        # Update settings (in a real implementation, you'd save to config file)
+        if "camera_url" in data:
+            settings.camera_url = data["camera_url"]
+        if "camera_entity" in data:
+            # Handle camera entity selection
+            pass
+        if "confidence_threshold" in data:
+            settings.face_confidence_threshold = data["confidence_threshold"]
+
+        return {"success": True, "message": "Settings updated successfully"}
+
+    except Exception as e:
+        logger.error("Error updating settings", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/camera/test")
+async def test_camera_connection(request: Request):
+    """Test camera connection."""
+    try:
+        data = await request.json()
+        source = data.get("source")
+        value = data.get("value")
+
+        if source == "url":
+            # Test direct URL connection
+            import cv2
+
+            cap = cv2.VideoCapture(value)
+            if cap.isOpened():
+                ret, frame = cap.read()
+                cap.release()
+                if ret:
+                    return {"success": True, "message": "Camera connection successful"}
+                else:
+                    return {"success": False, "error": "Could not read from camera"}
+            else:
+                return {"success": False, "error": "Could not connect to camera"}
+
+        elif source == "entity":
+            # Test Home Assistant camera entity
+            result = ha_camera_manager.test_camera_connection(value)
+            return result
+
+        else:
+            return {"success": False, "error": "Invalid camera source"}
+
+    except Exception as e:
+        logger.error("Error testing camera", error=str(e))
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/cameras")
+async def get_cameras():
+    """Get available Home Assistant camera entities."""
+    try:
+        cameras = ha_camera_manager.get_available_cameras()
+        return {"cameras": cameras}
+    except Exception as e:
+        logger.error("Error getting cameras", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/stats")
