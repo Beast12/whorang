@@ -6,7 +6,7 @@ from typing import Any, Dict
 import structlog
 
 from .config import settings
-from .utils import HomeAssistantAPI
+from .utils import notification_manager
 
 logger = structlog.get_logger()
 
@@ -15,7 +15,7 @@ class HomeAssistantIntegration:
     """Manages Home Assistant integration and entity registration."""
 
     def __init__(self):
-        self.ha_api = HomeAssistantAPI()
+        self.ha_api = notification_manager
         self.entities_registered = False
         self.last_event_id = None
 
@@ -120,11 +120,11 @@ class HomeAssistantIntegration:
     async def update_sensors(self):
         """Update all sensor states."""
         try:
-            from .database import db
+            from .database import DatabaseManager
 
             # Get today's events
             today = datetime.now().date()
-            all_events = db.get_doorbell_events(limit=1000)
+            all_events = DatabaseManager().get_doorbell_events(limit=1000)
             today_events = [e for e in all_events if e.timestamp.date() == today]
 
             known_today = len([e for e in today_events if e.is_known])

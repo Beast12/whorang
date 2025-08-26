@@ -13,13 +13,15 @@ from PIL import Image
 import face_recognition  # type: ignore
 
 from .config import settings
-from .database import db
+from .database import DatabaseManager
+from .utils import sanitize_filename
 
 
 class FaceRecognitionManager:
     """Manages face recognition operations."""
 
-    def __init__(self):
+    def __init__(self, db_manager: DatabaseManager):
+        self.db = db_manager
         self.known_face_encodings: List[np.ndarray] = []
         self.known_face_names: List[str] = []
         self.known_face_ids: List[int] = []
@@ -38,10 +40,10 @@ class FaceRecognitionManager:
         self.known_face_ids = []
 
         # Get all face encodings from database
-        face_encodings = db.get_face_encodings()
+        face_encodings = self.db.get_face_encodings()
 
         for face_encoding in face_encodings:
-            person = db.get_person(face_encoding.person_id)
+            person = self.db.get_person(face_encoding.person_id)
             if person:
                 self.known_face_encodings.append(face_encoding.encoding)
                 self.known_face_names.append(person.name)
@@ -130,7 +132,7 @@ class FaceRecognitionManager:
                         break
 
         # Save event to database
-        event = db.add_doorbell_event(
+        event = self.db.add_doorbell_event(
             image_path=image_path,
             person_id=known_person_id,
             confidence=max_confidence if known_person_id else None,
@@ -177,7 +179,7 @@ class FaceRecognitionManager:
         """
         try:
             # Get or create person
-            persons = db.get_all_persons()
+            persons = self.db.get_all_persons()
             person = None
             for p in persons:
                 if p.name == person_name:
@@ -185,7 +187,7 @@ class FaceRecognitionManager:
                     break
 
             if not person:
-                person = db.add_person(person_name)
+                person = self.db.add_person(person_name)
 
             # Load image and extract face encoding
             image = face_recognition.load_image_from_file(image_path)  # type: ignore
@@ -209,7 +211,7 @@ class FaceRecognitionManager:
 
             # Add face encoding to database
             face_encoding = face_encodings[0]
-            db.add_face_encoding(person.id, face_encoding)
+            self.db.add_face_encoding(person.id, face_encoding)
 
             # Reload known faces
             self.load_known_faces()

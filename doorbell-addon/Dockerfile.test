@@ -1,0 +1,41 @@
+FROM python:3.11-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    build-base \
+    cmake \
+    gfortran \
+    openblas-dev \
+    lapack-dev \
+    jpeg-dev \
+    zlib-dev \
+    py3-numpy \
+    py3-pillow \
+    py3-opencv \
+    py3-opencv-pyc
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies (excluding opencv)
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir fastapi uvicorn jinja2 python-multipart aiofiles structlog paho-mqtt pydantic pydantic-settings cryptography httpx requests
+
+# Install face recognition dependencies
+RUN pip3 install --no-cache-dir --no-build-isolation dlib || \
+    echo "dlib installation failed - will run without face recognition"
+RUN pip3 install --no-cache-dir face-recognition || \
+    echo "face-recognition installation failed - will run without face recognition"
+
+# Copy application files
+COPY src/ ./src/
+COPY web/ ./web/
+
+# Create data directories
+RUN mkdir -p /data/doorbell /data/faces /data/images
+
+# Expose port
+EXPOSE 8099
+
+# Run the application directly
+CMD ["python3", "src/app.py"]

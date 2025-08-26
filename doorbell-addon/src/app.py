@@ -13,9 +13,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import settings
-from .database import db
-from .ha_camera import ha_camera_manager
-from .ha_integration import ha_integration
+from .database import DatabaseManager
+from .ha_camera import HACameraManager
+from .ha_integration import HomeAssistantIntegration
 from .utils import (
     ensure_directories,
     get_storage_usage,
@@ -27,9 +27,20 @@ from .utils import (
 # Setup logger first
 logger = structlog.get_logger()
 
+# Initialize database
+db = DatabaseManager()
+
+# Initialize Home Assistant integration
+ha_integration = HomeAssistantIntegration()
+
+# Initialize HA Camera Manager
+ha_camera_manager = HACameraManager()
+
 # Face recognition imports
 try:
-    from .face_recognition import camera_manager, face_manager
+    from .face_recognition import FaceRecognitionManager, camera_manager
+
+    face_manager = FaceRecognitionManager(db)
 
     FACE_RECOGNITION_AVAILABLE = True
     logger.info("Face recognition capabilities loaded successfully")
@@ -508,9 +519,13 @@ async def gallery(request: Request):
     events = db.get_doorbell_events(limit=100)
     persons = db.get_all_persons()
 
-    return templates.TemplateResponse(
-        "gallery.html", {"request": request, "events": events, "persons": persons}
-    )
+    try:
+        return templates.TemplateResponse(
+            "gallery.html", {"request": request, "events": events, "persons": persons}
+        )
+    except Exception as e:
+        logger.error(f"Template error for gallery: {e}")
+        raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
 @app.get("/settings", response_class=HTMLResponse)
@@ -518,10 +533,14 @@ async def settings_page(request: Request):
     """Settings page."""
     storage_info = get_storage_usage()
 
-    return templates.TemplateResponse(
-        "settings.html",
-        {"request": request, "settings": settings, "storage_info": storage_info},
-    )
+    try:
+        return templates.TemplateResponse(
+            "settings.html",
+            {"request": request, "settings": settings, "storage_info": storage_info},
+        )
+    except Exception as e:
+        logger.error(f"Template error for settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
 if __name__ == "__main__":
