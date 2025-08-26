@@ -130,7 +130,7 @@
                     <div class="progress mb-2">
                         <div class="progress-bar" 
                              role="progressbar" 
-                             style="width: {{ storage_info.usage_percent|default(0) }}%"
+                             style="width: {{ storage_info.usage_percent|default(0) }}%;"
                              aria-valuenow="{{ storage_info.usage_percent|default(0) }}" 
                              aria-valuemin="0" 
                              aria-valuemax="100">
@@ -150,6 +150,30 @@
                         <i class="bi bi-arrow-clockwise"></i> Refresh Storage Info
                     </button>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Home Assistant Integration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-house"></i> Home Assistant Integration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="ha-access-token" class="form-label">Long-lived Access Token (Optional)</label>
+                    <input type="password" 
+                           class="form-control" 
+                           id="ha-access-token" 
+                           value="{{ settings.ha_access_token or '' }}" 
+                           placeholder="Enter your Home Assistant long-lived access token">
+                    <div class="form-text">
+                        Required for camera entity discovery. Create in Home Assistant: Profile → Security → Long-lived access tokens
+                    </div>
+                </div>
+                
+                <button class="btn btn-info" onclick="refreshCameraEntities()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Camera Entities
+                </button>
             </div>
         </div>
         
@@ -181,7 +205,7 @@
                     <i class="bi bi-send"></i> Test Notifications
                 </button>
             </div>
-        </div>
+        }</div>
     </div>
     
     <!-- System Information -->

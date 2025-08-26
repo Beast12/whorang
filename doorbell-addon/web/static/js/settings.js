@@ -149,11 +149,17 @@ async function saveSettings() {
     const urlOption = document.getElementById('camera-url-option');
     const entityOption = document.getElementById('camera-entity-option');
     const confidenceSlider = document.getElementById('confidence-threshold');
+    const haAccessToken = document.getElementById('ha-access-token');
     
     // Collect settings data
     const settings = {
         confidence_threshold: confidenceSlider ? parseFloat(confidenceSlider.value) / 100 : 0.6
     };
+    
+    // Add Home Assistant access token
+    if (haAccessToken && haAccessToken.value) {
+        settings.ha_access_token = haAccessToken.value;
+    }
     
     // Add camera configuration
     if (urlOption && urlOption.checked) {
@@ -208,7 +214,48 @@ function showStatus(message, type) {
     }
 }
 
+async function refreshCameraEntities() {
+    const button = event.target;
+    
+    // Update button state
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refreshing...';
+    
+    try {
+        await loadAvailableCameras();
+        showNotification('Camera entities refreshed successfully!', 'success');
+    } catch (error) {
+        console.error('Refresh cameras error:', error);
+        showNotification('Error refreshing camera entities', 'error');
+    } finally {
+        // Restore button state
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Camera Entities';
+    }
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
 // Export functions for global access
 window.testCamera = testCamera;
 window.saveSettings = saveSettings;
 window.updateConfidenceValue = updateConfidenceValue;
+window.refreshCameraEntities = refreshCameraEntities;

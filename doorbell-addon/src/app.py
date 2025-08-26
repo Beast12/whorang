@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import requests
 import structlog
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -407,11 +408,13 @@ async def get_settings():
     """Get current settings."""
     return {
         "camera_url": settings.camera_url,
+        "camera_entity": settings.camera_entity,
         "storage_path": settings.storage_path,
         "retention_days": settings.retention_days,
         "face_confidence_threshold": settings.face_confidence_threshold,
         "notification_webhook": settings.notification_webhook,
         "database_encryption": settings.database_encryption,
+        "ha_access_token": settings.ha_access_token,
         "app_version": settings.app_version,
     }
 
@@ -426,8 +429,9 @@ async def update_settings(request: Request):
         if "camera_url" in data:
             settings.camera_url = data["camera_url"]
         if "camera_entity" in data:
-            # Handle camera entity selection
-            pass
+            settings.camera_entity = data["camera_entity"]
+        if "ha_access_token" in data:
+            settings.ha_access_token = data["ha_access_token"]
         if "confidence_threshold" in data:
             settings.face_confidence_threshold = data["confidence_threshold"]
 
@@ -447,35 +451,34 @@ async def test_camera_connection(request: Request):
         value = data.get("value")
 
         if source == "url":
-            # Test direct URL connection
-            import cv2
-
-            cap = cv2.VideoCapture(value)
-            if cap.isOpened():
-                ret, frame = cap.read()
-                cap.release()
-                if ret:
-                    return {"success": True, "message": "Camera connection successful"}
+            # Test manual URL connection
+            try:
+                response = requests.head(value, timeout=5)
+                if response.status_code == 200:
+                    return {"success": True, "message": "Camera URL is accessible"}
                 else:
-                    return {"success": False, "error": "Could not read from camera"}
-            else:
-                return {"success": False, "error": "Could not connect to camera"}
+                    return {
+                        "success": False,
+                        "error": f"Camera not accessible: {response.status_code}",
+                    }
+            except Exception as e:
+                return {"success": False, "error": str(e)}
 
         elif source == "entity":
-            # Test Home Assistant camera entity
+            # Test Home Assistant entity connection
             result = ha_camera_manager.test_camera_connection(value)
             return result
 
         else:
-            return {"success": False, "error": "Invalid camera source"}
+            return {"success": False, "error": "Invalid source type"}
 
     except Exception as e:
-        logger.error("Error testing camera", error=str(e))
-        return {"success": False, "error": str(e)}
+        logger.error("Error testing camera connection", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/cameras")
-async def get_cameras():
+async def get_available_cameras():
     """Get available Home Assistant camera entities."""
     try:
         cameras = ha_camera_manager.get_available_cameras()

@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "Doorbell Face Recognition"
-version: "1.0.26"
+version: "1.0.27"
 slug: "doorbell_face_recognition"
 description: "AI-powered doorbell with face recognition capabilities"
 url: "https://github.com/Beast12/whorang"
@@ -22,6 +22,7 @@ options:
   face_confidence_threshold: 0.6
   notification_webhook: ""
   database_encryption: false
+  ha_access_token: ""
 schema:
   camera_entity: "str?"
   camera_url: "str"
@@ -30,6 +31,7 @@ schema:
   face_confidence_threshold: "float(0.1,1.0)"
   notification_webhook: "str?"
   database_encryption: "bool"
+  ha_access_token: "str?"
 ports:
   "8099/tcp": 8099
 ports_description:

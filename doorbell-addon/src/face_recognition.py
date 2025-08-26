@@ -14,7 +14,6 @@ import face_recognition  # type: ignore
 
 from .config import settings
 from .database import DatabaseManager
-from .utils import sanitize_filename
 
 
 class FaceRecognitionManager:

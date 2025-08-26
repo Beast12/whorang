@@ -32,9 +32,10 @@ class Settings(BaseSettings):
     # Home Assistant integration
     hassio_token: Optional[str] = os.getenv("HASSIO_TOKEN")
     supervisor_token: Optional[str] = os.getenv("SUPERVISOR_TOKEN")
+    ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.26"
+    app_version: ClassVar[str] = "1.0.27"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property

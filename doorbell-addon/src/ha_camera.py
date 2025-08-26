@@ -15,17 +15,20 @@ class HACameraManager:
 
     def __init__(self):
         self.hassio_token = settings.hassio_token or settings.supervisor_token
+        self.ha_access_token = settings.ha_access_token
         self.base_url = "http://supervisor/core/api"
 
     def get_available_cameras(self) -> list:
         """Get list of available camera entities from Home Assistant."""
-        if not self.hassio_token:
+        # Use long-lived access token if available, otherwise fallback to hassio token
+        token = self.ha_access_token or self.hassio_token
+        if not token:
             logger.warning("No Home Assistant token available")
             return []
 
         try:
             headers = {
-                "Authorization": f"Bearer {self.hassio_token}",
+                "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             }
 
@@ -56,13 +59,15 @@ class HACameraManager:
 
     def get_camera_stream_url(self, entity_id: str) -> Optional[str]:
         """Get stream URL for a camera entity."""
-        if not self.hassio_token:
+        # Use long-lived access token if available, otherwise fallback to hassio token
+        token = self.ha_access_token or self.hassio_token
+        if not token:
             logger.warning("No Home Assistant token available")
             return None
 
         try:
             headers = {
-                "Authorization": f"Bearer {self.hassio_token}",
+                "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             }
 
