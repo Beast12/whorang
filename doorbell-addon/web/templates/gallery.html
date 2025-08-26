@@ -59,7 +59,7 @@
                  data-date="{{ event.timestamp.strftime('%Y-%m-%d') }}">
                 <div class="card h-100">
                     <div class="position-relative">
-                        <img src="/api/images/{{ event.image_path.split('/')[-1] }}" 
+                        <img src="api/images/{{ event.image_path.split('/')[-1] }}" 
                              class="card-img-top" 
                              style="height: 200px; object-fit: cover;"
                              alt="Event image"
@@ -253,10 +253,10 @@ function applyFilters() {
 function viewImageModal(imageName, eventId) {
     currentEventId = eventId;
     
-    document.getElementById('modal-image').src = `/api/images/${imageName}`;
+    document.getElementById('modal-image').src = `api/images/${imageName}`;
     
     // Get event details
-    fetch(`/api/events?limit=1000`)
+    fetch(`api/events?limit=1000`)
         .then(response => response.json())
         .then(data => {
             const event = data.events.find(e => e.id === eventId);
@@ -301,7 +301,7 @@ async function loadMoreEvents() {
     loadBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Loading...';
     
     try {
-        const response = await fetch(`/api/events?limit=20&offset=${currentOffset}`);
+        const response = await fetch(`api/events?limit=20&offset=${currentOffset}`);
         const data = await response.json();
         
         if (data.events.length > 0) {
@@ -350,7 +350,7 @@ function createEventCard(event) {
              data-date="${event.timestamp.split('T')[0]}">
             <div class="card h-100">
                 <div class="position-relative">
-                    <img src="/api/images/${event.image_path.split('/').pop()}" 
+                    <img src="api/images/${event.image_path.split('/').pop()}" 
                          class="card-img-top" 
                          style="height: 200px; object-fit: cover;"
                          alt="Event image"
@@ -409,7 +409,7 @@ async function submitLabel() {
             const formData = new FormData();
             formData.append('name', newPersonName);
             
-            const personResponse = await fetch('/api/persons', {
+            const personResponse = await fetch('api/persons', {
                 method: 'POST',
                 body: formData
             });
@@ -431,7 +431,7 @@ async function submitLabel() {
         const formData = new FormData();
         formData.append('person_id', finalPersonId);
         
-        const response = await fetch(`/api/events/${eventId}/label`, {
+        const response = await fetch(`api/events/${eventId}/label`, {
             method: 'POST',
             body: formData
         });
