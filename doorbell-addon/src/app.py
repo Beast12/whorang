@@ -519,7 +519,8 @@ async def get_statistics():
 async def gallery(request: Request):
     """Image gallery page."""
     logger.info("Gallery page requested")
-    logger.debug(f"Templates directory: {templates.directory}")
+    template_dir = "/app/web/templates"
+    logger.debug(f"Templates directory: {template_dir}")
 
     events = db.get_doorbell_events(limit=100)
     persons = db.get_all_persons()
@@ -531,11 +532,9 @@ async def gallery(request: Request):
         )
     except Exception as e:
         logger.error(f"Template error for gallery: {e}")
+        logger.error(f"Template directory exists: {os.path.exists(template_dir)}")
         logger.error(
-            f"Template directory exists: {os.path.exists(templates.directory)}"
-        )
-        logger.error(
-            f"Gallery template exists: {os.path.exists(os.path.join(templates.directory, 'gallery.html'))}"
+            f"Gallery template exists: {os.path.exists(os.path.join(template_dir, 'gallery.html'))}"
         )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
@@ -544,7 +543,8 @@ async def gallery(request: Request):
 async def settings_page(request: Request):
     """Settings page."""
     logger.info("Settings page requested")
-    logger.debug(f"Templates directory: {templates.directory}")
+    template_dir = "/app/web/templates"
+    logger.debug(f"Templates directory: {template_dir}")
 
     storage_info = get_storage_usage()
 
@@ -556,11 +556,9 @@ async def settings_page(request: Request):
         )
     except Exception as e:
         logger.error(f"Template error for settings: {e}")
+        logger.error(f"Template directory exists: {os.path.exists(template_dir)}")
         logger.error(
-            f"Template directory exists: {os.path.exists(templates.directory)}"
-        )
-        logger.error(
-            f"Settings template exists: {os.path.exists(os.path.join(templates.directory, 'settings.html'))}"
+            f"Settings template exists: {os.path.exists(os.path.join(template_dir, 'settings.html'))}"
         )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
