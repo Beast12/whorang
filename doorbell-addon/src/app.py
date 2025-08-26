@@ -528,7 +528,13 @@ async def gallery(request: Request):
     try:
         logger.debug("Attempting to render gallery.html template")
         return templates.TemplateResponse(
-            "gallery.html", {"request": request, "events": events, "persons": persons}
+            "gallery.html",
+            {
+                "request": request,
+                "events": events,
+                "persons": persons,
+                "settings": settings,
+            },
         )
     except Exception as e:
         logger.error(f"Template error for gallery: {e}")
