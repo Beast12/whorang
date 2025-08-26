@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.14-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.20-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -327,9 +327,13 @@ When reporting bugs, please include:
 
 ## Changelog
 
-## v1.0.14 (Latest)
-- Fixed main branch synchronization issue
-- Ensured proper workflow for version updates: files → main → tag
+## v1.0.20 (Latest)
+- Fixed template loading and import paths for containerized environment
+- Resolved settings and gallery page 404 errors
+- Corrected absolute file paths (/app/web/templates, /app/web/static)
+- Fixed relative imports to use proper module structure
+- Added database dependency injection to FaceRecognitionManager
+- All linting checks pass (flake8, black, isort, mypy)
 
 ## v1.0.13
 - Fixed Docker image name in config.yaml to match actual build output
