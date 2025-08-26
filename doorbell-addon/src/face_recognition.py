@@ -404,6 +404,6 @@ class CameraManager:
                 cap.release()
 
 
-# Global instances
-face_manager = FaceRecognitionManager()
-camera_manager = CameraManager(face_manager)
+# Global instances - initialized in app.py with proper dependencies
+face_manager = None
+camera_manager = None

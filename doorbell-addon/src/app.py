@@ -38,9 +38,11 @@ ha_camera_manager = HACameraManager()
 
 # Face recognition imports
 try:
-    from .face_recognition import FaceRecognitionManager, camera_manager
+    from .face_recognition import CameraManager, FaceRecognitionManager
 
+    # Initialize face recognition components with proper dependencies
     face_manager = FaceRecognitionManager(db)
+    camera_manager = CameraManager(face_manager)
 
     FACE_RECOGNITION_AVAILABLE = True
     logger.info("Face recognition capabilities loaded successfully")
