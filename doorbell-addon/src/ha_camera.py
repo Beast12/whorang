@@ -23,7 +23,10 @@ class HACameraManager:
         # Use long-lived access token if available, otherwise fallback to hassio token
         token = self.ha_access_token or self.hassio_token
         if not token:
-            logger.warning("No Home Assistant token available")
+            logger.warning("No Home Assistant token available for camera discovery")
+            logger.debug(
+                f"ha_access_token: {bool(self.ha_access_token)}, hassio_token: {bool(self.hassio_token)}"
+            )
             return []
 
         try:
@@ -32,9 +35,19 @@ class HACameraManager:
                 "Content-Type": "application/json",
             }
 
+            logger.debug(f"Requesting camera entities from: {self.base_url}/states")
+            logger.debug(
+                f"Using token type: {'long-lived' if self.ha_access_token else 'hassio'}"
+            )
+
             response = requests.get(
                 f"{self.base_url}/states", headers=headers, timeout=10
             )
+
+            logger.debug(f"API response status: {response.status_code}")
+            if response.status_code != 200:
+                logger.error(f"API response body: {response.text}")
+
             response.raise_for_status()
 
             states = response.json()

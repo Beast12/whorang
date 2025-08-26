@@ -432,6 +432,7 @@ async def update_settings(request: Request):
             settings.camera_entity = data["camera_entity"]
         if "ha_access_token" in data:
             settings.ha_access_token = data["ha_access_token"]
+            logger.info("Home Assistant access token updated via settings")
         if "confidence_threshold" in data:
             settings.face_confidence_threshold = data["confidence_threshold"]
 
@@ -481,10 +482,18 @@ async def test_camera_connection(request: Request):
 async def get_available_cameras():
     """Get available Home Assistant camera entities."""
     try:
+        logger.info("Camera entities requested via API")
+        # Refresh the camera manager with current settings
+        ha_camera_manager.ha_access_token = settings.ha_access_token
+        ha_camera_manager.hassio_token = (
+            settings.hassio_token or settings.supervisor_token
+        )
+
         cameras = ha_camera_manager.get_available_cameras()
+        logger.info(f"Returning {len(cameras)} camera entities")
         return {"cameras": cameras}
     except Exception as e:
-        logger.error("Error getting cameras", error=str(e))
+        logger.error("Error getting camera entities", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 

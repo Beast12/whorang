@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # Camera configuration
     camera_url: str = os.getenv("CAMERA_URL", "rtsp://192.168.1.100:554/stream")
+    camera_entity: Optional[str] = os.getenv("CAMERA_ENTITY")
 
     # Storage configuration
     storage_path: str = os.getenv("STORAGE_PATH", "/share/doorbell")
@@ -35,7 +36,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.27"
+    app_version: ClassVar[str] = "1.0.28"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
