@@ -4,9 +4,8 @@ url: "https://github.com/Beast12/whorang"
 maintainer: "Beast12"
 
 # Latest release information
-latest_version: 
-  "1.0.19": "2024-08-26"
-  "1.0.20": "2024-08-26"
+latest_version: "1.0.20"
+release_date: "2024-08-26"
 
 # Add-on information
 addons:
