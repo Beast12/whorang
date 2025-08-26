@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     supervisor_token: Optional[str] = os.getenv("SUPERVISOR_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.21"
-    debug: bool = os.getenv("DEBUG", "false").lower() == "true"
+    app_version: ClassVar[str] = "1.0.22"
+    debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
     def database_path(self) -> str:

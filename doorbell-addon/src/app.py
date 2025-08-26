@@ -518,30 +518,50 @@ async def get_statistics():
 @app.get("/gallery", response_class=HTMLResponse)
 async def gallery(request: Request):
     """Image gallery page."""
+    logger.info("Gallery page requested")
+    logger.debug(f"Templates directory: {templates.directory}")
+
     events = db.get_doorbell_events(limit=100)
     persons = db.get_all_persons()
 
     try:
+        logger.debug("Attempting to render gallery.html template")
         return templates.TemplateResponse(
             "gallery.html", {"request": request, "events": events, "persons": persons}
         )
     except Exception as e:
         logger.error(f"Template error for gallery: {e}")
+        logger.error(
+            f"Template directory exists: {os.path.exists(templates.directory)}"
+        )
+        logger.error(
+            f"Gallery template exists: {os.path.exists(os.path.join(templates.directory, 'gallery.html'))}"
+        )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """Settings page."""
+    logger.info("Settings page requested")
+    logger.debug(f"Templates directory: {templates.directory}")
+
     storage_info = get_storage_usage()
 
     try:
+        logger.debug("Attempting to render settings.html template")
         return templates.TemplateResponse(
             "settings.html",
             {"request": request, "settings": settings, "storage_info": storage_info},
         )
     except Exception as e:
         logger.error(f"Template error for settings: {e}")
+        logger.error(
+            f"Template directory exists: {os.path.exists(templates.directory)}"
+        )
+        logger.error(
+            f"Settings template exists: {os.path.exists(os.path.join(templates.directory, 'settings.html'))}"
+        )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
