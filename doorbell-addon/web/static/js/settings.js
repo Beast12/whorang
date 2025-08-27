@@ -13,6 +13,20 @@ function initializeSettings() {
     
     // Setup confidence threshold slider
     setupConfidenceSlider();
+    
+    // Set initial visibility based on current settings
+    const urlOption = document.getElementById('camera-url-option');
+    const entityOption = document.getElementById('camera-entity-option');
+    const urlSection = document.getElementById('camera-url-section');
+    const entitySection = document.getElementById('camera-entity-section');
+    
+    if (entityOption && entityOption.checked) {
+        if (urlSection) urlSection.style.display = 'none';
+        if (entitySection) entitySection.style.display = 'block';
+    } else {
+        if (urlSection) urlSection.style.display = 'block';
+        if (entitySection) entitySection.style.display = 'none';
+    }
 }
 
 function setupCameraSourceToggle() {
@@ -43,7 +57,7 @@ async function loadAvailableCameras() {
     if (!cameraSelect) return;
     
     try {
-        const response = await fetch('/api/cameras');
+        const response = await fetch('api/cameras');
         if (response.ok) {
             const data = await response.json();
             const cameras = data.cameras || [];
@@ -115,7 +129,7 @@ async function testCamera() {
     button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Testing...';
     
     try {
-        const response = await fetch('/api/camera/test', {
+        const response = await fetch('api/camera/test', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -175,7 +189,7 @@ async function saveSettings() {
     button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Saving...';
     
     try {
-        const response = await fetch('/api/settings', {
+        const response = await fetch('api/settings', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

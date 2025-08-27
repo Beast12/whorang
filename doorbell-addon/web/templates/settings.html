@@ -3,7 +3,7 @@
 {% block title %}Settings - Doorbell Face Recognition{% endblock %}
 
 {% block extra_head %}
-<script src="/static/js/settings.js" defer></script>
+<script src="static/js/settings.js" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -23,7 +23,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="camera-source" id="camera-url-option" value="url" checked>
+                                <input class="form-check-input" type="radio" name="camera-source" id="camera-url-option" value="url" {% if not settings.camera_entity %}checked{% endif %}>
                                 <label class="form-check-label" for="camera-url-option">
                                     Manual URL
                                 </label>
@@ -31,7 +31,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="camera-source" id="camera-entity-option" value="entity">
+                                <input class="form-check-input" type="radio" name="camera-source" id="camera-entity-option" value="entity" {% if settings.camera_entity %}checked{% endif %}>
                                 <label class="form-check-label" for="camera-entity-option">
                                     Home Assistant Entity
                                 </label>
@@ -40,13 +40,13 @@
                     </div>
                 </div>
                 
-                <div id="camera-url-section" class="mb-3">
+                <div id="camera-url-section" class="mb-3"{% if settings.camera_entity %} style="display: none;"{% endif %}>
                     <label for="camera-url" class="form-label">Camera URL</label>
                     <input type="text" class="form-control" id="camera-url" value="{{ settings.camera_url }}">
                     <div class="form-text">RTSP or HTTP URL for your doorbell camera</div>
                 </div>
                 
-                <div id="camera-entity-section" class="mb-3" style="display: none;">
+                <div id="camera-entity-section" class="mb-3"{% if not settings.camera_entity %} style="display: none;"{% endif %}>
                     <label for="camera-entity" class="form-label">Camera Entity</label>
                     <select class="form-select" id="camera-entity">
                         <option value="">Loading cameras...</option>
