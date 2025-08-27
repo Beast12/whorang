@@ -116,10 +116,7 @@ async function captureFrame() {
     
     try {
         const response = await fetch('/api/camera/capture', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            method: 'POST'
         });
         
         if (response.ok) {

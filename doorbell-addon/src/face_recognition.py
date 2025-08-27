@@ -309,11 +309,24 @@ class CameraManager:
         cap = None
 
         try:
-            # Initialize video capture
-            cap = cv2.VideoCapture(self.camera_url)
+            # Initialize video capture with GStreamer backend
+            cap = cv2.VideoCapture(self.camera_url, cv2.CAP_GSTREAMER)
+
+            # Set timeouts and buffer settings
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 10000)  # 10 second timeout
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)  # 5 second read timeout
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer
+
             if not cap.isOpened():
-                print(f"Failed to open camera: {self.camera_url}")
-                return
+                print(f"Failed to open camera with GStreamer: {self.camera_url}")
+                # Try fallback without GStreamer backend
+                cap.release()
+                cap = cv2.VideoCapture(self.camera_url)
+                if not cap.isOpened():
+                    print(
+                        f"Failed to open camera with fallback backend: {self.camera_url}"
+                    )
+                    return
 
             print(f"Connected to camera: {self.camera_url}")
 
@@ -336,8 +349,13 @@ class CameraManager:
         except Exception as e:
             print(f"Camera monitoring error: {e}")
         finally:
-            if cap:
-                cap.release()
+            if cap is not None:
+                try:
+                    cap.release()
+                    # Force cleanup to prevent GStreamer warnings
+                    cv2.destroyAllWindows()
+                except Exception as cleanup_error:
+                    print(f"Error during camera cleanup: {cleanup_error}")
 
     def _process_frame(self, frame):
         """Process a camera frame for face detection."""
@@ -377,12 +395,33 @@ class CameraManager:
         """Capture a single frame from the camera."""
         cap = None
         try:
-            cap = cv2.VideoCapture(self.camera_url)
-            if not cap.isOpened():
-                return None
+            # Set OpenCV backend and timeout for better RTSP handling
+            cap = cv2.VideoCapture(self.camera_url, cv2.CAP_GSTREAMER)
 
-            ret, frame = cap.read()
-            if not ret:
+            # Set connection timeout and buffer size
+            cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)  # 5 second timeout
+            cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)  # 5 second read timeout
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer
+
+            if not cap.isOpened():
+                print(f"Failed to open camera: {self.camera_url}")
+                # Try fallback without GStreamer backend
+                cap.release()
+                cap = cv2.VideoCapture(self.camera_url)
+                if not cap.isOpened():
+                    print("Failed to open camera with fallback backend")
+                    return None
+
+            # Try to read frame with retry
+            for attempt in range(3):
+                ret, frame = cap.read()
+                if ret and frame is not None:
+                    break
+                print(f"Frame read attempt {attempt + 1} failed")
+                time.sleep(0.5)
+
+            if not ret or frame is None:
+                print("Failed to capture frame after retries")
                 return None
 
             # Save frame
@@ -391,16 +430,26 @@ class CameraManager:
             image_path = os.path.join(settings.images_path, filename)
 
             os.makedirs(settings.images_path, exist_ok=True)
-            cv2.imwrite(image_path, frame)
+            success = cv2.imwrite(image_path, frame)
 
+            if not success:
+                print("Failed to save captured frame")
+                return None
+
+            print(f"Frame captured successfully: {filename}")
             return image_path
 
         except Exception as e:
             print(f"Error capturing frame: {e}")
             return None
         finally:
-            if cap:
-                cap.release()
+            if cap is not None:
+                try:
+                    cap.release()
+                    # Force cleanup to prevent GStreamer warnings
+                    cv2.destroyAllWindows()
+                except Exception as cleanup_error:
+                    print(f"Error during camera cleanup: {cleanup_error}")
 
 
 # Global instances - initialized in app.py with proper dependencies
