@@ -43,6 +43,12 @@ RUN \
         pkgconfig \
         ffmpeg \
         ffmpeg-dev \
+        gstreamer \
+        gst-plugins-base \
+        gst-plugins-good \
+        gst-plugins-bad \
+        gst-plugins-ugly \
+        gst-libav \
         blas-dev \
         lapack-dev \
         gfortran \

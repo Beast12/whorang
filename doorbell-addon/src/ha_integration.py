@@ -15,7 +15,7 @@ class HomeAssistantIntegration:
     """Manages Home Assistant integration and entity registration."""
 
     def __init__(self):
-        self.ha_api = notification_manager
+        self.ha_api = notification_manager.ha_api
         self.entities_registered = False
         self.last_event_id = None
 

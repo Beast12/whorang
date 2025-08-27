@@ -120,8 +120,9 @@ class HACameraManager:
             if not stream_url:
                 return {"success": False, "error": "Could not get stream URL"}
 
-            # Test if we can access the stream
-            response = requests.head(stream_url, timeout=5)
+            # Test if we can access the stream using GET instead of HEAD
+            # Some camera proxies don't support HEAD requests
+            response = requests.get(stream_url, timeout=5, stream=True)
             if response.status_code == 200:
                 return {"success": True, "stream_url": stream_url}
             else:
