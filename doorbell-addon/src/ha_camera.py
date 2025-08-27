@@ -85,18 +85,27 @@ class HACameraManager:
                 "Content-Type": "application/json",
             }
 
-            # Get camera proxy stream URL
-            response = requests.post(
-                f"{self.base_url}/camera_proxy_stream/{entity_id}",
+            # Get camera entity state to extract entity_picture
+            response = requests.get(
+                f"{self.base_url}/states/{entity_id}",
                 headers=headers,
                 timeout=10,
             )
 
             if response.status_code == 200:
-                # Return the proxy stream URL
-                return f"http://supervisor:8123{response.url}"
+                entity_data = response.json()
+                entity_picture = entity_data.get("attributes", {}).get("entity_picture")
 
-            logger.warning(f"Failed to get stream URL for {entity_id}")
+                if entity_picture:
+                    # Return the camera proxy URL using entity_picture
+                    return f"http://supervisor:8123{entity_picture}"
+                else:
+                    logger.warning(f"No entity_picture found for {entity_id}")
+                    return None
+
+            logger.warning(
+                f"Failed to get entity state for {entity_id}: {response.status_code}"
+            )
             return None
 
         except Exception as e:
