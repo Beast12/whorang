@@ -98,7 +98,8 @@ class HACameraManager:
 
                 if entity_picture:
                     # Return the camera proxy URL using entity_picture
-                    return f"http://supervisor:8123{entity_picture}"
+                    # Use homeassistant hostname for direct camera proxy access
+                    return f"http://homeassistant:8123{entity_picture}"
                 else:
                     logger.warning(f"No entity_picture found for {entity_id}")
                     return None
