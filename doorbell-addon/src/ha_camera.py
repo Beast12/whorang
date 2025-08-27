@@ -14,18 +14,19 @@ class HACameraManager:
     """Manages Home Assistant camera entity integration."""
 
     def __init__(self):
-        self.hassio_token = settings.hassio_token or settings.supervisor_token
+        # For addon API access, prioritize SUPERVISOR_TOKEN over long-lived token
+        self.supervisor_token = settings.supervisor_token or settings.hassio_token
         self.ha_access_token = settings.ha_access_token
         self.base_url = "http://supervisor/core/api"
 
     def get_available_cameras(self) -> list:
         """Get list of available camera entities from Home Assistant."""
-        # Use long-lived access token if available, otherwise fallback to hassio token
-        token = self.ha_access_token or self.hassio_token
+        # For addon API access, use SUPERVISOR_TOKEN first, then long-lived token as fallback
+        token = self.supervisor_token or self.ha_access_token
         if not token:
             logger.warning("No Home Assistant token available for camera discovery")
             logger.debug(
-                f"ha_access_token: {bool(self.ha_access_token)}, hassio_token: {bool(self.hassio_token)}"
+                f"supervisor_token: {bool(self.supervisor_token)}, ha_access_token: {bool(self.ha_access_token)}"
             )
             return []
 
@@ -37,7 +38,7 @@ class HACameraManager:
 
             logger.debug(f"Requesting camera entities from: {self.base_url}/states")
             logger.debug(
-                f"Using token type: {'long-lived' if self.ha_access_token else 'hassio'}"
+                f"Using token type: {'supervisor' if self.supervisor_token else 'long-lived'}"
             )
 
             response = requests.get(
@@ -72,8 +73,8 @@ class HACameraManager:
 
     def get_camera_stream_url(self, entity_id: str) -> Optional[str]:
         """Get stream URL for a camera entity."""
-        # Use long-lived access token if available, otherwise fallback to hassio token
-        token = self.ha_access_token or self.hassio_token
+        # For addon API access, use SUPERVISOR_TOKEN first, then long-lived token as fallback
+        token = self.supervisor_token or self.ha_access_token
         if not token:
             logger.warning("No Home Assistant token available")
             return None

@@ -483,11 +483,11 @@ async def get_available_cameras():
     """Get available Home Assistant camera entities."""
     try:
         logger.info("Camera entities requested via API")
-        # Refresh the camera manager with current settings
-        ha_camera_manager.ha_access_token = settings.ha_access_token
-        ha_camera_manager.hassio_token = (
-            settings.hassio_token or settings.supervisor_token
+        # Update camera manager with current settings
+        ha_camera_manager.supervisor_token = (
+            settings.supervisor_token or settings.hassio_token
         )
+        ha_camera_manager.ha_access_token = settings.ha_access_token
 
         cameras = ha_camera_manager.get_available_cameras()
         logger.info(f"Returning {len(cameras)} camera entities")
