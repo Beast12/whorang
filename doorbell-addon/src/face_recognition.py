@@ -393,15 +393,19 @@ class CameraManager:
 
     def capture_single_frame(self) -> Optional[str]:
         """Capture a single frame from the camera."""
+        # Use current settings instead of instance variables
+        current_camera_url = settings.camera_url
+        current_camera_entity = settings.camera_entity
+
         # First try RTSP if configured
-        if self.camera_url and self.camera_url.startswith(("rtsp://", "http://")):
-            result = self._capture_from_url(self.camera_url)
+        if current_camera_url and current_camera_url.startswith(("rtsp://", "http://")):
+            result = self._capture_from_url(current_camera_url)
             if result:
                 return result
 
         # If RTSP fails, try Home Assistant camera entity
-        if settings.camera_entity:
-            result = self._capture_from_ha_entity(settings.camera_entity)
+        if current_camera_entity:
+            result = self._capture_from_ha_entity(current_camera_entity)
             if result:
                 return result
 

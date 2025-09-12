@@ -8,25 +8,14 @@ function initializeSettings() {
     // Setup camera source radio buttons
     setupCameraSourceToggle();
     
-    // Load available cameras
-    loadAvailableCameras();
+    // Load current settings first, then load cameras
+    loadCurrentSettings().then(() => {
+        // Load available cameras after settings are loaded
+        loadAvailableCameras();
+    });
     
     // Setup confidence threshold slider
     setupConfidenceSlider();
-    
-    // Set initial visibility based on current settings
-    const urlOption = document.getElementById('camera-url-option');
-    const entityOption = document.getElementById('camera-entity-option');
-    const urlSection = document.getElementById('camera-url-section');
-    const entitySection = document.getElementById('camera-entity-section');
-    
-    if (entityOption && entityOption.checked) {
-        if (urlSection) urlSection.style.display = 'none';
-        if (entitySection) entitySection.style.display = 'block';
-    } else {
-        if (urlSection) urlSection.style.display = 'block';
-        if (entitySection) entitySection.style.display = 'none';
-    }
 }
 
 function setupCameraSourceToggle() {
@@ -49,6 +38,61 @@ function setupCameraSourceToggle() {
                 entitySection.style.display = 'block';
             }
         });
+    }
+}
+
+async function loadCurrentSettings() {
+    try {
+        const response = await fetch('api/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            
+            // Update form fields with current settings
+            const cameraUrl = document.getElementById('camera-url');
+            const haAccessToken = document.getElementById('ha-access-token');
+            const confidenceSlider = document.getElementById('confidence-threshold');
+            const confidenceValue = document.getElementById('confidence-value');
+            const urlOption = document.getElementById('camera-url-option');
+            const entityOption = document.getElementById('camera-entity-option');
+            const urlSection = document.getElementById('camera-url-section');
+            const entitySection = document.getElementById('camera-entity-section');
+            
+            if (cameraUrl && settings.camera_url) {
+                cameraUrl.value = settings.camera_url;
+            }
+            
+            if (haAccessToken && settings.ha_access_token) {
+                haAccessToken.value = settings.ha_access_token;
+            }
+            
+            if (confidenceSlider && settings.face_confidence_threshold !== undefined) {
+                confidenceSlider.value = settings.face_confidence_threshold;
+                if (confidenceValue) {
+                    confidenceValue.textContent = Math.round(settings.face_confidence_threshold * 100) + '%';
+                }
+            }
+            
+            // Set camera source based on settings
+            if (settings.camera_entity) {
+                if (entityOption) entityOption.checked = true;
+                if (urlOption) urlOption.checked = false;
+                if (urlSection) urlSection.style.display = 'none';
+                if (entitySection) entitySection.style.display = 'block';
+                
+                // Store current entity for later restoration
+                const cameraSelect = document.getElementById('camera-entity');
+                if (cameraSelect) {
+                    cameraSelect.setAttribute('data-current-value', settings.camera_entity);
+                }
+            } else if (settings.camera_url) {
+                if (urlOption) urlOption.checked = true;
+                if (entityOption) entityOption.checked = false;
+                if (urlSection) urlSection.style.display = 'block';
+                if (entitySection) entitySection.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading current settings:', error);
     }
 }
 
