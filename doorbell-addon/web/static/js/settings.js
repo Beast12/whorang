@@ -43,9 +43,11 @@ function setupCameraSourceToggle() {
 
 async function loadCurrentSettings() {
     try {
+        console.log('Loading current settings...');
         const response = await fetch('api/settings');
         if (response.ok) {
             const settings = await response.json();
+            console.log('Loaded settings:', settings);
             
             // Update form fields with current settings
             const cameraUrl = document.getElementById('camera-url');
@@ -59,6 +61,7 @@ async function loadCurrentSettings() {
             
             if (cameraUrl && settings.camera_url) {
                 cameraUrl.value = settings.camera_url;
+                console.log('Set camera URL:', settings.camera_url);
             }
             
             if (haAccessToken && settings.ha_access_token) {
@@ -66,7 +69,7 @@ async function loadCurrentSettings() {
             }
             
             if (confidenceSlider && settings.face_confidence_threshold !== undefined) {
-                confidenceSlider.value = settings.face_confidence_threshold;
+                confidenceSlider.value = settings.face_confidence_threshold * 100;
                 if (confidenceValue) {
                     confidenceValue.textContent = Math.round(settings.face_confidence_threshold * 100) + '%';
                 }
@@ -74,6 +77,7 @@ async function loadCurrentSettings() {
             
             // Set camera source based on settings
             if (settings.camera_entity) {
+                console.log('Setting camera entity mode:', settings.camera_entity);
                 if (entityOption) entityOption.checked = true;
                 if (urlOption) urlOption.checked = false;
                 if (urlSection) urlSection.style.display = 'none';
@@ -83,17 +87,24 @@ async function loadCurrentSettings() {
                 const cameraSelect = document.getElementById('camera-entity');
                 if (cameraSelect) {
                     cameraSelect.setAttribute('data-current-value', settings.camera_entity);
+                    console.log('Set data-current-value:', settings.camera_entity);
                 }
             } else if (settings.camera_url) {
+                console.log('Setting camera URL mode:', settings.camera_url);
                 if (urlOption) urlOption.checked = true;
                 if (entityOption) entityOption.checked = false;
                 if (urlSection) urlSection.style.display = 'block';
                 if (entitySection) entitySection.style.display = 'none';
             }
+            
+            return settings;
+        } else {
+            console.error('Failed to load settings:', response.status);
         }
     } catch (error) {
         console.error('Error loading current settings:', error);
     }
+    return null;
 }
 
 async function loadAvailableCameras() {
@@ -101,10 +112,12 @@ async function loadAvailableCameras() {
     if (!cameraSelect) return;
     
     try {
+        console.log('Loading available cameras...');
         const response = await fetch('api/cameras');
         if (response.ok) {
             const data = await response.json();
             const cameras = data.cameras || [];
+            console.log('Available cameras:', cameras);
             
             // Clear existing options
             cameraSelect.innerHTML = '';
@@ -122,8 +135,10 @@ async function loadAvailableCameras() {
                 
                 // Set the selected value from current settings
                 const currentEntity = cameraSelect.getAttribute('data-current-value');
+                console.log('Restoring camera entity selection:', currentEntity);
                 if (currentEntity) {
                     cameraSelect.value = currentEntity;
+                    console.log('Camera entity selected:', cameraSelect.value);
                 }
             }
         } else {
