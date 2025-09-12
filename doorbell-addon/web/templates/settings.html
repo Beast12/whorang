@@ -48,7 +48,7 @@
                 
                 <div id="camera-entity-section" class="mb-3"{% if not settings.camera_entity %} style="display: none;"{% endif %}>
                     <label for="camera-entity" class="form-label">Camera Entity</label>
-                    <select class="form-select" id="camera-entity">
+                    <select class="form-select" id="camera-entity" data-current-value="{{ settings.camera_entity or '' }}">
                         <option value="">Loading cameras...</option>
                     </select>
                     <div class="form-text">Select a camera entity from Home Assistant</div>

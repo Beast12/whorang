@@ -441,7 +441,7 @@ async def update_settings(request: Request):
     try:
         data = await request.json()
 
-        # Update settings (in a real implementation, you'd save to config file)
+        # Update settings and save to file
         if "camera_url" in data:
             settings.camera_url = data["camera_url"]
         if "camera_entity" in data:
@@ -451,6 +451,14 @@ async def update_settings(request: Request):
             logger.info("Home Assistant access token updated via settings")
         if "confidence_threshold" in data:
             settings.face_confidence_threshold = data["confidence_threshold"]
+
+        # Save settings to file for persistence
+        settings.save_to_file()
+        logger.info(
+            "Settings saved to file",
+            camera_entity=settings.camera_entity,
+            camera_url=settings.camera_url,
+        )
 
         return {"success": True, "message": "Settings updated successfully"}
 

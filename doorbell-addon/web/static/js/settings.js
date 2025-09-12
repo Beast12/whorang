@@ -75,6 +75,12 @@ async function loadAvailableCameras() {
                     option.textContent = camera.friendly_name;
                     cameraSelect.appendChild(option);
                 });
+                
+                // Set the selected value from current settings
+                const currentEntity = cameraSelect.getAttribute('data-current-value');
+                if (currentEntity) {
+                    cameraSelect.value = currentEntity;
+                }
             }
         } else {
             cameraSelect.innerHTML = '<option value="">Error loading cameras</option>';

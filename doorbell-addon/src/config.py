@@ -1,9 +1,10 @@
 """Configuration management for the doorbell face recognition addon."""
 
+import json
 import os
 from typing import ClassVar, Optional
 
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -36,7 +37,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.36"
+    app_version: ClassVar[str] = "1.0.37"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -54,6 +55,52 @@ class Settings(BaseSettings):
         """Get the faces directory path."""
         return os.path.join(self.storage_path, "faces")
 
+    @property
+    def config_file_path(self) -> str:
+        """Get the configuration file path."""
+        return os.path.join(self.storage_path, "config", "settings.json")
+
+    def save_to_file(self):
+        """Save current settings to file."""
+        try:
+            config_dir = os.path.dirname(self.config_file_path)
+            os.makedirs(config_dir, exist_ok=True)
+
+            config_data = {
+                "camera_url": self.camera_url,
+                "camera_entity": self.camera_entity,
+                "face_confidence_threshold": self.face_confidence_threshold,
+                "ha_access_token": self.ha_access_token,
+            }
+
+            with open(self.config_file_path, "w") as f:
+                json.dump(config_data, f, indent=2)
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+
+    def load_from_file(self):
+        """Load settings from file if it exists."""
+        try:
+            if os.path.exists(self.config_file_path):
+                with open(self.config_file_path, "r") as f:
+                    config_data = json.load(f)
+
+                # Update settings with saved values
+                if "camera_url" in config_data:
+                    self.camera_url = config_data["camera_url"]
+                if "camera_entity" in config_data:
+                    self.camera_entity = config_data["camera_entity"]
+                if "face_confidence_threshold" in config_data:
+                    self.face_confidence_threshold = config_data[
+                        "face_confidence_threshold"
+                    ]
+                if "ha_access_token" in config_data:
+                    self.ha_access_token = config_data["ha_access_token"]
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+
 
 # Global settings instance
 settings = Settings()
+# Load saved settings on startup
+settings.load_from_file()
