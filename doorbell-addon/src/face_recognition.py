@@ -393,10 +393,29 @@ class CameraManager:
 
     def capture_single_frame(self) -> Optional[str]:
         """Capture a single frame from the camera."""
+        # First try RTSP if configured
+        if self.camera_url and self.camera_url.startswith(("rtsp://", "http://")):
+            result = self._capture_from_url(self.camera_url)
+            if result:
+                return result
+
+        # If RTSP fails, try Home Assistant camera entity
+        if settings.camera_entity:
+            result = self._capture_from_ha_entity(settings.camera_entity)
+            if result:
+                return result
+
+        print("All camera capture methods failed")
+        return None
+
+    def _capture_from_url(self, camera_url: str) -> Optional[str]:
+        """Capture frame from camera URL (RTSP/HTTP)."""
         cap = None
         try:
+            print(f"Attempting to capture from URL: {camera_url}")
+
             # Set OpenCV backend and timeout for better RTSP handling
-            cap = cv2.VideoCapture(self.camera_url, cv2.CAP_GSTREAMER)
+            cap = cv2.VideoCapture(camera_url, cv2.CAP_GSTREAMER)
 
             # Set connection timeout and buffer size
             cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)  # 5 second timeout
@@ -404,12 +423,12 @@ class CameraManager:
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer
 
             if not cap.isOpened():
-                print(f"Failed to open camera: {self.camera_url}")
+                print(f"Failed to open camera with GStreamer: {camera_url}")
                 # Try fallback without GStreamer backend
                 cap.release()
-                cap = cv2.VideoCapture(self.camera_url)
+                cap = cv2.VideoCapture(camera_url)
                 if not cap.isOpened():
-                    print("Failed to open camera with fallback backend")
+                    print(f"Failed to open camera with fallback backend: {camera_url}")
                     return None
 
             # Try to read frame with retry
@@ -436,11 +455,11 @@ class CameraManager:
                 print("Failed to save captured frame")
                 return None
 
-            print(f"Frame captured successfully: {filename}")
+            print(f"Frame captured successfully from URL: {filename}")
             return image_path
 
         except Exception as e:
-            print(f"Error capturing frame: {e}")
+            print(f"Error capturing frame from URL: {e}")
             return None
         finally:
             if cap is not None:
@@ -450,6 +469,47 @@ class CameraManager:
                     cv2.destroyAllWindows()
                 except Exception as cleanup_error:
                     print(f"Error during camera cleanup: {cleanup_error}")
+
+    def _capture_from_ha_entity(self, entity_id: str) -> Optional[str]:
+        """Capture frame from Home Assistant camera entity."""
+        try:
+            print(f"Attempting to capture from HA entity: {entity_id}")
+
+            # Import here to avoid circular imports
+            from .ha_camera import ha_camera_manager
+
+            # Get camera stream URL from Home Assistant
+            stream_url = ha_camera_manager.get_camera_stream_url(entity_id)
+            if not stream_url:
+                print(f"Failed to get stream URL for entity: {entity_id}")
+                return None
+
+            print(f"Got HA camera stream URL: {stream_url}")
+
+            # Try to capture from the HA stream URL
+            import requests
+
+            response = requests.get(stream_url, timeout=10, stream=True)
+            if response.status_code != 200:
+                print(f"Failed to access HA camera stream: {response.status_code}")
+                return None
+
+            # Save the image directly from the response
+            timestamp = datetime.now()
+            filename = f"manual_ha_{timestamp.strftime('%Y%m%d_%H%M%S')}.jpg"
+            image_path = os.path.join(settings.images_path, filename)
+
+            os.makedirs(settings.images_path, exist_ok=True)
+            with open(image_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            print(f"Frame captured successfully from HA entity: {filename}")
+            return image_path
+
+        except Exception as e:
+            print(f"Error capturing frame from HA entity: {e}")
+            return None
 
 
 # Global instances - initialized in app.py with proper dependencies

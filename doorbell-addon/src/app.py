@@ -381,14 +381,30 @@ async def get_image(image_name: str):
 @app.post("/api/camera/capture")
 async def capture_frame():
     """Manually capture a frame from the camera."""
+    logger.info("Manual frame capture requested")
     try:
+        # Check if camera_manager is available
+        if not camera_manager:
+            logger.error("Camera manager not initialized")
+            raise HTTPException(status_code=500, detail="Camera manager not available")
+
+        # Check camera URL configuration
+        camera_url = getattr(camera_manager, "camera_url", None)
+        logger.info("Attempting to capture frame", camera_url=camera_url)
+
         image_path = camera_manager.capture_single_frame()
 
         if not image_path:
-            raise HTTPException(status_code=500, detail="Failed to capture frame")
+            logger.error("Failed to capture frame - no image path returned")
+            raise HTTPException(
+                status_code=500, detail="Failed to capture frame from camera"
+            )
+
+        logger.info("Frame captured successfully", image_path=image_path)
 
         # Process the captured frame
         results = face_manager.process_doorbell_image(image_path)
+        logger.info("Frame processing completed", results=results)
 
         return {
             "message": "Frame captured successfully",
@@ -399,8 +415,8 @@ async def capture_frame():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error capturing frame", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Error capturing frame", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Camera capture failed: {str(e)}")
 
 
 @app.get("/api/settings")
