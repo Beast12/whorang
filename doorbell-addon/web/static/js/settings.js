@@ -12,6 +12,8 @@ function initializeSettings() {
     loadCurrentSettings().then(() => {
         // Load available cameras after settings are loaded
         loadAvailableCameras();
+        // Update camera status after settings are loaded
+        updateCameraStatus();
     });
     
     // Setup confidence threshold slider
@@ -264,6 +266,8 @@ async function saveSettings() {
         
         if (response.ok) {
             showNotification('Settings saved successfully!', 'success');
+            // Update camera status after saving settings
+            updateCameraStatus();
         } else {
             const error = await response.json();
             showNotification('Error saving settings: ' + error.detail, 'error');
@@ -333,8 +337,39 @@ function showNotification(message, type) {
     }, 5000);
 }
 
+async function updateCameraStatus() {
+    const statusElement = document.getElementById('camera-connection-status');
+    if (!statusElement) return;
+    
+    try {
+        const response = await fetch('api/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            
+            if (settings.camera_entity) {
+                statusElement.textContent = 'Connected (HA Entity)';
+                statusElement.className = 'badge bg-success';
+            } else if (settings.camera_url) {
+                statusElement.textContent = 'Connected (URL)';
+                statusElement.className = 'badge bg-success';
+            } else {
+                statusElement.textContent = 'Not Configured';
+                statusElement.className = 'badge bg-warning';
+            }
+        } else {
+            statusElement.textContent = 'Error';
+            statusElement.className = 'badge bg-danger';
+        }
+    } catch (error) {
+        console.error('Error updating camera status:', error);
+        statusElement.textContent = 'Unknown';
+        statusElement.className = 'badge bg-secondary';
+    }
+}
+
 // Export functions for global access
 window.testCamera = testCamera;
 window.saveSettings = saveSettings;
 window.updateConfidenceValue = updateConfidenceValue;
 window.refreshCameraEntities = refreshCameraEntities;
+window.updateCameraStatus = updateCameraStatus;

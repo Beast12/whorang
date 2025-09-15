@@ -115,8 +115,11 @@ async function captureFrame() {
     });
     
     try {
-        const response = await fetch('/api/camera/capture', {
-            method: 'POST'
+        const response = await fetch('api/camera/capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         
         if (response.ok) {
@@ -139,8 +142,15 @@ async function captureFrame() {
             }, 1500);
             
         } else {
-            const error = await response.json();
-            showNotification('Error capturing frame: ' + error.detail, 'error');
+            let errorMessage = 'Unknown error';
+            try {
+                const error = await response.json();
+                errorMessage = error.detail || error.message || 'API error';
+            } catch (parseError) {
+                console.error('Failed to parse error response:', parseError);
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            showNotification('Error capturing frame: ' + errorMessage, 'error');
         }
         
     } catch (error) {
