@@ -279,10 +279,8 @@ def create_placeholder_image(image_name: str) -> Optional[str]:
 
         # Try to use a font, fallback to default if not available
         try:
-            font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10
-            )
-        except:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        except (OSError, IOError):
             font = ImageFont.load_default()
 
         # Draw camera icon using text
@@ -296,7 +294,7 @@ def create_placeholder_image(image_name: str) -> Optional[str]:
             y = (60 - text_height) // 2
 
             draw.text((x, y), text, fill="#ffffff", font=font)
-        except:
+        except Exception:
             # Fallback to simple text if emoji doesn't work
             text = "IMG"
             bbox = draw.textbbox((0, 0), text, font=font)
