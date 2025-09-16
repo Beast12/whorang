@@ -248,7 +248,7 @@
                 <button class="btn btn-info" onclick="reloadFaceEncodings()">
                     <i class="bi bi-arrow-clockwise"></i> Reload Face Encodings
                 </button>
-                <button class="btn btn-warning" onclick="exportData()">
+                <button class="btn btn-warning text-dark" onclick="exportData()">
                     <i class="bi bi-download"></i> Export Data
                 </button>
                 <button class="btn btn-danger" onclick="resetSystem()">
@@ -311,7 +311,7 @@ function updateConfidenceValue(value) {
 // Load system statistics
 async function loadStatistics() {
     try {
-        const response = await fetch('/api/stats');
+        const response = await fetch('api/stats');
         const stats = await response.json();
         
         const statsHtml = `
