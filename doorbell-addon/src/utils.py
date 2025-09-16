@@ -256,5 +256,63 @@ def sanitize_filename(filename: str) -> str:
     return filename
 
 
+def create_placeholder_image(image_name: str) -> Optional[str]:
+    """Create a placeholder image for missing files."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import os
+        
+        # Create placeholder directory if it doesn't exist
+        placeholder_dir = os.path.join(settings.storage_path, "placeholders")
+        os.makedirs(placeholder_dir, exist_ok=True)
+        
+        placeholder_path = os.path.join(placeholder_dir, f"placeholder_{image_name}")
+        
+        # Don't recreate if it already exists
+        if os.path.exists(placeholder_path):
+            return placeholder_path
+        
+        # Create a simple placeholder image (60x60 to match thumbnail size)
+        img = Image.new('RGB', (60, 60), color='#6c757d')
+        draw = ImageDraw.Draw(img)
+        
+        # Try to use a font, fallback to default if not available
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        except:
+            font = ImageFont.load_default()
+        
+        # Draw camera icon using text
+        text = "📷"
+        try:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            x = (60 - text_width) // 2
+            y = (60 - text_height) // 2
+            
+            draw.text((x, y), text, fill='#ffffff', font=font)
+        except:
+            # Fallback to simple text if emoji doesn't work
+            text = "IMG"
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            x = (60 - text_width) // 2
+            y = (60 - text_height) // 2
+            
+            draw.text((x, y), text, fill='#ffffff', font=font)
+        
+        # Save placeholder
+        img.save(placeholder_path, 'JPEG')
+        return placeholder_path
+        
+    except Exception as e:
+        logger.error(f"Failed to create placeholder image: {e}")
+        return None
+
+
 # Global notification manager instance
 notification_manager = NotificationManager()

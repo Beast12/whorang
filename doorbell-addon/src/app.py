@@ -18,6 +18,7 @@ from .database import DatabaseManager
 from .ha_camera import HACameraManager
 from .ha_integration import HomeAssistantIntegration
 from .utils import (
+    create_placeholder_image,
     ensure_directories,
     get_storage_usage,
     notification_manager,
@@ -358,16 +359,27 @@ async def get_image(image_name: str):
     try:
         # Sanitize image name
         image_name = sanitize_filename(image_name)
+        logger.debug(f"Serving image: {image_name}")
 
         # Try images directory first
         image_path = os.path.join(settings.images_path, image_name)
+        logger.debug(f"Checking images path: {image_path}")
         if os.path.exists(image_path):
+            logger.debug(f"Found image at: {image_path}")
             return FileResponse(image_path)
 
         # Try faces directory
         image_path = os.path.join(settings.faces_path, image_name)
+        logger.debug(f"Checking faces path: {image_path}")
         if os.path.exists(image_path):
+            logger.debug(f"Found image at: {image_path}")
             return FileResponse(image_path)
+
+        # Create placeholder image if not found
+        logger.warning(f"Image not found: {image_name}, creating placeholder")
+        placeholder_path = create_placeholder_image(image_name)
+        if placeholder_path and os.path.exists(placeholder_path):
+            return FileResponse(placeholder_path)
 
         raise HTTPException(status_code=404, detail="Image not found")
 
