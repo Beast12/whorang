@@ -260,8 +260,11 @@ def create_placeholder_image(image_name: str) -> Optional[str]:
     """Create a placeholder image for missing files."""
     try:
         import os
+        from typing import Union
 
         from PIL import Image, ImageDraw, ImageFont
+        from PIL.ImageFont import FreeTypeFont
+        from PIL.ImageFont import ImageFont as PILImageFont
 
         # Create placeholder directory if it doesn't exist
         placeholder_dir = os.path.join(settings.storage_path, "placeholders")
@@ -278,6 +281,7 @@ def create_placeholder_image(image_name: str) -> Optional[str]:
         draw = ImageDraw.Draw(img)
 
         # Try to use a font, fallback to default if not available
+        font: Union[FreeTypeFont, PILImageFont]
         try:
             font = ImageFont.truetype(
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10

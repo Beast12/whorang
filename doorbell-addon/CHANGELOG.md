@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.46] - 2025-09-16
+
+### Fixed
+- MyPy type checking error in utils.py for PIL ImageFont compatibility
+- Added proper Union type annotation for FreeTypeFont | ImageFont
+- Fixed import sorting with isort for consistent code formatting
+
 ## [1.0.20] - 2024-08-26
 
 ### Fixed
