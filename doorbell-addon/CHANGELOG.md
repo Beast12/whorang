@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.48] - 2025-09-17
+
+### Changed
+- **BREAKING**: Converted from continuous monitoring to event-driven architecture
+- Face recognition now only triggered by doorbell ring events, not continuous capture
+- Added new `/api/doorbell/ring` endpoint for doorbell trigger integration
+- Removed automatic camera monitoring on startup for better performance and privacy
+- Updated documentation with Home Assistant automation setup instructions
+
+### Added
+- Event-driven doorbell processing with `/api/doorbell/ring` endpoint
+- Webhook notification support for doorbell ring events
+- Better resource efficiency - no background camera monitoring
+
 ## [1.0.47] - 2025-09-17
 
 ### Fixed
