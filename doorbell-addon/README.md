@@ -1,15 +1,15 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.47-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.48-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
-AI-powered doorbell with face recognition capabilities for Home Assistant. This add-on provides real-time face detection and recognition, allowing you to identify known visitors and receive notifications when unknown faces are detected at your door.
+AI-powered doorbell with face recognition capabilities for Home Assistant. This add-on provides event-driven face detection and recognition, triggered when your doorbell is pressed, allowing you to identify known visitors and receive notifications when unknown faces are detected at your door.
 
 ## Features
 
 - **AI-Powered Face Recognition** - Uses the face_recognition library for accurate face detection and identification
-- **Real-time Camera Monitoring** - Continuous monitoring of your doorbell camera feed
+- **Event-Driven Processing** - Face recognition triggered by doorbell ring events, not continuous monitoring
 - **Home Assistant Integration** - Native integration with sensors, notifications, and automations
 - **Web Interface** - Beautiful, responsive web UI for managing faces and viewing events
 - **Privacy-Focused** - All processing happens locally, no cloud dependencies
@@ -89,10 +89,34 @@ database_encryption: false
 
 ### Initial Setup
 
-1. **Configure Camera**: Set your doorbell camera URL in the add-on configuration
+1. **Configure Camera**: Set your doorbell camera URL or Home Assistant camera entity in the add-on configuration
 2. **Start Add-on**: Enable "Start on boot" and "Auto update" options
 3. **Access Web Interface**: Open the add-on web UI (port 8099)
 4. **Test Camera**: Use the "Capture" button to test camera connectivity
+5. **Setup Doorbell Trigger**: Create Home Assistant automation to trigger face recognition on doorbell press
+
+### Doorbell Integration Setup
+
+This add-on uses **event-driven face recognition** - it only processes images when your doorbell is pressed, not continuously. You need to create a Home Assistant automation:
+
+```yaml
+automation:
+  - alias: "Doorbell Face Recognition Trigger"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.your_doorbell_button  # Replace with your doorbell entity
+        to: "on"
+    action:
+      - service: rest_command.doorbell_ring
+        
+rest_command:
+  doorbell_ring:
+    url: "http://a0d7b954-doorbell-face-recognition:8000/api/doorbell/ring"
+    method: POST
+    timeout: 30
+```
+
+**Important**: Replace `binary_sensor.your_doorbell_button` with your actual doorbell entity ID.
 
 ### Adding People
 
@@ -174,6 +198,7 @@ automation:
 - `POST /api/persons/{id}/faces` - Add face image to person
 - `POST /api/events/{id}/label` - Label an event with a person
 - `POST /api/camera/capture` - Manually capture a frame
+- `POST /api/doorbell/ring` - **NEW**: Trigger doorbell ring event with face recognition
 - `GET /api/settings` - Get current settings
 - `GET /api/stats` - Get system statistics
 
@@ -205,10 +230,10 @@ ws.onmessage = function(event) {
 - Adjust confidence threshold in settings
 - Ensure multiple face images per person for better accuracy
 
-**High CPU Usage**
-- Reduce camera resolution if possible
-- Increase capture interval in advanced settings
-- Consider using hardware acceleration if available
+**No Events Being Created**
+- Ensure doorbell automation is configured to call `/api/doorbell/ring`
+- Test manual capture to verify camera connectivity
+- Check that doorbell entity is triggering the automation
 
 **Storage Issues**
 - Check available disk space

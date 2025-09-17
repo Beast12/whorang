@@ -90,11 +90,9 @@ async def startup_event():
     # Initialize Home Assistant integration
     await ha_integration.initialize()
 
-    # Start camera monitoring if face recognition is available
-    if FACE_RECOGNITION_AVAILABLE and camera_manager:
-        camera_manager.start_monitoring()
-    else:
-        logger.warning("Face recognition not available - camera monitoring disabled")
+    # Don't start continuous monitoring - doorbell events are trigger-based
+    # Camera monitoring will be triggered by doorbell ring events via /api/doorbell/ring
+    logger.info("Doorbell addon ready - waiting for doorbell ring events")
 
     logger.info("Addon started successfully")
 
@@ -104,9 +102,7 @@ async def shutdown_event():
     """Clean up on shutdown."""
     logger.info("Shutting down Doorbell Face Recognition addon")
 
-    # Stop camera monitoring if available
-    if FACE_RECOGNITION_AVAILABLE and camera_manager:
-        camera_manager.stop_monitoring()
+    # No continuous monitoring to stop - doorbell is event-driven
 
     # Clean up old events
     db.cleanup_old_events()
@@ -397,8 +393,7 @@ async def capture_frame():
     try:
         # Check if camera_manager is available
         if not camera_manager:
-            logger.error("Camera manager not initialized")
-            raise HTTPException(status_code=500, detail="Camera manager not available")
+            raise HTTPException(status_code=503, detail="Camera manager not available")
 
         # Check camera URL configuration
         camera_url = getattr(camera_manager, "camera_url", None)
@@ -419,16 +414,77 @@ async def capture_frame():
         logger.info("Frame processing completed", results=results)
 
         return {
-            "message": "Frame captured successfully",
-            "image_path": os.path.basename(image_path),
+            "success": True,
+            "message": "Frame captured and processed successfully",
+            "image_path": image_path,
             "results": results,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error capturing frame", error=str(e), exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Camera capture failed: {str(e)}")
+        logger.error("Error during frame capture", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Capture failed: {str(e)}")
+
+
+@app.post("/api/doorbell/ring")
+async def doorbell_ring():
+    """Handle doorbell ring event - capture frame and process for face recognition."""
+    logger.info("Doorbell ring event received")
+    try:
+        # Check if camera_manager is available
+        if not camera_manager:
+            raise HTTPException(status_code=503, detail="Camera manager not available")
+
+        # Capture frame from doorbell camera
+        image_path = camera_manager.capture_single_frame()
+
+        if not image_path:
+            logger.error("Failed to capture frame from doorbell")
+            raise HTTPException(
+                status_code=500, detail="Failed to capture frame from doorbell camera"
+            )
+
+        logger.info("Doorbell frame captured successfully", image_path=image_path)
+
+        # Process the captured frame for face recognition
+        results = face_manager.process_doorbell_image(image_path)
+        logger.info("Doorbell frame processing completed", results=results)
+
+        # Send notification if configured
+        if settings.notification_webhook:
+            try:
+                import requests
+
+                notification_data = {
+                    "event": "doorbell_ring",
+                    "timestamp": results["timestamp"].isoformat(),
+                    "faces_detected": results["faces_detected"],
+                    "known_faces": results["known_faces"],
+                    "image_path": image_path,
+                }
+                requests.post(
+                    settings.notification_webhook, json=notification_data, timeout=5
+                )
+            except Exception as e:
+                logger.warning("Failed to send notification", error=str(e))
+
+        return {
+            "success": True,
+            "message": "Doorbell ring processed successfully",
+            "event_id": results["event_id"],
+            "faces_detected": results["faces_detected"],
+            "known_faces": results["known_faces"],
+            "results": results,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error processing doorbell ring", error=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Doorbell processing failed: {str(e)}"
+        )
 
 
 @app.get("/api/settings")
