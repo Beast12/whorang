@@ -100,17 +100,19 @@ class DatabaseManager:
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
         with sqlite3.connect(self.db_path) as conn:
+            # Create persons table
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS persons (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
+                    name TEXT UNIQUE NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """
             )
 
+            # Create face_encodings table
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS face_encodings (
@@ -124,6 +126,7 @@ class DatabaseManager:
             """
             )
 
+            # Create doorbell_events table
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS doorbell_events (
@@ -139,6 +142,14 @@ class DatabaseManager:
                 )
             """
             )
+
+            # Add ai_message column if it doesn't exist (migration for existing databases)
+            try:
+                conn.execute("ALTER TABLE doorbell_events ADD COLUMN ai_message TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # Column already exists, ignore
+                pass
 
             conn.execute(
                 """
@@ -326,7 +337,7 @@ class DatabaseManager:
                     confidence=row["confidence"],
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
-                    ai_message=row["ai_message"],
+                    ai_message=row.get("ai_message"),
                 )
                 for row in rows
             ]
