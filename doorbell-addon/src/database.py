@@ -46,6 +46,7 @@ class DoorbellEvent:
     confidence: Optional[float] = None
     is_known: bool = False
     processed: bool = False
+    ai_message: Optional[str] = None
 
 
 class DatabaseManager:
@@ -133,6 +134,7 @@ class DatabaseManager:
                     confidence REAL,
                     is_known BOOLEAN DEFAULT FALSE,
                     processed BOOLEAN DEFAULT FALSE,
+                    ai_message TEXT,
                     FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE SET NULL
                 )
             """
@@ -264,6 +266,7 @@ class DatabaseManager:
         image_path: str,
         person_id: Optional[int] = None,
         confidence: Optional[float] = None,
+        ai_message: Optional[str] = None,
     ) -> DoorbellEvent:
         """Add a new doorbell event."""
         is_known = person_id is not None
@@ -271,9 +274,9 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
-                   (image_path, person_id, confidence, is_known, processed)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (image_path, person_id, confidence, is_known, False),
+                   (image_path, person_id, confidence, is_known, processed, ai_message)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (image_path, person_id, confidence, is_known, False, ai_message),
             )
             event_id = cursor.lastrowid
             conn.commit()
@@ -286,6 +289,7 @@ class DatabaseManager:
                 confidence=confidence,
                 is_known=is_known,
                 processed=False,
+                ai_message=ai_message,
             )
 
     def get_doorbell_events(
@@ -322,6 +326,7 @@ class DatabaseManager:
                     confidence=row["confidence"],
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
+                    ai_message=row["ai_message"],
                 )
                 for row in rows
             ]

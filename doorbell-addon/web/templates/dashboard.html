@@ -89,6 +89,7 @@
                                     <th>Time</th>
                                     <th>Image</th>
                                     <th>Person</th>
+                                    <th>AI Message</th>
                                     <th>Confidence</th>
                                     <th>Actions</th>
                                 </tr>
@@ -116,6 +117,13 @@
                                             </span>
                                         {% else %}
                                             <span class="badge bg-warning">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.ai_message %}
+                                            <small class="text-muted" style="font-style: italic;">{{ event.ai_message }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>

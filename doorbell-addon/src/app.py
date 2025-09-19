@@ -428,7 +428,7 @@ async def capture_frame():
 
 
 @app.post("/api/doorbell/ring")
-async def doorbell_ring():
+async def doorbell_ring(ai_message: Optional[str] = Form(None)):
     """Handle doorbell ring event - capture frame and process for face recognition."""
     logger.info("Doorbell ring event received")
     try:
@@ -448,8 +448,12 @@ async def doorbell_ring():
         logger.info("Doorbell frame captured successfully", image_path=image_path)
 
         # Process the captured frame for face recognition
-        results = face_manager.process_doorbell_image(image_path)
-        logger.info("Doorbell frame processing completed", results=results)
+        results = face_manager.process_doorbell_image(image_path, ai_message)
+        logger.info(
+            "Doorbell frame processing completed",
+            results=results,
+            ai_message=ai_message,
+        )
 
         # Send notification if configured
         if settings.notification_webhook:

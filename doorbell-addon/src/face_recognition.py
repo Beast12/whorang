@@ -99,7 +99,9 @@ class FaceRecognitionManager:
             print(f"Error detecting faces in {image_path}: {e}")
             return []
 
-    def process_doorbell_image(self, image_path: str) -> Dict:
+    def process_doorbell_image(
+        self, image_path: str, ai_message: Optional[str] = None
+    ) -> Dict:
         """
         Process a doorbell image for face recognition.
 
@@ -135,6 +137,7 @@ class FaceRecognitionManager:
             image_path=image_path,
             person_id=known_person_id,
             confidence=max_confidence if known_person_id else None,
+            ai_message=ai_message,
         )
 
         result = {
