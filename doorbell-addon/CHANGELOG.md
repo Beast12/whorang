@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.49] - 2025-09-19
+
+### Added
+- Clickable thumbnail images in Recent Events dashboard
+- Image modal popup for viewing full-size event images
+- Enhanced user experience with image viewing capabilities
+
+### Fixed
+- JavaScript lint errors in dashboard template
+- Improved code quality with proper event listeners
+
 ## [1.0.48] - 2025-09-17
 
 ### Changed
