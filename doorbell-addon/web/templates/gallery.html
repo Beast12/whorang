@@ -236,13 +236,23 @@ function applyFilters() {
             show = false;
         }
         
-        // Date filters
+        // Date filters - convert to Date objects for proper comparison
         const itemDate = item.dataset.date;
-        if (dateFrom && itemDate < dateFrom) {
-            show = false;
+        if (dateFrom) {
+            const itemDateObj = new Date(itemDate);
+            const fromDateObj = new Date(dateFrom);
+            if (itemDateObj < fromDateObj) {
+                show = false;
+            }
         }
-        if (dateTo && itemDate > dateTo) {
-            show = false;
+        if (dateTo) {
+            const itemDateObj = new Date(itemDate);
+            const toDateObj = new Date(dateTo);
+            // Make "To Date" inclusive by adding one day and using <
+            toDateObj.setDate(toDateObj.getDate() + 1);
+            if (itemDateObj >= toDateObj) {
+                show = false;
+            }
         }
         
         item.style.display = show ? 'block' : 'none';
