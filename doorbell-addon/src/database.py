@@ -337,7 +337,9 @@ class DatabaseManager:
                     confidence=row["confidence"],
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
-                    ai_message=row.get("ai_message"),
+                    ai_message=(
+                        row["ai_message"] if "ai_message" in row.keys() else None
+                    ),
                 )
                 for row in rows
             ]
