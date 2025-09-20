@@ -337,12 +337,35 @@ class DatabaseManager:
                     confidence=row["confidence"],
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
+                    ai_message=row["ai_message"],
+                )
+                for row in rows
+            ]
+
+    def get_doorbell_event(self, event_id: int) -> Optional[DoorbellEvent]:
+        """Get a single doorbell event by ID."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+
+            cursor = conn.execute(
+                "SELECT * FROM doorbell_events WHERE id = ?", (event_id,)
+            )
+            row = cursor.fetchone()
+
+            if row:
+                return DoorbellEvent(
+                    id=row["id"],
+                    timestamp=datetime.fromisoformat(row["timestamp"]),
+                    image_path=row["image_path"],
+                    person_id=row["person_id"],
+                    confidence=row["confidence"],
+                    is_known=bool(row["is_known"]),
+                    processed=bool(row["processed"]),
                     ai_message=(
                         row["ai_message"] if "ai_message" in row.keys() else None
                     ),
                 )
-                for row in rows
-            ]
+            return None
 
     def cleanup_old_events(self):
         """Clean up old events based on retention policy."""

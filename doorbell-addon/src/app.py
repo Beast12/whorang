@@ -309,13 +309,8 @@ async def add_face_to_person(
 async def label_event(event_id: int, person_id: int = Form(...)):
     """Label an event with a person."""
     try:
-        # Get event
-        events = db.get_doorbell_events(limit=1, offset=0)
-        event = None
-        for e in events:
-            if e.id == event_id:
-                event = e
-                break
+        # Get event by ID
+        event = db.get_doorbell_event(event_id)
 
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
