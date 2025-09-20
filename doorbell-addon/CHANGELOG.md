@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.55] - 2025-09-20
+
+### Removed
+- WebSocket references from documentation (feature was never implemented)
+- Cleaned up README.md and CHANGELOG.md to reflect current HTTP-only API
+
 ## [1.0.54] - 2025-09-20
 
 ### Fixed
@@ -177,7 +183,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable confidence thresholds and retention policies
 - Automated cleanup of old events and images
 - RESTful API for external integrations
-- WebSocket support for real-time updates
 - Comprehensive logging and error handling
 - Security scanning and vulnerability management
 - GitHub Actions CI/CD pipeline with automated builds

@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.54-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.55-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -202,19 +202,6 @@ automation:
 - `GET /api/settings` - Get current settings
 - `GET /api/stats` - Get system statistics
 
-### WebSocket Events
-
-The add-on supports real-time updates via WebSocket:
-
-```javascript
-const ws = new WebSocket('ws://localhost:8099/ws');
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    if (data.type === 'face_detected') {
-        console.log('Face detected:', data.person_name);
-    }
-};
-```
 
 ## Troubleshooting
 
