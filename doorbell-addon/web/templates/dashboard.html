@@ -539,12 +539,26 @@ async function deleteSelectedEvents() {
         });
         
         if (response.ok) {
-            const result = await response.json();
-            alert(`Successfully deleted ${result.deleted_count} event(s)`);
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                alert(`Successfully deleted ${result.deleted_count} event(s)`);
+            } catch (parseError) {
+                // If JSON parsing fails, assume success and show generic message
+                alert(`Successfully deleted ${eventIds.length} event(s)`);
+            }
             location.reload();
         } else {
-            const error = await response.json();
-            alert('Error: ' + error.detail);
+            const responseText = await response.text();
+            let errorMessage = 'Unknown error occurred';
+            try {
+                const error = JSON.parse(responseText);
+                errorMessage = error.detail || errorMessage;
+            } catch (parseError) {
+                errorMessage = responseText || errorMessage;
+            }
+            alert('Error: ' + errorMessage);
         }
     } catch (error) {
         alert('Error deleting events: ' + error.message);
