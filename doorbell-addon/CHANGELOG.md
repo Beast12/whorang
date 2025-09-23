@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.58] - 2025-09-23
+
+### Fixed
+- 405 Method Not Allowed error in event deletion functionality
+- Changed DELETE /api/events to POST /api/events/delete for better form data compatibility
+- Improved HTTP method handling for event deletion API
+
 ## [1.0.57] - 2025-09-23
 
 ### Fixed

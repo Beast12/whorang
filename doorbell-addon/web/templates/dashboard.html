@@ -533,8 +533,8 @@ async function deleteSelectedEvents() {
         const formData = new FormData();
         formData.append('event_ids', eventIds.join(','));
         
-        const response = await fetch('/api/events', {
-            method: 'DELETE',
+        const response = await fetch('/api/events/delete', {
+            method: 'POST',
             body: formData
         });
         

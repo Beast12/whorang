@@ -305,7 +305,7 @@ async def add_face_to_person(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/api/events")
+@app.post("/api/events/delete")
 async def delete_events(event_ids: str = Form(...)):
     """Delete multiple events by their IDs."""
     try:
