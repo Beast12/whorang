@@ -394,6 +394,37 @@ class DatabaseManager:
                 except Exception as e:
                     print(f"Error deleting image {image_path}: {e}")
 
+    def delete_events(self, event_ids: List[int]) -> int:
+        """Delete multiple events by their IDs and associated image files."""
+        if not event_ids:
+            return 0
+
+        with sqlite3.connect(self.db_path) as conn:
+            # Get image paths of events to be deleted
+            placeholders = ",".join("?" * len(event_ids))
+            cursor = conn.execute(
+                f"SELECT image_path FROM doorbell_events WHERE id IN ({placeholders})",
+                event_ids,
+            )
+            image_paths = [row[0] for row in cursor.fetchall()]
+
+            # Delete events from database
+            deleted_count = conn.execute(
+                f"DELETE FROM doorbell_events WHERE id IN ({placeholders})",
+                event_ids,
+            ).rowcount
+            conn.commit()
+
+            # Delete associated image files
+            for image_path in image_paths:
+                try:
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+                except Exception as e:
+                    print(f"Error deleting image {image_path}: {e}")
+
+            return deleted_count
+
     def update_event_person(self, event_id: int, person_id: int, confidence: float):
         """Update an event with person identification."""
         with sqlite3.connect(self.db_path) as conn:

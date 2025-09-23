@@ -83,9 +83,23 @@
             <div class="card-body">
                 {% if recent_events %}
                     <div class="table-responsive">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <button id="selectAllBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
+                                    <i class="bi bi-check-square"></i> Select All
+                                </button>
+                                <button id="deleteSelectedBtn" class="btn btn-sm btn-outline-danger ms-2" onclick="deleteSelectedEvents()" disabled>
+                                    <i class="bi bi-trash"></i> Delete Selected
+                                </button>
+                            </div>
+                            <span id="selectedCount" class="text-muted small"></span>
+                        </div>
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th width="40px">
+                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                    </th>
                                     <th>Time</th>
                                     <th>Image</th>
                                     <th>Person</th>
@@ -97,6 +111,9 @@
                             <tbody>
                                 {% for event in recent_events[:10] %}
                                 <tr>
+                                    <td>
+                                        <input type="checkbox" class="event-checkbox" value="{{ event.id }}" onchange="updateDeleteButton()">
+                                    </td>
                                     <td>
                                         <small>{{ event.timestamp.strftime('%m/%d %H:%M') }}</small>
                                     </td>
@@ -456,6 +473,82 @@ function showImageModal(imageSrc, timestamp) {
     document.getElementById('modal-image').src = imageSrc;
     document.getElementById('modal-timestamp').textContent = timestamp;
     new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+// Event selection and deletion functions
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const eventCheckboxes = document.querySelectorAll('.event-checkbox');
+    
+    eventCheckboxes.forEach(function(checkbox) {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const selectedCheckboxes = document.querySelectorAll('.event-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    deleteBtn.disabled = selectedCheckboxes.length === 0;
+    
+    if (selectedCheckboxes.length > 0) {
+        selectedCount.textContent = `${selectedCheckboxes.length} event(s) selected`;
+    } else {
+        selectedCount.textContent = '';
+    }
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.event-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    if (selectedCheckboxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (selectedCheckboxes.length === allCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+async function deleteSelectedEvents() {
+    const selectedCheckboxes = document.querySelectorAll('.event-checkbox:checked');
+    
+    if (selectedCheckboxes.length === 0) {
+        return;
+    }
+    
+    const eventIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    const confirmMessage = `Are you sure you want to delete ${eventIds.length} event(s)? This action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('event_ids', eventIds.join(','));
+        
+        const response = await fetch('/api/events', {
+            method: 'DELETE',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Successfully deleted ${result.deleted_count} event(s)`);
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error deleting events: ' + error.message);
+    }
 }
 
 // Add click event listeners for clickable images

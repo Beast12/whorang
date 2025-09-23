@@ -305,6 +305,31 @@ async def add_face_to_person(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.delete("/api/events")
+async def delete_events(event_ids: str = Form(...)):
+    """Delete multiple events by their IDs."""
+    try:
+        # Parse comma-separated event IDs
+        ids = [int(id.strip()) for id in event_ids.split(",") if id.strip()]
+
+        if not ids:
+            raise HTTPException(status_code=400, detail="No event IDs provided")
+
+        # Delete events
+        deleted_count = db.delete_events(ids)
+
+        return {
+            "message": f"Successfully deleted {deleted_count} event(s)",
+            "deleted_count": deleted_count,
+        }
+
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid event ID format")
+    except Exception as e:
+        logger.error("Error deleting events", event_ids=event_ids, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/events/{event_id}/label")
 async def label_event(event_id: int, person_id: int = Form(...)):
     """Label an event with a person."""

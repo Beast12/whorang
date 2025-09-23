@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.56] - 2025-09-23
+
+### Added
+- Manual event selection and deletion functionality in dashboard
+- Checkbox selection for individual events in Recent Events table
+- "Select All" and "Delete Selected" buttons for bulk operations
+- Confirmation dialog for event deletion with undo warning
+- Backend API endpoint DELETE /api/events for bulk event deletion
+- Automatic cleanup of associated image files when events are deleted
+
+### Enhanced
+- Dashboard UI with improved event management capabilities
+- Real-time selection counter showing number of selected events
+- Indeterminate checkbox state for partial selections
+
 ## [1.0.55] - 2025-09-20
 
 ### Removed
