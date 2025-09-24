@@ -92,6 +92,12 @@
                             {{ event.timestamp.strftime('%m/%d/%Y %H:%M') }}
                         </h6>
                         
+                        {% if event.ai_message %}
+                        <p class="text-light mb-2" style="font-style: italic; color: #e9ecef; font-size: 0.9em;">
+                            "{{ event.ai_message }}"
+                        </p>
+                        {% endif %}
+                        
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 Event #{{ event.id }}

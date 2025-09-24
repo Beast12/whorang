@@ -97,26 +97,173 @@ database_encryption: false
 
 ### Doorbell Integration Setup
 
-This add-on uses **event-driven face recognition** - it only processes images when your doorbell is pressed, not continuously. You need to create a Home Assistant automation:
+This add-on uses **event-driven face recognition** - it only processes images when your doorbell is pressed, not continuously. You need to create a Home Assistant automation that captures an image and sends it to the addon for face recognition.
+
+Here's a comprehensive automation that includes AI-generated descriptions, notifications, and face recognition:
 
 ```yaml
-automation:
-  - alias: "Doorbell Face Recognition Trigger"
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.your_doorbell_button  # Replace with your doorbell entity
-        to: "on"
-    action:
-      - service: rest_command.doorbell_ring
-        
+alias: Smart Doorbell Notification with AI + Face Recognition
+description: Send notification with AI-generated message and process face recognition
+triggers:
+  - entity_id: binary_sensor.your_doorbell_button  # Replace with your doorbell entity
+    from: "off"
+    to: "on"
+    trigger: state
+actions:
+  - target:
+      entity_id: camera.your_doorbell_camera  # Replace with your camera entity
+    data:
+      filename: "{{ snapshot_path }}"
+    action: camera.snapshot
+  - target:
+      device_id:
+        - your_device_id_1  # Replace with your device IDs for doorbell sound
+        - your_device_id_2
+        - your_device_id_3
+        - your_device_id_4
+        - your_device_id_5
+        - your_device_id_6
+        - your_device_id_7
+        - your_device_id_8
+        - your_device_id_9
+    data:
+      media:
+        media_content_id: /local/sounds/doorbell.mp3
+        media_content_type: music
+        metadata: {}
+    action: media_player.play_media
+    enabled: true
+  - data:
+      remember: false
+      use_memory: false
+      include_filename: false
+      target_width: 1280
+      max_tokens: 100
+      temperature: 0.2
+      generate_title: true
+      expose_images: true
+      provider: your_llm_provider_id  # Replace with your LLM provider ID
+      message: >-
+        You are my sarcastic funny security guard. Describe what you see. Don't
+        mention trees, bushes, grass, landscape, driveway, light fixtures, yard,
+        brick, wall, garden. Don't mention the time and date. Be precise and
+        short in one funny one liner of max 10 words. Only describe the person,
+        vehicle or the animal.
+      image_file: "{{ snapshot_path }}"
+      model: gpt-4o-mini  # Replace with your preferred AI model
+    response_variable: ai_description
+    action: llmvision.image_analyzer
+  - parallel:
+      - data:
+          message: "{{ ai_description.response_text }}"
+          title: "{{ ai_description.title }}"
+          data:
+            image: /local/doorbell_snapshot_{{ timestamp }}.jpg
+            ttl: 0
+            priority: high
+            clickAction: "{{ snapshot_url }}"
+            actions:
+              - action: VIEW_PHOTO
+                title: 📷 Photo
+                uri: "{{ snapshot_url }}"
+              - action: OPEN_CAMERA
+                title: 📹 Live
+                uri: /dashboard-home/cameras
+              - action: DISMISS
+                title: ❌ Close
+        action: notify.mobile_app_your_phone_1  # Replace with your notification service
+      - data:
+          message: "{{ ai_description.response_text }}"
+          title: "{{ ai_description.title }}"
+          data:
+            image: /local/doorbell_snapshot_{{ timestamp }}.jpg
+            ttl: 0
+            priority: high
+            clickAction: "{{ snapshot_url }}"
+            actions:
+              - action: VIEW_PHOTO
+                title: 📷 Photo
+                uri: "{{ snapshot_url }}"
+              - action: OPEN_CAMERA
+                title: 📹 Live
+                uri: /dashboard-home/cameras
+              - action: DISMISS
+                title: ❌ Close
+        action: notify.mobile_app_your_phone_2  # Replace with second notification service
+        enabled: true
+      # Send to doorbell addon for face recognition
+      - action: rest_command.doorbell_ring
+        data:
+          ai_message: "{{ ai_description.response_text }}"
+          ai_title: "{{ ai_description.title }}"
+          image_path: "{{ snapshot_path }}"
+          image_url: "{{ snapshot_url }}"
+      - data:
+          media_player_entity_id: media_player.your_display_1  # Replace with your media players
+          message: "{{ ai_description.response_text }}"
+          cache: true
+        action: tts.speak
+        target:
+          entity_id: tts.google_translate_en_com
+        enabled: true
+      - data:
+          media_player_entity_id: media_player.your_display_2  # Replace with your media players
+          message: "{{ ai_description.response_text }}"
+          cache: true
+        action: tts.speak
+        target:
+          entity_id: tts.google_translate_en_com
+        enabled: true
+  - target:
+      device_id:
+        - your_display_device_id_1  # Replace with your display device IDs
+        - your_display_device_id_2
+    data:
+      media:
+        media_content_id: "{{ snapshot_url }}"
+        media_content_type: image/jpeg
+        metadata: {}
+    action: media_player.play_media
+    enabled: true
+  - delay:
+      seconds: 15
+  - target:
+      device_id:
+        - your_display_device_id_1  # Same display device IDs as above
+        - your_display_device_id_2
+        - your_display_device_id_3
+    action: media_player.media_stop
+    data: {}
+    enabled: true
+variables:
+  timestamp: "{{ now().timestamp() | int }}"
+  snapshot_path: /config/www/doorbell_snapshot_{{ timestamp }}.jpg
+  snapshot_url: https://your-ha-domain.com/local/doorbell_snapshot_{{ timestamp }}.jpg  # Replace with your HA URL
+```
+
+**Required REST Command** - Add this to your `configuration.yaml`:
+
+```yaml
 rest_command:
   doorbell_ring:
-    url: "http://a0d7b954-doorbell-face-recognition:8000/api/doorbell/ring"
+    url: "http://a0d7b954-doorbell-face-recognition:8099/api/doorbell/ring"
     method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    payload: >-
+      ai_message={{ ai_message | urlencode }}&ai_title={{ ai_title | urlencode }}&image_path={{ image_path | urlencode }}&image_url={{ image_url | urlencode }}
     timeout: 30
 ```
 
-**Important**: Replace `binary_sensor.your_doorbell_button` with your actual doorbell entity ID.
+**Important Replacements Needed:**
+- `binary_sensor.your_doorbell_button` - Your doorbell button entity
+- `camera.your_doorbell_camera` - Your doorbell camera entity  
+- `your_device_id_*` - Your device IDs for speakers/displays (9 total for doorbell sound)
+- `your_llm_provider_id` - Your LLM Vision provider ID
+- `notify.mobile_app_your_phone_*` - Your mobile notification services
+- `media_player.your_display_*` - Your media player entities for TTS
+- `your_display_device_id_*` - Your display device IDs for showing images
+- `https://your-ha-domain.com` - Your Home Assistant external URL
 
 ### Adding People
 
@@ -157,35 +304,55 @@ The add-on fires the following events:
 - `doorbell_known_person` - Fired when a known person is detected
 - `doorbell_unknown_person` - Fired when an unknown person is detected
 
-### Automations
+### Additional Automations
 
-Example automation to send notifications:
+You can create additional automations to respond to face recognition events:
 
 ```yaml
 automation:
-  - alias: "Doorbell Known Person"
+  - alias: "Doorbell Known Person Detected"
     trigger:
       platform: event
       event_type: doorbell_known_person
     action:
-      service: notify.mobile_app_your_phone
-      data:
-        title: "Doorbell"
-        message: "{{ trigger.event.data.person_name }} is at the door"
+      - service: notify.mobile_app_your_phone  # Replace with your notification service
         data:
-          image: "/api/doorbell/image/{{ trigger.event.data.image_path }}"
+          title: "Welcome Home!"
+          message: "{{ trigger.event.data.person_name }} is at the door"
+          data:
+            image: "/api/doorbell/image/{{ trigger.event.data.image_path }}"
+      - service: light.turn_on  # Optional: Turn on lights for known persons
+        target:
+          entity_id: light.front_porch
 
-  - alias: "Doorbell Unknown Person"
+  - alias: "Doorbell Unknown Person Alert"
     trigger:
       platform: event
       event_type: doorbell_unknown_person
     action:
-      service: notify.mobile_app_your_phone
-      data:
-        title: "Doorbell Alert"
-        message: "Unknown person detected at the door"
+      - service: notify.mobile_app_your_phone  # Replace with your notification service
         data:
-          image: "/api/doorbell/image/{{ trigger.event.data.image_path }}"
+          title: "Security Alert"
+          message: "Unknown person detected at the door"
+          data:
+            image: "/api/doorbell/image/{{ trigger.event.data.image_path }}"
+      - service: light.turn_on  # Optional: Turn on security lights
+        target:
+          entity_id: light.security_lights
+        data:
+          brightness: 255
+
+  - alias: "Daily Face Recognition Summary"
+    trigger:
+      platform: time
+      at: "23:00:00"
+    action:
+      service: notify.mobile_app_your_phone  # Replace with your notification service
+      data:
+        title: "Daily Doorbell Summary"
+        message: >
+          Today: {{ states('sensor.doorbell_known_faces_today') }} known visitors, 
+          {{ states('sensor.doorbell_unknown_faces_today') }} unknown visitors
 ```
 
 ## API Reference
