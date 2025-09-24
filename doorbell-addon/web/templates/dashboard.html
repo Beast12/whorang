@@ -356,7 +356,7 @@ document.getElementById('add-person-form').addEventListener('submit', async func
         const formData = new FormData();
         formData.append('name', name);
         
-        const response = await fetch('/api/persons', {
+        const response = await fetch('api/persons', {
             method: 'POST',
             body: formData
         });
@@ -391,7 +391,7 @@ async function submitLabel() {
             const formData = new FormData();
             formData.append('name', newPersonName);
             
-            const personResponse = await fetch('/api/persons', {
+            const personResponse = await fetch('api/persons', {
                 method: 'POST',
                 body: formData
             });
@@ -533,7 +533,7 @@ async function deleteSelectedEvents() {
         const formData = new FormData();
         formData.append('event_ids', eventIds.join(','));
         
-        const response = await fetch('/api/events/delete', {
+        const response = await fetch('api/events/delete', {
             method: 'POST',
             body: formData
         });

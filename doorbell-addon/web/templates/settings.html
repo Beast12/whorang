@@ -360,7 +360,7 @@ async function testCamera() {
     statusElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Testing...';
     
     try {
-        const response = await fetch('/api/camera/capture', { method: 'POST' });
+        const response = await fetch('api/camera/capture', { method: 'POST' });
         
         if (response.ok) {
             statusElement.innerHTML = '<span class="badge bg-success">✓ Camera Connected</span>';
@@ -382,7 +382,7 @@ async function testCamera() {
 async function checkCameraStatus() {
     try {
         // This is a lightweight check - we'll just see if we can reach the API
-        const response = await fetch('/api/settings');
+        const response = await fetch('api/settings');
         if (response.ok) {
             document.getElementById('camera-connection-status').className = 'badge bg-success';
             document.getElementById('camera-connection-status').textContent = 'Ready';
@@ -397,7 +397,7 @@ async function checkCameraStatus() {
 async function testNotifications() {
     try {
         // We'll simulate this by capturing a frame which triggers the notification system
-        const response = await fetch('/api/camera/capture', { method: 'POST' });
+        const response = await fetch('api/camera/capture', { method: 'POST' });
         
         if (response.ok) {
             alert('Test notification sent! Check your Home Assistant notifications.');
@@ -413,7 +413,7 @@ async function testNotifications() {
 async function reloadFaceEncodings() {
     try {
         // This would typically be a dedicated endpoint, but we'll simulate it
-        const response = await fetch('/api/persons');
+        const response = await fetch('api/persons');
         
         if (response.ok) {
             alert('Face encodings reloaded successfully!');

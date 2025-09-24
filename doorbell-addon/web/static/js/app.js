@@ -204,14 +204,14 @@ function getBootstrapAlertClass(type) {
 async function refreshDashboardData() {
     try {
         // Refresh statistics
-        const statsResponse = await fetch('/api/stats');
+        const statsResponse = await fetch('api/stats');
         if (statsResponse.ok) {
             const stats = await statsResponse.json();
             updateDashboardStats(stats);
         }
         
         // Refresh recent events (only update counts, not full reload)
-        const eventsResponse = await fetch('/api/events?limit=10');
+        const eventsResponse = await fetch('api/events?limit=10');
         if (eventsResponse.ok) {
             const events = await eventsResponse.json();
             updateEventCounts(events.events);
