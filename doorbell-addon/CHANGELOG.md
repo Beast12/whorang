@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.61] - 2025-09-24
+
+### Fixed
+- **UI:** Fixed AI message visibility in dashboard and gallery views
+- Changed AI message text color from blue to light gray for better readability on dark backgrounds
+- Added AI message display to gallery cards with proper contrast styling
+- AI messages now clearly visible with italic formatting and quotes
+
 ## [1.0.60] - 2025-09-24
 
 ### Fixed
