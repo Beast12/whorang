@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.60] - 2025-09-24
+
+### Fixed
+- **CRITICAL:** Fixed ingress API path routing causing 401 Unauthorized errors
+- Changed all API calls from absolute paths (/api/*) to relative paths (api/*)
+- Resolved "Login attempt with invalid authentication" errors in Home Assistant logs
+- Fixed event deletion, person creation, and settings API calls through ingress proxy
+
 ## [1.0.59] - 2025-09-24
 
 ### Fixed
