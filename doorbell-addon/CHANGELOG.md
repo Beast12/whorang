@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.59] - 2025-09-24
+
+### Fixed
+- 401 Unauthorized error in event deletion functionality
+- Added Home Assistant ingress authentication middleware for proper session handling
+- Implemented CORS preflight request handling for ingress compatibility
+- Enhanced FastAPI configuration for Home Assistant addon ingress support
+
 ## [1.0.58] - 2025-09-23
 
 ### Fixed

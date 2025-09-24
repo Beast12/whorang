@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
 from .database import DatabaseManager
@@ -38,6 +39,52 @@ ha_integration = HomeAssistantIntegration()
 # Initialize HA Camera Manager
 ha_camera_manager = HACameraManager()
 
+
+class IngressAuthMiddleware(BaseHTTPMiddleware):
+    """Middleware to handle Home Assistant ingress authentication."""
+
+    async def dispatch(self, request: Request, call_next):
+        # For ingress, we need to trust the proxy headers
+        # Home Assistant ingress handles authentication at the proxy level
+
+        # Get the original request headers
+        headers = dict(request.headers)
+
+        # Log ingress headers for debugging
+        ingress_headers = {
+            k: v
+            for k, v in headers.items()
+            if "ingress" in k.lower() or "x-" in k.lower()
+        }
+        if ingress_headers:
+            logger.debug("Ingress headers received", headers=ingress_headers)
+
+        # Check for Home Assistant ingress session headers
+        has_ingress_session = (
+            "x-ingress-path" in headers
+            or "x-hassio-key" in headers
+            or "authorization" in headers
+            or request.url.path.startswith("/api/hassio_ingress/")
+        )
+
+        if has_ingress_session:
+            logger.debug("Request has ingress session", path=request.url.path)
+
+        # Process the request
+        response = await call_next(request)
+
+        # Add CORS headers for ingress compatibility
+        if has_ingress_session:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = (
+                "GET, POST, PUT, DELETE, OPTIONS"
+            )
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+
+        return response
+
+
 # Face recognition imports
 try:
     from .face_recognition import CameraManager, FaceRecognitionManager
@@ -62,6 +109,9 @@ app = FastAPI(
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
 )
+
+# Add ingress authentication middleware
+app.add_middleware(IngressAuthMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -140,6 +190,12 @@ async def health_check():
         "version": settings.app_version,
         "timestamp": datetime.now().isoformat(),
     }
+
+
+@app.options("/{full_path:path}")
+async def options_handler(request: Request, full_path: str):
+    """Handle OPTIONS preflight requests for CORS."""
+    return {"message": "OK"}
 
 
 @app.get("/api/events")
