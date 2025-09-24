@@ -84,6 +84,47 @@ class HomeAssistantAPI:
                 error=str(e),
             )
 
+    async def get_weather_data(self, entity_id: str) -> Optional[Dict[str, Any]]:
+        """Get weather data from Home Assistant entity."""
+        if not entity_id:
+            return None
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/states/{entity_id}",
+                    headers=self.headers,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                # Extract weather information
+                weather_info = {
+                    "condition": data.get("state"),
+                    "temperature": None,
+                    "humidity": None,
+                }
+
+                # Get temperature and humidity from attributes
+                attributes = data.get("attributes", {})
+                if "temperature" in attributes:
+                    weather_info["temperature"] = float(attributes["temperature"])
+                if "humidity" in attributes:
+                    weather_info["humidity"] = float(attributes["humidity"])
+
+                logger.info(
+                    "Weather data retrieved", entity_id=entity_id, weather=weather_info
+                )
+                return weather_info
+
+        except Exception as e:
+            logger.error(
+                "Failed to get weather data",
+                entity_id=entity_id,
+                error=str(e),
+            )
+            return None
+
 
 class NotificationManager:
     """Manages notifications for doorbell events."""

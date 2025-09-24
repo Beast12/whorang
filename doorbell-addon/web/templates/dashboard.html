@@ -104,6 +104,7 @@
                                     <th>Image</th>
                                     <th>Person</th>
                                     <th>AI Message</th>
+                                    <th>Weather</th>
                                     <th>Confidence</th>
                                     <th>Actions</th>
                                 </tr>
@@ -139,6 +140,23 @@
                                     <td>
                                         {% if event.ai_message %}
                                             <small class="text-light" style="font-style: italic; color: #e9ecef;">{{ event.ai_message }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.weather_condition or event.weather_temperature %}
+                                            <small class="text-light">
+                                                {% if event.weather_condition %}
+                                                    <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
+                                                {% endif %}
+                                                {% if event.weather_temperature %}
+                                                    <br><i class="bi bi-thermometer-half"></i> {{ "%.1f"|format(event.weather_temperature) }}°C
+                                                {% endif %}
+                                                {% if event.weather_humidity %}
+                                                    <br><i class="bi bi-droplet"></i> {{ "%.0f"|format(event.weather_humidity) }}%
+                                                {% endif %}
+                                            </small>
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}

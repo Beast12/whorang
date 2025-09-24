@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import httpx
 import requests
 import structlog
 import uvicorn
@@ -19,6 +20,7 @@ from .database import DatabaseManager
 from .ha_camera import HACameraManager
 from .ha_integration import HomeAssistantIntegration
 from .utils import (
+    HomeAssistantAPI,
     create_placeholder_image,
     ensure_directories,
     get_storage_usage,
@@ -486,7 +488,7 @@ async def capture_frame():
         logger.info("Frame captured successfully", image_path=image_path)
 
         # Process the captured frame
-        results = face_manager.process_doorbell_image(image_path)
+        results = await face_manager.process_doorbell_image(image_path)
         logger.info("Frame processing completed", results=results)
 
         return {
@@ -524,7 +526,7 @@ async def doorbell_ring(ai_message: Optional[str] = Form(None)):
         logger.info("Doorbell frame captured successfully", image_path=image_path)
 
         # Process the captured frame for face recognition
-        results = face_manager.process_doorbell_image(image_path, ai_message)
+        results = await face_manager.process_doorbell_image(image_path, ai_message)
         logger.info(
             "Doorbell frame processing completed",
             results=results,
@@ -667,6 +669,46 @@ async def get_available_cameras():
     except Exception as e:
         logger.error("Error getting camera entities", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/weather-entities")
+async def get_available_weather_entities():
+    """Get available Home Assistant weather entities."""
+    try:
+        logger.info("Weather entities requested via API")
+
+        # Use the Home Assistant API to get weather entities
+        ha_api = HomeAssistantAPI()
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{ha_api.base_url}/states",
+                headers=ha_api.headers,
+            )
+            response.raise_for_status()
+            states = response.json()
+
+            # Filter for weather entities
+            weather_entities = []
+            for state in states:
+                entity_id = state.get("entity_id", "")
+                if entity_id.startswith("weather."):
+                    attributes = state.get("attributes", {})
+                    friendly_name = attributes.get("friendly_name", entity_id)
+                    weather_entities.append(
+                        {
+                            "entity_id": entity_id,
+                            "friendly_name": friendly_name,
+                            "state": state.get("state"),
+                        }
+                    )
+
+            logger.info(f"Returning {len(weather_entities)} weather entities")
+            return {"entities": weather_entities}
+
+    except Exception as e:
+        logger.error("Error getting weather entities", error=str(e))
+        return {"entities": []}
 
 
 @app.get("/api/stats")

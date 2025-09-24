@@ -14,6 +14,7 @@ import face_recognition  # type: ignore
 
 from .config import settings
 from .database import DatabaseManager
+from .utils import HomeAssistantAPI
 
 
 class FaceRecognitionManager:
@@ -21,6 +22,7 @@ class FaceRecognitionManager:
 
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
+        self.ha_api = HomeAssistantAPI()
         self.known_face_encodings: List[np.ndarray] = []
         self.known_face_names: List[str] = []
         self.known_face_ids: List[int] = []
@@ -99,7 +101,7 @@ class FaceRecognitionManager:
             print(f"Error detecting faces in {image_path}: {e}")
             return []
 
-    def process_doorbell_image(
+    async def process_doorbell_image(
         self, image_path: str, ai_message: Optional[str] = None
     ) -> Dict:
         """
@@ -132,12 +134,27 @@ class FaceRecognitionManager:
                         known_person_id = self.known_face_ids[i]
                         break
 
+        # Fetch weather data if weather entity is configured
+        weather_condition = None
+        weather_temperature = None
+        weather_humidity = None
+
+        if settings.weather_entity:
+            weather_data = await self.ha_api.get_weather_data(settings.weather_entity)
+            if weather_data:
+                weather_condition = weather_data.get("condition")
+                weather_temperature = weather_data.get("temperature")
+                weather_humidity = weather_data.get("humidity")
+
         # Save event to database
         event = self.db.add_doorbell_event(
             image_path=image_path,
             person_id=known_person_id,
             confidence=max_confidence if known_person_id else None,
             ai_message=ai_message,
+            weather_condition=weather_condition,
+            weather_temperature=weather_temperature,
+            weather_humidity=weather_humidity,
         )
 
         result = {

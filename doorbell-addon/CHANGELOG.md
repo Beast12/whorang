@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.62] - 2025-09-24
+
+### Added
+- **Weather Integration:** Added comprehensive weather data capture for doorbell events
+- Weather entity selector in settings page to choose Home Assistant weather source
+- Weather conditions, temperature, and humidity automatically captured with each event
+- Weather display in dashboard table with condition icons and temperature/humidity
+- Weather information in gallery event cards with proper styling
+- New API endpoint `/api/weather-entities` to fetch available weather entities
+- Database schema updated with weather fields (condition, temperature, humidity)
+
+### Technical
+- Added `weather_entity` configuration setting for user-selectable weather source
+- Enhanced `process_doorbell_image()` to fetch and store weather data automatically
+- Updated database models and migration for weather data storage
+- Added weather data display with Bootstrap icons in UI templates
+- Weather data persists with events and survives addon restarts
+
 ## [1.0.61] - 2025-09-24
 
 ### Fixed

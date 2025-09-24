@@ -98,6 +98,23 @@
                         </p>
                         {% endif %}
                         
+                        {% if event.weather_condition or event.weather_temperature %}
+                        <div class="mb-2">
+                            <small class="text-light" style="color: #adb5bd;">
+                                {% if event.weather_condition %}
+                                    <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
+                                {% endif %}
+                                {% if event.weather_temperature %}
+                                    {% if event.weather_condition %} • {% endif %}
+                                    <i class="bi bi-thermometer-half"></i> {{ "%.1f"|format(event.weather_temperature) }}°C
+                                {% endif %}
+                                {% if event.weather_humidity %}
+                                    • <i class="bi bi-droplet"></i> {{ "%.0f"|format(event.weather_humidity) }}%
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 Event #{{ event.id }}

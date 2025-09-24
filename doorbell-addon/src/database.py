@@ -47,6 +47,9 @@ class DoorbellEvent:
     is_known: bool = False
     processed: bool = False
     ai_message: Optional[str] = None
+    weather_condition: Optional[str] = None
+    weather_temperature: Optional[float] = None
+    weather_humidity: Optional[float] = None
 
 
 class DatabaseManager:
@@ -138,6 +141,9 @@ class DatabaseManager:
                     is_known BOOLEAN DEFAULT FALSE,
                     processed BOOLEAN DEFAULT FALSE,
                     ai_message TEXT,
+                    weather_condition TEXT,
+                    weather_temperature REAL,
+                    weather_humidity REAL,
                     FOREIGN KEY (person_id) REFERENCES persons (id) ON DELETE SET NULL
                 )
             """
@@ -149,6 +155,31 @@ class DatabaseManager:
                 conn.commit()
             except sqlite3.OperationalError:
                 # Column already exists, ignore
+                pass
+
+            # Add weather columns if they don't exist (migration for existing databases)
+            try:
+                conn.execute(
+                    "ALTER TABLE doorbell_events ADD COLUMN weather_condition TEXT"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute(
+                    "ALTER TABLE doorbell_events ADD COLUMN weather_temperature REAL"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute(
+                    "ALTER TABLE doorbell_events ADD COLUMN weather_humidity REAL"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
                 pass
 
             conn.execute(
@@ -278,6 +309,9 @@ class DatabaseManager:
         person_id: Optional[int] = None,
         confidence: Optional[float] = None,
         ai_message: Optional[str] = None,
+        weather_condition: Optional[str] = None,
+        weather_temperature: Optional[float] = None,
+        weather_humidity: Optional[float] = None,
     ) -> DoorbellEvent:
         """Add a new doorbell event."""
         is_known = person_id is not None
@@ -285,9 +319,20 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
-                   (image_path, person_id, confidence, is_known, processed, ai_message)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (image_path, person_id, confidence, is_known, False, ai_message),
+                   (image_path, person_id, confidence, is_known, processed, ai_message, 
+                    weather_condition, weather_temperature, weather_humidity)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    image_path,
+                    person_id,
+                    confidence,
+                    is_known,
+                    False,
+                    ai_message,
+                    weather_condition,
+                    weather_temperature,
+                    weather_humidity,
+                ),
             )
             event_id = cursor.lastrowid
             conn.commit()
@@ -301,6 +346,9 @@ class DatabaseManager:
                 is_known=is_known,
                 processed=False,
                 ai_message=ai_message,
+                weather_condition=weather_condition,
+                weather_temperature=weather_temperature,
+                weather_humidity=weather_humidity,
             )
 
     def get_doorbell_events(
@@ -338,6 +386,9 @@ class DatabaseManager:
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
                     ai_message=row["ai_message"],
+                    weather_condition=row.get("weather_condition"),
+                    weather_temperature=row.get("weather_temperature"),
+                    weather_humidity=row.get("weather_humidity"),
                 )
                 for row in rows
             ]
@@ -364,6 +415,9 @@ class DatabaseManager:
                     ai_message=(
                         row["ai_message"] if "ai_message" in row.keys() else None
                     ),
+                    weather_condition=row.get("weather_condition"),
+                    weather_temperature=row.get("weather_temperature"),
+                    weather_humidity=row.get("weather_humidity"),
                 )
             return None
 

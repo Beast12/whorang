@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Notification settings
     notification_webhook: Optional[str] = os.getenv("NOTIFICATION_WEBHOOK")
 
+    # Weather integration
+    weather_entity: Optional[str] = os.getenv("WEATHER_ENTITY")
+
     # Database settings
     database_encryption: bool = (
         os.getenv("DATABASE_ENCRYPTION", "false").lower() == "true"
@@ -37,7 +40,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.61"
+    app_version: ClassVar[str] = "1.0.62"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property

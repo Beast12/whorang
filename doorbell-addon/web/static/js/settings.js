@@ -8,10 +8,12 @@ function initializeSettings() {
     // Setup camera source radio buttons
     setupCameraSourceToggle();
     
-    // Load current settings first, then load cameras
+    // Load current settings first, then load cameras and weather entities
     loadCurrentSettings().then(() => {
         // Load available cameras after settings are loaded
         loadAvailableCameras();
+        // Load available weather entities
+        loadAvailableWeatherEntities();
         // Update camera status after settings are loaded
         updateCameraStatus();
     });
@@ -152,6 +154,49 @@ async function loadAvailableCameras() {
     }
 }
 
+async function loadAvailableWeatherEntities() {
+    const weatherSelect = document.getElementById('weather-entity');
+    if (!weatherSelect) return;
+    
+    try {
+        console.log('Loading available weather entities...');
+        const response = await fetch('api/weather-entities');
+        if (response.ok) {
+            const data = await response.json();
+            const entities = data.entities || [];
+            console.log('Available weather entities:', entities);
+            
+            // Clear existing options
+            weatherSelect.innerHTML = '';
+            
+            if (entities.length === 0) {
+                weatherSelect.innerHTML = '<option value="">No weather entities found</option>';
+            } else {
+                weatherSelect.innerHTML = '<option value="">Select a weather entity...</option>';
+                entities.forEach(entity => {
+                    const option = document.createElement('option');
+                    option.value = entity.entity_id;
+                    option.textContent = entity.friendly_name;
+                    weatherSelect.appendChild(option);
+                });
+                
+                // Set the selected value from current settings
+                const currentEntity = weatherSelect.getAttribute('data-current-value');
+                console.log('Restoring weather entity selection:', currentEntity);
+                if (currentEntity) {
+                    weatherSelect.value = currentEntity;
+                    console.log('Weather entity selected:', weatherSelect.value);
+                }
+            }
+        } else {
+            weatherSelect.innerHTML = '<option value="">Error loading weather entities</option>';
+        }
+    } catch (error) {
+        console.error('Error loading weather entities:', error);
+        weatherSelect.innerHTML = '<option value="">Error loading weather entities</option>';
+    }
+}
+
 function setupConfidenceSlider() {
     const slider = document.getElementById('confidence-threshold');
     const valueDisplay = document.getElementById('confidence-value');
@@ -249,6 +294,12 @@ async function saveSettings() {
     } else if (entityOption && entityOption.checked) {
         settings.camera_entity = document.getElementById('camera-entity').value;
         settings.camera_url = null;
+    }
+    
+    // Add weather entity configuration
+    const weatherEntity = document.getElementById('weather-entity');
+    if (weatherEntity && weatherEntity.value) {
+        settings.weather_entity = weatherEntity.value;
     }
     
     // Update button state
