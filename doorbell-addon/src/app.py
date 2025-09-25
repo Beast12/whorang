@@ -105,11 +105,12 @@ except ImportError as e:
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Doorbell Face Recognition",
-    description="AI-powered doorbell with face recognition capabilities",
+    title="Doorbell Face Recognition API",
+    description="AI-powered doorbell with face recognition capabilities. This API provides endpoints for managing doorbell events, face recognition, weather integration, and system configuration.",
     version=settings.app_version,
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 # Add ingress authentication middleware
@@ -200,9 +201,17 @@ async def options_handler(request: Request, full_path: str):
     return {"message": "OK"}
 
 
-@app.get("/api/events")
+@app.get("/api/events", tags=["Events"], summary="Get doorbell events")
 async def get_events(limit: int = 50, offset: int = 0, person_id: Optional[int] = None):
-    """Get doorbell events with pagination."""
+    """
+    Get doorbell events with pagination and optional filtering.
+    
+    - **limit**: Maximum number of events to return (default: 50)
+    - **offset**: Number of events to skip for pagination (default: 0)  
+    - **person_id**: Filter events by specific person ID (optional)
+    
+    Returns a list of doorbell events with face recognition results, weather data, and AI messages.
+    """
     try:
         events = db.get_doorbell_events(
             limit=limit,
@@ -238,9 +247,13 @@ async def get_events(limit: int = 50, offset: int = 0, person_id: Optional[int] 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/persons")
+@app.get("/api/persons", tags=["Persons"], summary="Get all persons")
 async def get_persons():
-    """Get all persons."""
+    """
+    Get all registered persons in the face recognition system.
+    
+    Returns a list of all persons with their IDs, names, and face count.
+    """
     try:
         persons = db.get_all_persons()
 
@@ -270,9 +283,15 @@ async def get_persons():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/persons")
+@app.post("/api/persons", tags=["Persons"], summary="Create a new person")
 async def create_person(name: str = Form(...)):
-    """Create a new person."""
+    """
+    Create a new person in the face recognition system.
+    
+    - **name**: The name of the person to create
+    
+    Returns the created person with their assigned ID.
+    """
     try:
         # Sanitize name
         name = sanitize_filename(name.strip())
@@ -505,9 +524,16 @@ async def capture_frame():
         raise HTTPException(status_code=500, detail=f"Capture failed: {str(e)}")
 
 
-@app.post("/api/doorbell/ring")
+@app.post("/api/doorbell/ring", tags=["Events"], summary="Handle doorbell ring event")
 async def doorbell_ring(ai_message: Optional[str] = Form(None)):
-    """Handle doorbell ring event - capture frame and process for face recognition."""
+    """
+    Handle a doorbell ring event - capture frame and process for face recognition.
+    
+    - **ai_message**: Optional AI-generated message about the event
+    
+    This endpoint captures a frame from the doorbell camera, processes it for face recognition,
+    captures weather data, and stores the event in the database.
+    """
     logger.info("Doorbell ring event received")
     try:
         # Check if camera_manager is available
@@ -569,9 +595,13 @@ async def doorbell_ring(ai_message: Optional[str] = Form(None)):
         )
 
 
-@app.get("/api/settings")
+@app.get("/api/settings", tags=["Settings"], summary="Get current settings")
 async def get_settings():
-    """Get current settings."""
+    """
+    Get current addon configuration settings.
+    
+    Returns all configurable settings including camera, weather, and face recognition parameters.
+    """
     return {
         "camera_url": settings.camera_url,
         "camera_entity": settings.camera_entity,
@@ -585,9 +615,13 @@ async def get_settings():
     }
 
 
-@app.post("/api/settings")
+@app.post("/api/settings", tags=["Settings"], summary="Update settings")
 async def update_settings(request: Request):
-    """Update settings."""
+    """
+    Update addon configuration settings.
+    
+    Accepts a JSON payload with settings to update. Settings are automatically saved to persistent storage.
+    """
     try:
         data = await request.json()
 
@@ -652,9 +686,13 @@ async def test_camera_connection(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/cameras")
+@app.get("/api/cameras", tags=["Camera"], summary="Get available camera entities")
 async def get_available_cameras():
-    """Get available Home Assistant camera entities."""
+    """
+    Get available Home Assistant camera entities for doorbell integration.
+    
+    Returns a list of camera entities that can be used as doorbell camera sources.
+    """
     try:
         logger.info("Camera entities requested via API")
         # Update camera manager with current settings
@@ -671,9 +709,13 @@ async def get_available_cameras():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/weather-entities")
+@app.get("/api/weather-entities", tags=["Weather"], summary="Get available weather entities")
 async def get_available_weather_entities():
-    """Get available Home Assistant weather entities."""
+    """
+    Get available Home Assistant weather entities for integration.
+    
+    Returns a list of weather entities that can be used to capture weather conditions with doorbell events.
+    """
     try:
         logger.info("Weather entities requested via API")
 
@@ -711,9 +753,13 @@ async def get_available_weather_entities():
         return {"entities": []}
 
 
-@app.get("/api/stats")
+@app.get("/api/stats", tags=["System"], summary="Get system statistics")
 async def get_statistics():
-    """Get system statistics."""
+    """
+    Get system statistics and usage information.
+    
+    Returns statistics about events, storage usage, and system performance.
+    """
     try:
         # Get event counts
         all_events = db.get_doorbell_events(limit=1000)
@@ -770,6 +816,23 @@ async def gallery(request: Request):
         )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
+
+@app.get("/api-docs", response_class=HTMLResponse)
+async def api_docs_redirect():
+    """Redirect to API documentation."""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>API Documentation - Doorbell Face Recognition</title>
+        <meta http-equiv="refresh" content="0; url=/api/docs">
+    </head>
+    <body>
+        <p>Redirecting to API documentation...</p>
+        <p>If you are not redirected automatically, <a href="/api/docs">click here</a>.</p>
+    </body>
+    </html>
+    """)
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
