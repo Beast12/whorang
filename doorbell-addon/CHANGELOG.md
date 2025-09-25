@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.63] - 2025-09-25
+
+### Fixed
+- **Critical Bug:** Fixed AttributeError in database row access for weather fields
+- sqlite3.Row objects don't have .get() method - changed to proper key checking
+- Dashboard now loads correctly without 500 errors when accessing weather data
+- Backward compatibility maintained for databases without weather columns
+
+### Technical
+- Updated get_doorbell_events() and get_doorbell_event() methods in database.py
+- Changed `row.get("field")` to `row["field"] if "field" in row.keys() else None`
+- Proper handling of missing weather columns in existing database records
+- No database migration required - graceful degradation for missing fields
+
 ## [1.0.62] - 2025-09-24
 
 ### Added

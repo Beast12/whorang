@@ -386,9 +386,21 @@ class DatabaseManager:
                     is_known=bool(row["is_known"]),
                     processed=bool(row["processed"]),
                     ai_message=row["ai_message"],
-                    weather_condition=row["weather_condition"] if "weather_condition" in row.keys() else None,
-                    weather_temperature=row["weather_temperature"] if "weather_temperature" in row.keys() else None,
-                    weather_humidity=row["weather_humidity"] if "weather_humidity" in row.keys() else None,
+                    weather_condition=(
+                        row["weather_condition"]
+                        if "weather_condition" in row.keys()
+                        else None
+                    ),
+                    weather_temperature=(
+                        row["weather_temperature"]
+                        if "weather_temperature" in row.keys()
+                        else None
+                    ),
+                    weather_humidity=(
+                        row["weather_humidity"]
+                        if "weather_humidity" in row.keys()
+                        else None
+                    ),
                 )
                 for row in rows
             ]
@@ -415,9 +427,21 @@ class DatabaseManager:
                     ai_message=(
                         row["ai_message"] if "ai_message" in row.keys() else None
                     ),
-                    weather_condition=row["weather_condition"] if "weather_condition" in row.keys() else None,
-                    weather_temperature=row["weather_temperature"] if "weather_temperature" in row.keys() else None,
-                    weather_humidity=row["weather_humidity"] if "weather_humidity" in row.keys() else None,
+                    weather_condition=(
+                        row["weather_condition"]
+                        if "weather_condition" in row.keys()
+                        else None
+                    ),
+                    weather_temperature=(
+                        row["weather_temperature"]
+                        if "weather_temperature" in row.keys()
+                        else None
+                    ),
+                    weather_humidity=(
+                        row["weather_humidity"]
+                        if "weather_humidity" in row.keys()
+                        else None
+                    ),
                 )
             return None
 
