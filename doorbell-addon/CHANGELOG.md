@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.64] - 2025-09-25
+
+### Added
+- **API Documentation:** Enhanced OpenAPI documentation with Swagger UI
+- Interactive API documentation available at `/api/docs`
+- ReDoc documentation available at `/api/redoc`
+- Added `/api-docs` redirect route for easy access
+- Organized API endpoints with proper tags (Events, Persons, Settings, Weather, Camera, System)
+
+### Enhanced
+- Comprehensive endpoint descriptions with parameter details
+- Better API discoverability and usability for developers
+- Interactive API testing through Swagger UI
+- Improved documentation for integration purposes
+
+### Technical
+- Set docs_url to `/api/docs` (always available, not debug-only)
+- Added detailed docstrings for all major API endpoints
+- Proper HTTP method documentation for all routes
+- Enhanced OpenAPI schema generation
+
 ## [1.0.63] - 2025-09-25
 
 ### Fixed

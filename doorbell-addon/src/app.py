@@ -205,11 +205,11 @@ async def options_handler(request: Request, full_path: str):
 async def get_events(limit: int = 50, offset: int = 0, person_id: Optional[int] = None):
     """
     Get doorbell events with pagination and optional filtering.
-    
+
     - **limit**: Maximum number of events to return (default: 50)
-    - **offset**: Number of events to skip for pagination (default: 0)  
+    - **offset**: Number of events to skip for pagination (default: 0)
     - **person_id**: Filter events by specific person ID (optional)
-    
+
     Returns a list of doorbell events with face recognition results, weather data, and AI messages.
     """
     try:
@@ -251,7 +251,7 @@ async def get_events(limit: int = 50, offset: int = 0, person_id: Optional[int] 
 async def get_persons():
     """
     Get all registered persons in the face recognition system.
-    
+
     Returns a list of all persons with their IDs, names, and face count.
     """
     try:
@@ -287,9 +287,9 @@ async def get_persons():
 async def create_person(name: str = Form(...)):
     """
     Create a new person in the face recognition system.
-    
+
     - **name**: The name of the person to create
-    
+
     Returns the created person with their assigned ID.
     """
     try:
@@ -528,9 +528,9 @@ async def capture_frame():
 async def doorbell_ring(ai_message: Optional[str] = Form(None)):
     """
     Handle a doorbell ring event - capture frame and process for face recognition.
-    
+
     - **ai_message**: Optional AI-generated message about the event
-    
+
     This endpoint captures a frame from the doorbell camera, processes it for face recognition,
     captures weather data, and stores the event in the database.
     """
@@ -599,7 +599,7 @@ async def doorbell_ring(ai_message: Optional[str] = Form(None)):
 async def get_settings():
     """
     Get current addon configuration settings.
-    
+
     Returns all configurable settings including camera, weather, and face recognition parameters.
     """
     return {
@@ -619,7 +619,7 @@ async def get_settings():
 async def update_settings(request: Request):
     """
     Update addon configuration settings.
-    
+
     Accepts a JSON payload with settings to update. Settings are automatically saved to persistent storage.
     """
     try:
@@ -690,7 +690,7 @@ async def test_camera_connection(request: Request):
 async def get_available_cameras():
     """
     Get available Home Assistant camera entities for doorbell integration.
-    
+
     Returns a list of camera entities that can be used as doorbell camera sources.
     """
     try:
@@ -709,11 +709,13 @@ async def get_available_cameras():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/weather-entities", tags=["Weather"], summary="Get available weather entities")
+@app.get(
+    "/api/weather-entities", tags=["Weather"], summary="Get available weather entities"
+)
 async def get_available_weather_entities():
     """
     Get available Home Assistant weather entities for integration.
-    
+
     Returns a list of weather entities that can be used to capture weather conditions with doorbell events.
     """
     try:
@@ -757,7 +759,7 @@ async def get_available_weather_entities():
 async def get_statistics():
     """
     Get system statistics and usage information.
-    
+
     Returns statistics about events, storage usage, and system performance.
     """
     try:
@@ -820,7 +822,8 @@ async def gallery(request: Request):
 @app.get("/api-docs", response_class=HTMLResponse)
 async def api_docs_redirect():
     """Redirect to API documentation."""
-    return HTMLResponse("""
+    return HTMLResponse(
+        """
     <!DOCTYPE html>
     <html>
     <head>
@@ -832,7 +835,9 @@ async def api_docs_redirect():
         <p>If you are not redirected automatically, <a href="/api/docs">click here</a>.</p>
     </body>
     </html>
-    """)
+    """
+    )
+
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
