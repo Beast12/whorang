@@ -2,15 +2,15 @@
 build_from:
   aarch64: "ghcr.io/hassio-addons/base/aarch64:18.1.0"
   amd64: "ghcr.io/hassio-addons/base/amd64:18.1.0"
-image: "ghcr.io/beast12/whorang-doorbell-addon:{arch}-1.0.64"
+image: "ghcr.io/beast12/whorang-doorbell-addon:{arch}-1.0.65"
 labels:
-  org.opencontainers.image.title: "doorbell-face-recognition:1.0.64"
+  org.opencontainers.image.title: "doorbell-face-recognition:1.0.65"
   org.opencontainers.image.description: "AI-powered doorbell with face recognition capabilities"
   org.opencontainers.image.source: "https://github.com/Beast12/whorang"
-  org.opencontainers.image.version: "1.0.64"
+  org.opencontainers.image.version: "1.0.65"
   org.opencontainers.image.created: "2024-01-01T00:00:00Z"
   org.opencontainers.image.authors: "Beast12"
   org.opencontainers.image.licenses: "MIT"
 args:
-  DOORBELL_VERSION: "1.0.64"
-  VERSION: "1.0.64"
+  DOORBELL_VERSION: "1.0.65"
+  VERSION: "1.0.65"

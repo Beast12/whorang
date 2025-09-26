@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.65] - 2025-09-26
+
+### Fixed
+- **Critical Bug:** Fixed API documentation "Method Not Allowed" error
+- API docs at /docs and /redoc now work properly through Home Assistant ingress
+- Added middleware bypass for API documentation routes
+- Created custom Swagger UI and ReDoc routes with CDN assets
+- Disabled automatic FastAPI docs generation to prevent conflicts
+
+### Technical
+- Updated IngressAuthMiddleware to skip API docs paths (/docs, /redoc, /openapi.json)
+- Added custom routes using get_swagger_ui_html() and get_redoc_html()
+- Used external CDN links for Swagger UI and ReDoc static assets
+- Fixed syntax errors in route definitions
+
 ## [1.0.64] - 2025-09-25
 
 ### Added
