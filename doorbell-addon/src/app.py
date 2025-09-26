@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
@@ -46,6 +47,10 @@ class IngressAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to handle Home Assistant ingress authentication."""
 
     async def dispatch(self, request: Request, call_next):
+        # Skip middleware for API documentation routes and their static assets
+        if request.url.path.startswith(("/api/docs", "/api/redoc", "/api/openapi.json", "/docs", "/redoc", "/openapi.json")):
+            return await call_next(request)
+            
         # For ingress, we need to trust the proxy headers
         # Home Assistant ingress handles authentication at the proxy level
 
@@ -108,9 +113,9 @@ app = FastAPI(
     title="Doorbell Face Recognition API",
     description="AI-powered doorbell with face recognition capabilities. This API provides endpoints for managing doorbell events, face recognition, weather integration, and system configuration.",
     version=settings.app_version,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url=None,  # Disable automatic docs
+    redoc_url=None,  # Disable automatic redoc
+    openapi_url="/openapi.json",
 )
 
 # Add ingress authentication middleware
@@ -819,24 +824,42 @@ async def gallery(request: Request):
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    """Custom Swagger UI that works with ingress."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    """Custom ReDoc that works with ingress."""
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.1.0/bundles/redoc.standalone.js",
+    )
+
 @app.get("/api-docs", response_class=HTMLResponse)
 async def api_docs_redirect():
     """Redirect to API documentation."""
-    return HTMLResponse(
-        """
+    return HTMLResponse("""
     <!DOCTYPE html>
     <html>
     <head>
         <title>API Documentation - Doorbell Face Recognition</title>
-        <meta http-equiv="refresh" content="0; url=/api/docs">
+        <meta http-equiv="refresh" content="0; url=/docs">
     </head>
     <body>
         <p>Redirecting to API documentation...</p>
-        <p>If you are not redirected automatically, <a href="/api/docs">click here</a>.</p>
+        <p>If you are not redirected automatically, <a href="/docs">click here</a>.</p>
     </body>
     </html>
-    """
-    )
+    """)
 
 
 @app.get("/settings", response_class=HTMLResponse)
