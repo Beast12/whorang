@@ -10,10 +10,10 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
@@ -48,9 +48,18 @@ class IngressAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Skip middleware for API documentation routes and their static assets
-        if request.url.path.startswith(("/api/docs", "/api/redoc", "/api/openapi.json", "/docs", "/redoc", "/openapi.json")):
+        if request.url.path.startswith(
+            (
+                "/api/docs",
+                "/api/redoc",
+                "/api/openapi.json",
+                "/docs",
+                "/redoc",
+                "/openapi.json",
+            )
+        ):
             return await call_next(request)
-            
+
         # For ingress, we need to trust the proxy headers
         # Home Assistant ingress handles authentication at the proxy level
 
@@ -111,7 +120,11 @@ except ImportError as e:
 # Initialize FastAPI app
 app = FastAPI(
     title="Doorbell Face Recognition API",
-    description="AI-powered doorbell with face recognition capabilities. This API provides endpoints for managing doorbell events, face recognition, weather integration, and system configuration.",
+    description=(
+        "AI-powered doorbell with face recognition capabilities. "
+        "This API provides endpoints for managing doorbell events, "
+        "face recognition, weather integration, and system configuration."
+    ),
     version=settings.app_version,
     docs_url=None,  # Disable automatic docs
     redoc_url=None,  # Disable automatic redoc
@@ -835,6 +848,7 @@ async def custom_swagger_ui_html():
         swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
     )
 
+
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     """Custom ReDoc that works with ingress."""
@@ -844,10 +858,12 @@ async def redoc_html():
         redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.1.0/bundles/redoc.standalone.js",
     )
 
+
 @app.get("/api-docs", response_class=HTMLResponse)
 async def api_docs_redirect():
     """Redirect to API documentation."""
-    return HTMLResponse("""
+    return HTMLResponse(
+        """
     <!DOCTYPE html>
     <html>
     <head>
@@ -859,7 +875,8 @@ async def api_docs_redirect():
         <p>If you are not redirected automatically, <a href="/docs">click here</a>.</p>
     </body>
     </html>
-    """)
+    """
+    )
 
 
 @app.get("/settings", response_class=HTMLResponse)

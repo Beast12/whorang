@@ -319,7 +319,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
-                   (image_path, person_id, confidence, is_known, processed, ai_message, 
+                   (image_path, person_id, confidence, is_known, processed, ai_message,
                     weather_condition, weather_temperature, weather_humidity)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
