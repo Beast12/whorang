@@ -48,15 +48,17 @@ class IngressAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Skip middleware for API documentation routes and their static assets
-        if request.url.path.startswith(
-            (
-                "/api/docs",
-                "/api/redoc",
-                "/api/openapi.json",
-                "/docs",
-                "/redoc",
-                "/openapi.json",
-            )
+        api_docs_paths = (
+            "/api/docs",
+            "/api/redoc",
+            "/api/openapi.json",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        )
+        if (
+            request.url.path.startswith(api_docs_paths)
+            or request.url.path in api_docs_paths
         ):
             return await call_next(request)
 
@@ -835,6 +837,12 @@ async def gallery(request: Request):
             f"Gallery template exists: {os.path.exists(os.path.join(template_dir, 'gallery.html'))}"
         )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def get_openapi_schema():
+    """Get OpenAPI schema - custom route to ensure it works with ingress."""
+    return app.openapi()
 
 
 @app.get("/docs", include_in_schema=False)

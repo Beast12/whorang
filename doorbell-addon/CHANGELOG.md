@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.66] - 2025-09-26
+
+### Fixed
+- **Critical Bug:** Fixed OpenAPI schema "Not Found" error for /openapi.json
+- Added explicit /openapi.json route handler to ensure proper schema serving
+- Enhanced middleware bypass logic for API documentation routes
+- API documentation now fully functional through Home Assistant ingress
+
+### Technical
+- Added custom get_openapi_schema() route handler
+- Improved IngressAuthMiddleware path matching for API docs
+- Enhanced route exclusion logic for better compatibility
+- All linting checks pass (mypy, flake8, black, isort)
+
 ## [1.0.65] - 2025-09-26
 
 ### Fixed
