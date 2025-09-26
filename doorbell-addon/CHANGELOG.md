@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.67] - 2025-09-26
+
+### Fixed
+- **FINAL FIX:** Replaced complex Swagger UI with simple, working HTML API documentation
+- Removed dependency on OpenAPI schema generation that doesn't work with ingress
+- Created comprehensive, static API documentation page at /docs
+- Eliminated all FastAPI automatic documentation features causing issues
+
+### Technical
+- Removed unused imports (get_swagger_ui_html, get_redoc_html)
+- Created custom HTML documentation with all endpoints listed
+- Simple, reliable solution that works in all environments
+- Clean, professional styling with endpoint categorization
+
+### API Documentation Features
+- Complete endpoint listing with HTTP methods and descriptions
+- Organized by categories: System, Events, Persons, Settings, Weather, Images, Web Interface
+- Professional styling with color-coded HTTP methods
+- No external dependencies - works offline and through any proxy
+
 ## [1.0.66] - 2025-09-26
 
 ### Fixed

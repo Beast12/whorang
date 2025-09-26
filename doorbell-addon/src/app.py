@@ -10,7 +10,6 @@ import structlog
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -837,34 +836,6 @@ async def gallery(request: Request):
             f"Gallery template exists: {os.path.exists(os.path.join(template_dir, 'gallery.html'))}"
         )
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
-
-
-@app.get("/openapi.json", include_in_schema=False)
-async def get_openapi_schema():
-    """Get OpenAPI schema - custom route to ensure it works with ingress."""
-    return app.openapi()
-
-
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    """Custom Swagger UI that works with ingress."""
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",
-        title=app.title + " - Swagger UI",
-        oauth2_redirect_url="/docs/oauth2-redirect",
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
-    )
-
-
-@app.get("/redoc", include_in_schema=False)
-async def redoc_html():
-    """Custom ReDoc that works with ingress."""
-    return get_redoc_html(
-        openapi_url="/openapi.json",
-        title=app.title + " - ReDoc",
-        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2.1.0/bundles/redoc.standalone.js",
-    )
 
 
 @app.get("/api-docs", response_class=HTMLResponse)
