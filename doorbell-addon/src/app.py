@@ -838,6 +838,141 @@ async def gallery(request: Request):
         raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
+@app.api_route(
+    "/docs",
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    response_class=HTMLResponse,
+)
+async def api_documentation():
+    """Simple API documentation page that actually works."""
+    return HTMLResponse(
+        """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Doorbell Face Recognition API Documentation</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+            h2 { color: #34495e; margin-top: 30px; }
+            .endpoint { background: #ecf0f1; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #3498db; }
+            .method { display: inline-block; padding: 4px 8px; border-radius: 3px; color: white; font-weight: bold; margin-right: 10px; }
+            .get { background: #27ae60; }
+            .post { background: #e74c3c; }
+            .put { background: #f39c12; }
+            .delete { background: #e67e22; }
+            code { background: #f8f9fa; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; }
+            .description { margin-top: 8px; color: #7f8c8d; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚪 Doorbell Face Recognition API</h1>
+            <p>AI-powered doorbell with face recognition capabilities. This API provides endpoints for managing doorbell events, face recognition, weather integration, and system configuration.</p>
+            
+            <h2>📊 System Endpoints</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/health</code>
+                <div class="description">Health check endpoint for monitoring system status</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/stats</code>
+                <div class="description">Get system statistics including event counts and storage usage</div>
+            </div>
+            
+            <h2>🎯 Event Management</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/events</code>
+                <div class="description">Get doorbell events with pagination. Parameters: limit, offset, person_id</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/doorbell/ring</code>
+                <div class="description">Handle doorbell ring event - capture frame and process for face recognition</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/events/{event_id}/label</code>
+                <div class="description">Label an event with a person ID</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/events/delete</code>
+                <div class="description">Delete multiple events by their IDs</div>
+            </div>
+            
+            <h2>👥 Person Management</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/persons</code>
+                <div class="description">Get all registered persons in the face recognition system</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/persons</code>
+                <div class="description">Create a new person. Form data: name</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/persons/{person_id}/faces</code>
+                <div class="description">Add face image to a person. Form data: image file</div>
+            </div>
+            
+            <h2>⚙️ Settings & Configuration</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/settings</code>
+                <div class="description">Get current addon configuration settings</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/settings</code>
+                <div class="description">Update addon settings. JSON payload with configuration options</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/cameras</code>
+                <div class="description">Get available Home Assistant camera entities</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/camera/test</code>
+                <div class="description">Test camera connection</div>
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span><code>/api/camera/capture</code>
+                <div class="description">Manually capture a frame from the camera</div>
+            </div>
+            
+            <h2>🌤️ Weather Integration</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/weather-entities</code>
+                <div class="description">Get available Home Assistant weather entities for integration</div>
+            </div>
+            
+            <h2>🖼️ Image Access</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/api/images/{image_name}</code>
+                <div class="description">Serve image files from the doorbell events</div>
+            </div>
+            
+            <h2>📱 Web Interface</h2>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/</code>
+                <div class="description">Main dashboard page with recent events</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/gallery</code>
+                <div class="description">Image gallery page with event filtering</div>
+            </div>
+            <div class="endpoint">
+                <span class="method get">GET</span><code>/settings</code>
+                <div class="description">Settings configuration page</div>
+            </div>
+            
+            <p style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ecf0f1; color: #7f8c8d;">
+                <strong>Version:</strong> 1.0.67 | 
+                <strong>Base URL:</strong> Your Home Assistant addon URL | 
+                <strong>Authentication:</strong> Handled by Home Assistant ingress
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    )
+
+
 @app.get("/api-docs", response_class=HTMLResponse)
 async def api_docs_redirect():
     """Redirect to API documentation."""
