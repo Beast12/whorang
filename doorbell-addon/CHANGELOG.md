@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.68] - 2025-10-03
+
+### Fixed
+- **CRITICAL HOTFIX:** Fixed persistent "Method Not Allowed" error for /docs endpoint
+- Changed from @app.get() to @app.api_route() with multiple HTTP methods support
+- Added support for GET, POST, PUT, DELETE, OPTIONS methods for ingress compatibility
+- Resolved Home Assistant ingress proxy routing incompatibility
+
+### Technical
+- Used @app.api_route("/docs", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+- Maintained simple HTML documentation approach
+- Fixed ingress routing issues that caused 405 errors
+- Future-proof solution for any HTTP method the proxy might send
+
 ## [1.0.67] - 2025-09-26
 
 ### Fixed
