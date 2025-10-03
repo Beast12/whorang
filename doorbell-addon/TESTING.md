@@ -117,7 +117,7 @@ The addon logs will show:
 
 ### Successful Startup
 ```
-Face recognition capabilities loaded2025-10-03 14:42:00 [info     ] Starting Doorbell Face Recognition addon version=1.0.68...
+Face recognition capabilities loaded2025-10-03 15:39:00 [info     ] Starting Doorbell Face Recognition addon version=1.0.69...
 Directory ensured path=/share/doorbell
 Loaded X known face encodings
 ```

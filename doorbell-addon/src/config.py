@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.68"
+    app_version: ClassVar[str] = "1.0.69"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -74,6 +74,7 @@ class Settings(BaseSettings):
                 "camera_entity": self.camera_entity,
                 "face_confidence_threshold": self.face_confidence_threshold,
                 "ha_access_token": self.ha_access_token,
+                "weather_entity": self.weather_entity,
             }
 
             with open(self.config_file_path, "w") as f:
@@ -99,6 +100,8 @@ class Settings(BaseSettings):
                     ]
                 if "ha_access_token" in config_data:
                     self.ha_access_token = config_data["ha_access_token"]
+                if "weather_entity" in config_data:
+                    self.weather_entity = config_data["weather_entity"]
         except Exception as e:
             print(f"Error loading settings: {e}")
 

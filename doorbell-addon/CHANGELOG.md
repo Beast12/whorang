@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.69] - 2025-10-03
+
+### Fixed
+- **Weather Integration Bug:** Fixed weather entity not being saved to persistent storage
+- **Settings API Bug:** Added missing weather_entity handling in /api/settings endpoint
+- **Configuration Persistence:** Weather entity selection now properly persists across addon restarts
+
+### Technical
+- Added weather_entity to save_to_file() method in config.py
+- Added weather_entity to load_from_file() method in config.py
+- Added weather_entity handling in POST /api/settings endpoint
+- Added weather_entity to GET /api/settings response
+- Enhanced logging for weather entity updates
+
+### User Impact
+- Weather entity selection now saves properly in settings
+- Weather data should now appear in doorbell events
+- Settings page weather dropdown will retain selected value
+- Weather integration fully functional
+
 ## [1.0.68] - 2025-10-03
 
 ### Fixed

@@ -628,6 +628,7 @@ async def get_settings():
         "retention_days": settings.retention_days,
         "face_confidence_threshold": settings.face_confidence_threshold,
         "notification_webhook": settings.notification_webhook,
+        "weather_entity": settings.weather_entity,
         "database_encryption": settings.database_encryption,
         "ha_access_token": settings.ha_access_token,
         "app_version": settings.app_version,
@@ -654,6 +655,12 @@ async def update_settings(request: Request):
             logger.info("Home Assistant access token updated via settings")
         if "confidence_threshold" in data:
             settings.face_confidence_threshold = data["confidence_threshold"]
+        if "weather_entity" in data:
+            settings.weather_entity = data["weather_entity"]
+            logger.info(
+                "Weather entity updated via settings",
+                weather_entity=settings.weather_entity,
+            )
 
         # Save settings to file for persistence
         settings.save_to_file()

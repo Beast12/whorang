@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.68-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.69-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
