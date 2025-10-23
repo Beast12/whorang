@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.71] - 2025-10-23
+
+### Added
+- **Dashboard Cards Clickable:** All dashboard stat cards now navigate to relevant pages
+  - Total Events → Gallery (all events)
+  - Known Faces → Gallery (filtered to known faces)
+  - Unknown Faces → Gallery (filtered to unknown faces)
+  - Registered People → New People management page
+- **People Management Page:** Comprehensive CRUD interface for managing registered people
+  - View all registered people with face encoding counts
+  - Add new people with modal dialog
+  - Rename existing people
+  - Delete people with confirmation (cascade deletes face encodings)
+  - Add face images to people
+  - View events for specific people
+- **Gallery URL Filtering:** Auto-apply filters based on URL parameters (?filter=known/unknown)
+- **Navigation Menu:** Added "People" link to main navigation
+
+### Technical
+- Added `/people` page route with full template
+- Added `PUT /api/persons/{person_id}` endpoint for updating person names
+- Added `DELETE /api/persons/{person_id}` endpoint for deleting persons
+- Added `update_person_name()` and `delete_person()` methods to DatabaseManager
+- Modified `GET /api/persons` to return array directly (instead of wrapped object)
+- Enhanced gallery.html with URL parameter handling on page load
+- Improved error handling for duplicate person names in update operations
+
+### User Impact
+- Better navigation and discoverability of features
+- Quick access to filtered event views from dashboard
+- Full people management without needing to use API directly
+- Cleaner interface for managing face recognition database
+- One-click access to person-specific events
+
 ## [1.0.70] - 2025-10-23
 
 ### Fixed

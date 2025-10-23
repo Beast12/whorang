@@ -296,7 +296,7 @@ async def get_persons():
                 }
             )
 
-        return {"persons": persons_data}
+        return persons_data
 
     except Exception as e:
         logger.error("Error getting persons", error=str(e))
@@ -410,6 +410,65 @@ async def add_face_to_person(
             error=str(e),
         )
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/persons/{person_id}")
+async def update_person(person_id: int, name: str = Form(...)):
+    """Update a person's name."""
+    try:
+        person = db.get_person(person_id)
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
+
+        # Sanitize name
+        name = sanitize_filename(name.strip())
+        if not name:
+            raise HTTPException(status_code=400, detail="Name cannot be empty")
+
+        # Update person name in database
+        db.update_person_name(person_id, name)
+
+        return {
+            "message": f"Person updated successfully",
+            "id": person_id,
+            "name": name,
+        }
+
+    except sqlite3.IntegrityError as e:
+        logger.error("Person name already exists", name=name, error=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=f"A person with the name '{name}' already exists. Please use a different name.",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error updating person", person_id=person_id, error=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update person: {str(e)}"
+        )
+
+
+@app.delete("/api/persons/{person_id}")
+async def delete_person(person_id: int):
+    """Delete a person and all their face encodings."""
+    try:
+        person = db.get_person(person_id)
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
+
+        # Delete person from database (cascade will delete face encodings)
+        db.delete_person(person_id)
+
+        return {"message": f"Person '{person.name}' deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error deleting person", person_id=person_id, error=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete person: {str(e)}"
+        )
 
 
 @app.post("/api/events/delete")
@@ -1009,6 +1068,21 @@ async def api_docs_redirect():
     </html>
     """
     )
+
+
+@app.get("/people", response_class=HTMLResponse)
+async def people_page(request: Request):
+    """People management page."""
+    logger.info("People page requested")
+
+    try:
+        persons = db.get_all_persons()
+        return templates.TemplateResponse(
+            "people.html", {"request": request, "persons": persons}
+        )
+    except Exception as e:
+        logger.error(f"Template error for people: {e}")
+        raise HTTPException(status_code=500, detail=f"Template error: {str(e)}")
 
 
 @app.get("/settings", response_class=HTMLResponse)

@@ -214,6 +214,23 @@ let currentEventId = null;
 let currentOffset = {{ events|length }};
 let isLoading = false;
 
+// Check URL parameters on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filter = urlParams.get('filter');
+    
+    if (filter) {
+        filterEvents(filter);
+        // Highlight the active button
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.textContent.toLowerCase().includes(filter)) {
+                btn.classList.add('active');
+            }
+        });
+    }
+});
+
 // Filter functions
 function filterEvents(type) {
     const items = document.querySelectorAll('.event-item');

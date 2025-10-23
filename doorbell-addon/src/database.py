@@ -245,6 +245,21 @@ class DatabaseManager:
                 for row in rows
             ]
 
+    def update_person_name(self, person_id: int, new_name: str) -> None:
+        """Update a person's name."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE persons SET name = ?, updated_at = ? WHERE id = ?",
+                (new_name, datetime.now().isoformat(), person_id),
+            )
+            conn.commit()
+
+    def delete_person(self, person_id: int) -> None:
+        """Delete a person and all their face encodings (cascade)."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM persons WHERE id = ?", (person_id,))
+            conn.commit()
+
     def add_face_encoding(
         self, person_id: int, encoding: np.ndarray, confidence: float = 0.0
     ) -> FaceEncoding:
