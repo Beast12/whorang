@@ -418,7 +418,8 @@ async function submitLabel() {
                 const person = await personResponse.json();
                 finalPersonId = person.id;
             } else {
-                throw new Error('Failed to create new person');
+                const errorData = await personResponse.json();
+                throw new Error(errorData.detail || 'Failed to create new person');
             }
         }
         

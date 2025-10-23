@@ -1,6 +1,7 @@
 """Main FastAPI application for the doorbell face recognition addon."""
 
 import os
+import sqlite3
 from datetime import datetime
 from typing import Optional
 
@@ -326,9 +327,19 @@ async def create_person(name: str = Form(...)):
             "created_at": person.created_at.isoformat() if person.created_at else None,
         }
 
+    except sqlite3.IntegrityError as e:
+        logger.error("Person already exists", name=name, error=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=f"A person with the name '{name}' already exists. Please use a different name.",
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error creating person", name=name, error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create person: {str(e)}"
+        )
 
 
 @app.post("/api/persons/{person_id}/faces")
