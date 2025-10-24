@@ -28,6 +28,20 @@ AI-powered doorbell with face recognition capabilities for Home Assistant. This 
 - Minimum 2GB RAM (4GB recommended for face recognition)
 - 10GB free storage space
 
+## 📸 Screenshots
+
+### Dashboard
+![Dashboard](dashboard.png)
+*View recent events, statistics, and quick access to all features*
+
+### Gallery
+![Gallery](gallery.png)
+*Browse all doorbell events with filtering and search capabilities*
+
+### Settings
+![Settings](settings.png)
+*Configure camera, face recognition, and integration settings*
+
 ## 🚀 Quick Start
 
 ### 1. Installation
@@ -52,10 +66,21 @@ Then restart Home Assistant and find the add-on under **Local Add-ons**.
 
 ### 2. Configuration
 
-Configure the add-on with your camera settings:
+Configure the add-on with your camera settings. You must provide **either** `camera_entity` **OR** `camera_url`:
 
+**Option A: Using Home Assistant Camera Entity (Recommended)**
 ```yaml
-camera_entity: "camera.your_doorbell_camera"  # Or use camera_url for RTSP
+camera_entity: "camera.your_doorbell_camera"
+storage_path: "/share/doorbell"
+retention_days: 30
+face_confidence_threshold: 0.6
+notification_webhook: ""
+database_encryption: false
+ha_access_token: ""
+```
+
+**Option B: Using Direct RTSP/HTTP URL**
+```yaml
 camera_url: "rtsp://192.168.1.100:554/stream"
 storage_path: "/share/doorbell"
 retention_days: 30
@@ -66,15 +91,18 @@ database_encryption: false
 
 **Configuration Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `camera_entity` | string | "" | Home Assistant camera entity ID |
-| `camera_url` | string | Required | RTSP or HTTP URL of your doorbell camera |
-| `storage_path` | string | `/share/doorbell` | Path to store images and database |
-| `retention_days` | integer | 30 | Days to keep events (1-365) |
-| `face_confidence_threshold` | float | 0.6 | Confidence threshold for face recognition (0.1-1.0) |
-| `notification_webhook` | string | "" | Optional webhook URL for external notifications |
-| `database_encryption` | boolean | false | Enable database encryption for face data |
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `camera_entity` | string | Either this OR camera_url | "" | Home Assistant camera entity ID (e.g., `camera.doorbell`) |
+| `camera_url` | string | Either this OR camera_entity | `rtsp://192.168.1.100:554/stream` | Direct RTSP or HTTP URL of your camera |
+| `storage_path` | string | No | `/share/doorbell` | Path to store images and database |
+| `retention_days` | integer | No | 30 | Days to keep events (1-365) |
+| `face_confidence_threshold` | float | No | 0.6 | Confidence threshold for face recognition (0.1-1.0) |
+| `notification_webhook` | string | No | "" | Webhook URL for external notifications |
+| `database_encryption` | boolean | No | false | Enable database encryption for face data |
+| `ha_access_token` | string | No | "" | Long-lived access token (only needed if camera_entity is used) |
+
+> **Note:** If using `camera_entity`, the addon will use Home Assistant's camera proxy. If using `camera_url`, it connects directly to the camera stream.
 
 ### 3. Setup Home Assistant Integration
 
