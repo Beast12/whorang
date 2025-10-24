@@ -59,7 +59,9 @@ class HomeAssistantAPI:
                     )
                     logger.info("Fallback persistent notification sent")
             except Exception as fallback_error:
-                logger.error("Fallback notification also failed", error=str(fallback_error))
+                logger.error(
+                    "Fallback notification also failed", error=str(fallback_error)
+                )
 
     async def update_sensor(
         self, entity_id: str, state: Any, attributes: Optional[Dict] = None
@@ -210,10 +212,10 @@ class NotificationManager:
         """Send notification to external webhook (supports Gotify and generic webhooks)."""
         if not settings.notification_webhook:
             return
-            
+
         try:
             webhook_url = settings.notification_webhook
-            
+
             # Check if it's a Gotify webhook (contains /message)
             if "/message" in webhook_url:
                 # Gotify format
@@ -222,33 +224,29 @@ class NotificationManager:
                     "message": data.get("message", "Face detected at the door"),
                     "priority": data.get("priority", 5),
                     "extras": {
-                        "client::display": {
-                            "contentType": "text/markdown"
-                        },
-                        "doorbell": data
-                    }
+                        "client::display": {"contentType": "text/markdown"},
+                        "doorbell": data,
+                    },
                 }
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
-                        webhook_url, 
-                        json=gotify_payload, 
-                        timeout=10.0
+                        webhook_url, json=gotify_payload, timeout=10.0
                     )
                     response.raise_for_status()
                     logger.info("Gotify notification sent successfully")
             else:
                 # Generic webhook format
                 async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        webhook_url, 
-                        json=data, 
-                        timeout=10.0
-                    )
+                    response = await client.post(webhook_url, json=data, timeout=10.0)
                     response.raise_for_status()
                     logger.info("Webhook notification sent successfully")
-                    
+
         except Exception as e:
-            logger.error("Failed to send webhook notification", error=str(e), webhook_url=webhook_url)
+            logger.error(
+                "Failed to send webhook notification",
+                error=str(e),
+                webhook_url=webhook_url,
+            )
 
 
 def ensure_directories():

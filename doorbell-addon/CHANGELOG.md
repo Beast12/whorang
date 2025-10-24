@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.77] - 2025-10-24
+
+### Fixed
+- **Test Notifications Button:** Now properly tests notifications via /api/notifications/test endpoint
+- **Webhook URL Field:** Removed readonly attribute - users can now edit and save webhook URL
+- **Home Assistant Notifications:** Now use proper notify.notify service instead of persistent_notification
+- **Notification Fallback:** Added fallback to persistent_notification if notify service fails
+
+### Added
+- **Gotify Support:** Automatic detection and proper formatting for Gotify webhook notifications
+- **Test Notification Endpoint:** POST /api/notifications/test for testing all notification channels
+- **Webhook URL Persistence:** notification_webhook now saved to and loaded from config file
+- **Save Webhook Button:** New button in settings to save webhook URL
+- **Gotify Format Detection:** Automatically detects Gotify URLs (containing /message) and formats properly
+
+### Changed
+- **HA Notification Service:** Changed from persistent_notification/create to notify.notify (standard service)
+- **Webhook Notifications:** Enhanced to support both Gotify format and generic webhooks
+- **Gotify Payload:** Properly formatted with title, message, priority, and extras containing all event data
+- **Settings UI:** Added helpful placeholder text showing Gotify URL format example
+- **Config Persistence:** notification_webhook included in save_to_file() and load_from_file()
+
+### Technical Implementation
+- Updated HomeAssistantAPI.send_notification() to use notify.notify service with fallback
+- Enhanced _send_webhook_notification() with Gotify detection and formatting
+- Added notification_webhook to config.py persistence methods
+- Created /api/notifications/test endpoint in app.py
+- Updated settings.html with saveWebhookUrl() JavaScript function
+- Added notification_webhook to /api/settings POST endpoint
+
+### User Impact
+- Users can now properly configure and test notifications from settings page
+- Gotify users receive properly formatted notifications with all metadata
+- Home Assistant notifications work with all notification platforms (mobile_app, telegram, etc.)
+- Test button actually sends test notifications to verify setup is working
+- Webhook URL persists across addon restarts
+
 ## [1.0.76] - 2025-10-24
 
 ### Fixed
