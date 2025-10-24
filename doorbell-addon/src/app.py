@@ -1078,7 +1078,8 @@ async def people_page(request: Request):
     try:
         persons = db.get_all_persons()
         return templates.TemplateResponse(
-            "people.html", {"request": request, "persons": persons}
+            "people.html",
+            {"request": request, "persons": persons, "settings": settings},
         )
     except Exception as e:
         logger.error(f"Template error for people: {e}")

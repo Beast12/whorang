@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.73] - 2025-10-24
+
+### Fixed
+- **People Page 500 Error:** Fixed Internal Server Error when accessing /people page
+- **Template Context:** Added missing settings object to people page template context
+- Base template requires settings.app_version for footer display
+
+### Technical
+- Updated people_page() route to include settings in template context
+- Ensures all pages have consistent template variables
+- Prevents template rendering errors from missing context variables
+
+### User Impact
+- People management page now loads correctly without 500 errors
+- Can access and manage registered people through the web interface
+- Consistent footer display across all pages
+
 ## [1.0.72] - 2025-10-24
 
 ### Fixed
