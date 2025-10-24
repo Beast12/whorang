@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.74] - 2025-10-24
+
+### Added
+- **Comprehensive Setup Documentation:** Complete step-by-step integration guide in README
+- **REST Command Configuration:** Clear instructions for adding doorbell_ring REST command
+- **Two Automation Options:** Simple and advanced automation examples with placeholders
+- **Placeholder Replacement Guide:** Helpful table showing how to find and replace all entities
+- **Troubleshooting Section:** Common issues and solutions for integration setup
+- **Support Section:** Added Buy Me a Coffee support links and QR code
+
+### Improved
+- **User-Friendly Documentation:** Restructured README for non-technical users
+- **Clear Step Numbering:** Easy-to-follow numbered steps for setup process
+- **Inline Comments:** Added explanatory comments to automation examples
+- **Entity Discovery Guide:** Instructions on how to find device IDs, entities, and URLs
+
+### Technical
+- Removed all personal data from automation examples
+- Used generic placeholders for all user-specific configuration
+- Added note about addon slug varying between installations
+- Included proper REST command timeout configuration
+
+### User Impact
+- Non-technical users can now easily set up the addon
+- Clear path from installation to working face recognition
+- Reduced support requests with comprehensive troubleshooting
+- Community can support development via Buy Me a Coffee
+
 ## [1.0.73] - 2025-10-24
 
 ### Fixed

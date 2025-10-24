@@ -1,6 +1,6 @@
 # Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.73-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.74-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 
@@ -97,35 +97,88 @@ database_encryption: false
 
 ### Doorbell Integration Setup
 
-This add-on uses **event-driven face recognition** - it only processes images when your doorbell is pressed, not continuously. You need to create a Home Assistant automation that captures an image and sends it to the addon for face recognition.
+This add-on uses **event-driven face recognition** - it only processes images when your doorbell is pressed, not continuously. Follow these steps to integrate it with your Home Assistant setup:
 
-Here's a comprehensive automation that includes AI-generated descriptions, notifications, and face recognition:
+#### Step 1: Add REST Command to Configuration
+
+Add this REST command to your Home Assistant `configuration.yaml` file. This allows automations to send doorbell events to the face recognition addon.
 
 ```yaml
-alias: Smart Doorbell Notification with AI + Face Recognition
-description: Send notification with AI-generated message and process face recognition
+rest_command:
+  doorbell_ring:
+    url: "http://d4f73725-doorbell-face-recognition:8099/api/doorbell/ring"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    payload: >-
+      ai_message={{ ai_message | urlencode }}&ai_title={{ ai_title | urlencode }}&image_path={{ image_path | urlencode }}&image_url={{ image_url | urlencode }}
+    timeout: 30
+```
+
+> **Note:** The URL `http://d4f73725-doorbell-face-recognition:8099` is the internal Home Assistant addon address. The slug `d4f73725-doorbell-face-recognition` may vary - check your addon details page for the exact address.
+
+After adding this, **restart Home Assistant** to load the REST command.
+
+#### Step 2: Create Doorbell Automation
+
+Create an automation that triggers when your doorbell is pressed. This example includes AI-powered descriptions, mobile notifications, TTS announcements, and face recognition.
+
+**Option A: Simple Automation (Face Recognition Only)**
+
+If you just want face recognition without AI descriptions:
+
+```yaml
+alias: Simple Doorbell Face Recognition
+description: Trigger face recognition when doorbell is pressed
 triggers:
-  - entity_id: binary_sensor.your_doorbell_button  # Replace with your doorbell entity
+  - entity_id: binary_sensor.your_doorbell_button
     from: "off"
     to: "on"
     trigger: state
 actions:
   - target:
-      entity_id: camera.your_doorbell_camera  # Replace with your camera entity
+      entity_id: camera.your_doorbell_camera
     data:
       filename: "{{ snapshot_path }}"
     action: camera.snapshot
+  - action: rest_command.doorbell_ring
+    data:
+      ai_message: "Doorbell pressed"
+      ai_title: "Visitor at the door"
+      image_path: "{{ snapshot_path }}"
+      image_url: "{{ snapshot_url }}"
+variables:
+  timestamp: "{{ now().timestamp() | int }}"
+  snapshot_path: /config/www/doorbell_snapshot_{{ timestamp }}.jpg
+  snapshot_url: https://your-home-assistant-url.com/local/doorbell_snapshot_{{ timestamp }}.jpg
+```
+
+**Option B: Advanced Automation (AI + Face Recognition + Notifications)**
+
+Full-featured automation with AI-generated descriptions, notifications, and face recognition:
+
+```yaml
+alias: Smart Doorbell Notification with AI
+description: Send notification with AI-generated message when doorbell is pressed
+triggers:
+  - entity_id: binary_sensor.your_doorbell_button
+    from: "off"
+    to: "on"
+    trigger: state
+actions:
+  # 1. Capture snapshot from doorbell camera
+  - target:
+      entity_id: camera.your_doorbell_camera
+    data:
+      filename: "{{ snapshot_path }}"
+    action: camera.snapshot
+  
+  # 2. Play doorbell sound on speakers (optional)
   - target:
       device_id:
-        - your_device_id_1  # Replace with your device IDs for doorbell sound
-        - your_device_id_2
-        - your_device_id_3
-        - your_device_id_4
-        - your_device_id_5
-        - your_device_id_6
-        - your_device_id_7
-        - your_device_id_8
-        - your_device_id_9
+        - device_id_speaker_1
+        - device_id_speaker_2
+        - device_id_speaker_3
     data:
       media:
         media_content_id: /local/sounds/doorbell.mp3
@@ -133,6 +186,8 @@ actions:
         metadata: {}
     action: media_player.play_media
     enabled: true
+  
+  # 3. Generate AI description of who's at the door (requires LLM Vision integration)
   - data:
       remember: false
       use_memory: false
@@ -142,7 +197,7 @@ actions:
       temperature: 0.2
       generate_title: true
       expose_images: true
-      provider: your_llm_provider_id  # Replace with your LLM provider ID
+      provider: your_llm_provider_id
       message: >-
         You are my sarcastic funny security guard. Describe what you see. Don't
         mention trees, bushes, grass, landscape, driveway, light fixtures, yard,
@@ -150,11 +205,15 @@ actions:
         short in one funny one liner of max 10 words. Only describe the person,
         vehicle or the animal.
       image_file: "{{ snapshot_path }}"
-      model: gpt-4o-mini  # Replace with your preferred AI model
+      model: gpt-4o-mini
     response_variable: ai_description
     action: llmvision.image_analyzer
+  
+  # 4. Send notifications and process face recognition in parallel
   - parallel:
-      - data:
+      # Send mobile notification to first phone
+      - action: notify.mobile_app_phone_1
+        data:
           message: "{{ ai_description.response_text }}"
           title: "{{ ai_description.title }}"
           data:
@@ -171,8 +230,10 @@ actions:
                 uri: /dashboard-home/cameras
               - action: DISMISS
                 title: ❌ Close
-        action: notify.mobile_app_your_phone_1  # Replace with your notification service
-      - data:
+      
+      # Send mobile notification to second phone
+      - action: notify.mobile_app_phone_2
+        data:
           message: "{{ ai_description.response_text }}"
           title: "{{ ai_description.title }}"
           data:
@@ -189,35 +250,41 @@ actions:
                 uri: /dashboard-home/cameras
               - action: DISMISS
                 title: ❌ Close
-        action: notify.mobile_app_your_phone_2  # Replace with second notification service
         enabled: true
-      # Send to doorbell addon for face recognition
+      
+      # Send to face recognition addon
       - action: rest_command.doorbell_ring
         data:
           ai_message: "{{ ai_description.response_text }}"
           ai_title: "{{ ai_description.title }}"
           image_path: "{{ snapshot_path }}"
           image_url: "{{ snapshot_url }}"
+      
+      # Announce via TTS on display 1
       - data:
-          media_player_entity_id: media_player.your_display_1  # Replace with your media players
+          media_player_entity_id: media_player.kitchen_display
           message: "{{ ai_description.response_text }}"
           cache: true
         action: tts.speak
         target:
           entity_id: tts.google_translate_en_com
         enabled: true
+      
+      # Announce via TTS on display 2
       - data:
-          media_player_entity_id: media_player.your_display_2  # Replace with your media players
+          media_player_entity_id: media_player.office_display
           message: "{{ ai_description.response_text }}"
           cache: true
         action: tts.speak
         target:
           entity_id: tts.google_translate_en_com
         enabled: true
+  
+  # 5. Show snapshot on displays
   - target:
       device_id:
-        - your_display_device_id_1  # Replace with your display device IDs
-        - your_display_device_id_2
+        - device_id_display_1
+        - device_id_display_2
     data:
       media:
         media_content_id: "{{ snapshot_url }}"
@@ -225,45 +292,54 @@ actions:
         metadata: {}
     action: media_player.play_media
     enabled: true
+  
+  # 6. Wait 15 seconds then stop displaying
   - delay:
       seconds: 15
+  
+  # 7. Stop media playback on displays
   - target:
       device_id:
-        - your_display_device_id_1  # Same display device IDs as above
-        - your_display_device_id_2
-        - your_display_device_id_3
+        - device_id_display_1
+        - device_id_display_2
     action: media_player.media_stop
     data: {}
     enabled: true
+
 variables:
   timestamp: "{{ now().timestamp() | int }}"
   snapshot_path: /config/www/doorbell_snapshot_{{ timestamp }}.jpg
-  snapshot_url: https://your-ha-domain.com/local/doorbell_snapshot_{{ timestamp }}.jpg  # Replace with your HA URL
+  snapshot_url: https://your-home-assistant-url.com/local/doorbell_snapshot_{{ timestamp }}.jpg
 ```
 
-**Required REST Command** - Add this to your `configuration.yaml`:
+#### Step 3: Customize the Automation
 
-```yaml
-rest_command:
-  doorbell_ring:
-    url: "http://a0d7b954-doorbell-face-recognition:8099/api/doorbell/ring"
-    method: POST
-    headers:
-      Content-Type: "application/x-www-form-urlencoded"
-    payload: >-
-      ai_message={{ ai_message | urlencode }}&ai_title={{ ai_title | urlencode }}&image_path={{ image_path | urlencode }}&image_url={{ image_url | urlencode }}
-    timeout: 30
-```
+Replace these placeholders with your actual entities and settings:
 
-**Important Replacements Needed:**
-- `binary_sensor.your_doorbell_button` - Your doorbell button entity
-- `camera.your_doorbell_camera` - Your doorbell camera entity  
-- `your_device_id_*` - Your device IDs for speakers/displays (9 total for doorbell sound)
-- `your_llm_provider_id` - Your LLM Vision provider ID
-- `notify.mobile_app_your_phone_*` - Your mobile notification services
-- `media_player.your_display_*` - Your media player entities for TTS
-- `your_display_device_id_*` - Your display device IDs for showing images
-- `https://your-ha-domain.com` - Your Home Assistant external URL
+| Placeholder | Replace With | How to Find |
+|-------------|--------------|-------------|
+| `binary_sensor.your_doorbell_button` | Your doorbell button entity | Developer Tools → States → Search for "doorbell" |
+| `camera.your_doorbell_camera` | Your doorbell camera entity | Settings → Devices → Your Camera → Entities |
+| `device_id_speaker_*` | Device IDs for speakers | Settings → Devices → Click device → Copy device ID from URL |
+| `device_id_display_*` | Device IDs for displays | Settings → Devices → Click device → Copy device ID from URL |
+| `your_llm_provider_id` | Your LLM Vision provider ID | LLM Vision integration settings |
+| `notify.mobile_app_phone_*` | Your mobile notification service | Developer Tools → Services → Search "notify" |
+| `media_player.kitchen_display` | Your media player entities | Developer Tools → States → Search "media_player" |
+| `https://your-home-assistant-url.com` | Your Home Assistant external URL | Settings → System → Network → External URL |
+
+#### Step 4: Test the Integration
+
+1. **Save the automation** in Home Assistant
+2. **Press your doorbell** to trigger the automation
+3. **Check the addon web interface** - you should see a new event in the dashboard
+4. **Verify face recognition** - if you've added people, they should be recognized
+
+#### Troubleshooting
+
+- **No events appearing?** Check Home Assistant logs for REST command errors
+- **Face recognition not working?** Ensure you've added people with face images first
+- **AI descriptions not showing?** The LLM Vision integration is optional - face recognition works without it
+- **Wrong addon URL?** Check Settings → Add-ons → Doorbell Face Recognition → Info for the correct slug
 
 ### Adding People
 
@@ -534,5 +610,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - All contributors and testers
 
 ---
+
+## 💖 **Support the Project**
+
+If you find WhoRang-addon useful, consider supporting its development:
+
+<div align="center">
+
+<a href="https://www.buymeacoffee.com/koen1203" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
+</a>
+
+**Or scan the QR code:**
+
+<img src="bmc_qr.png" alt="Buy Me A Coffee QR Code" width="150" height="150">
+
+*Your support helps maintain and improve WhoRang-addon!*
+
+</div>
 
 **Made with ❤️ for the Home Assistant community**
