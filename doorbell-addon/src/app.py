@@ -731,6 +731,9 @@ async def update_settings(request: Request):
                 "Weather entity updated via settings",
                 weather_entity=settings.weather_entity,
             )
+        if "notification_webhook" in data:
+            settings.notification_webhook = data["notification_webhook"]
+            logger.info("Notification webhook updated via settings")
 
         # Save settings to file for persistence
         settings.save_to_file()
@@ -745,6 +748,35 @@ async def update_settings(request: Request):
     except Exception as e:
         logger.error("Error updating settings", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/notifications/test", tags=["Notifications"], summary="Test notifications")
+async def test_notifications():
+    """
+    Test notification system by sending a test notification to Home Assistant and webhook.
+    
+    This endpoint sends a test notification through all configured notification channels:
+    - Home Assistant notify service
+    - External webhook (if configured)
+    """
+    try:
+        from .utils import notification_manager
+        
+        # Send test notification
+        await notification_manager.send_face_detection_notification(
+            person_name="Test User",
+            confidence=0.95,
+            is_known=True,
+            image_path="/test/image.jpg"
+        )
+        
+        return {
+            "success": True,
+            "message": "Test notifications sent successfully! Check your Home Assistant notifications and webhook."
+        }
+    except Exception as e:
+        logger.error("Error sending test notification", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to send test notification: {str(e)}")
 
 
 @app.post("/api/camera/test")

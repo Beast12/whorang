@@ -75,6 +75,7 @@ class Settings(BaseSettings):
                 "face_confidence_threshold": self.face_confidence_threshold,
                 "ha_access_token": self.ha_access_token,
                 "weather_entity": self.weather_entity,
+                "notification_webhook": self.notification_webhook,
             }
 
             with open(self.config_file_path, "w") as f:
@@ -102,6 +103,8 @@ class Settings(BaseSettings):
                     self.ha_access_token = config_data["ha_access_token"]
                 if "weather_entity" in config_data:
                     self.weather_entity = config_data["weather_entity"]
+                if "notification_webhook" in config_data:
+                    self.notification_webhook = config_data["notification_webhook"]
         except Exception as e:
             print(f"Error loading settings: {e}")
 

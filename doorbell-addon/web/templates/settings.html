@@ -218,10 +218,15 @@
                            class="form-control" 
                            id="webhook-url" 
                            value="{{ settings.notification_webhook or '' }}" 
-                           placeholder="https://your-webhook-url.com/notify"
-                           readonly>
-                    <div class="form-text">External webhook URL for notifications</div>
+                           placeholder="https://your-webhook-url.com/notify">
+                    <div class="form-text">
+                        External webhook URL for notifications. Supports Gotify (e.g., https://gotify.example.com/message?token=YOUR_TOKEN) and generic webhooks.
+                    </div>
                 </div>
+                
+                <button class="btn btn-success" onclick="saveWebhookUrl()">
+                    <i class="bi bi-save"></i> Save Webhook URL
+                </button>
                 
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="ha-notifications" checked disabled>
@@ -425,16 +430,43 @@ async function checkCameraStatus() {
 // Test notifications
 async function testNotifications() {
     try {
-        // We'll simulate this by capturing a frame which triggers the notification system
-        const response = await fetch('api/camera/capture', { method: 'POST' });
+        const response = await fetch('api/notifications/test', { method: 'POST' });
         
         if (response.ok) {
-            alert('Test notification sent! Check your Home Assistant notifications.');
+            const data = await response.json();
+            alert(data.message || 'Test notification sent! Check your Home Assistant notifications and webhook.');
         } else {
-            alert('Error sending test notification');
+            const error = await response.json();
+            alert('Error sending test notification: ' + (error.detail || 'Unknown error'));
         }
     } catch (error) {
         alert('Error testing notifications: ' + error.message);
+    }
+}
+
+// Save webhook URL
+async function saveWebhookUrl() {
+    try {
+        const webhookUrl = document.getElementById('webhook-url').value;
+        
+        const response = await fetch('api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                notification_webhook: webhookUrl
+            })
+        });
+        
+        if (response.ok) {
+            alert('Webhook URL saved successfully!');
+        } else {
+            const error = await response.json();
+            alert('Error saving webhook URL: ' + (error.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error saving webhook URL: ' + error.message);
     }
 }
 
