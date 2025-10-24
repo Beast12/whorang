@@ -765,7 +765,7 @@ async def test_notifications():
         from .utils import notification_manager
 
         # Send test notification
-        await notification_manager.send_face_detection_notification(
+        await notification_manager.notify_face_detected(
             person_name="Test User",
             confidence=0.95,
             is_known=True,
