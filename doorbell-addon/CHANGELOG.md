@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.75] - 2025-10-24
+
+### Changed
+- **Documentation Consolidation:** Completely restructured all documentation for clarity and professionalism
+- **Main README:** Root README.md is now the primary documentation with complete setup instructions
+- **Technical README:** Addon README.md now focuses on technical details and API reference
+- **Automation Guide:** Created separate AUTOMATION.md with detailed automation examples
+- **Removed Clutter:** Deleted outdated version references and redundant documentation
+- **Removed Files:** Deleted private-repo-setup.md (no longer needed)
+
+### Improved
+- **Professional Structure:** Clear separation between user docs and technical docs
+- **Version Consistency:** All documentation now references current version (1.0.75)
+- **Navigation:** Added clear links between documentation files
+- **User Experience:** Main README provides complete setup without jumping between files
+- **Developer Experience:** Technical details consolidated in addon README
+
+### Fixed
+- **Outdated Changelog:** Removed old changelog entries from addon README (stopped at v1.0.20)
+- **Duplicate Content:** Eliminated redundant information between root and addon READMEs
+- **Confusing Structure:** Clear hierarchy - root README for users, addon README for developers
+- **Version References:** Updated all version badges and references to 1.0.75
+
+### User Impact
+- Users now have one clear place to start (root README.md)
+- Complete setup instructions without jumping between files
+- Technical users can dive into addon README for API details
+- Professional, organized documentation structure
+
 ## [1.0.74] - 2025-10-24
 
 ### Added

@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "Doorbell Face Recognition"
-version: "1.0.74"
+version: "1.0.75"
 slug: "doorbell_face_recognition"
 description: "AI-powered doorbell with face recognition capabilities"
 url: "https://github.com/Beast12/whorang"

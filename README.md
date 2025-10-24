@@ -1,39 +1,268 @@
-# Doorbell Face Recognition - Home Assistant Add-on
+# WhoRang - Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.75-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
-[![Build](https://github.com/Beast12/whorang/workflows/Build%20and%20Publish%20Doorbell%20Face%20Recognition%20Addon/badge.svg)](https://github.com/Beast12/whorang/actions)
 
-A production-ready Home Assistant community add-on that replicates Google Nest Doorbell functionality with AI-powered face recognition capabilities. This add-on provides real-time face detection, recognition, and a beautiful web interface for managing your doorbell security system.
+AI-powered doorbell with face recognition capabilities for Home Assistant. This add-on provides event-driven face detection and recognition, triggered when your doorbell is pressed, allowing you to identify known visitors and receive notifications when unknown faces are detected at your door.
 
-## 🚀 Quick Start
+## ✨ Features
 
-1. **Add Repository**: Add `https://github.com/Beast12/whorang` to your Home Assistant add-on repositories
-2. **Install**: Find "Doorbell Face Recognition" in the add-on store and install
-3. **Configure**: Set your camera URL and preferences
-4. **Start**: Enable and start the add-on
-5. **Access**: Open the web UI and start adding faces
-
-## ✨ Key Features
-
-- 🎯 **AI-Powered Face Recognition** - Uses face_recognition library for accurate identification
-- 📹 **Real-time Monitoring** - Continuous doorbell camera surveillance
+- 🎯 **AI-Powered Face Recognition** - Uses the face_recognition library for accurate face detection and identification
+- 🔔 **Event-Driven Processing** - Face recognition triggered by doorbell ring events, not continuous monitoring
 - 🏠 **Native Home Assistant Integration** - Sensors, notifications, and automations
-- 🖥️ **Beautiful Web Interface** - Modern, responsive UI for face management
-- 🔒 **Privacy-First** - All processing happens locally, no cloud dependencies
-- 📱 **Multi-Architecture** - Supports amd64, arm64, armv7, and more
-- 🗄️ **Secure Storage** - SQLite with optional encryption
-- 🔔 **Smart Notifications** - Home Assistant and webhook notifications
-- 📊 **Event Management** - Gallery view with filtering and search
-- ⚙️ **Highly Configurable** - Adjustable thresholds and retention policies
+- 🖥️ **Beautiful Web Interface** - Modern, responsive UI for managing faces and viewing events
+- 🔒 **Privacy-Focused** - All processing happens locally, no cloud dependencies
+- 📱 **Multi-Platform Support** - Works on amd64, arm64, armv7, and other architectures
+- 🗄️ **Secure Storage** - SQLite database with optional encryption
+- 🔔 **Flexible Notifications** - Home Assistant notifications and webhook support
+- 📊 **Event Gallery** - Browse and manage doorbell events with filtering
+- ⚙️ **Configurable Settings** - Adjustable confidence thresholds and retention policies
+- 🌤️ **Weather Integration** - Capture weather conditions with each doorbell event
+- 🤖 **AI Descriptions** - Optional AI-generated descriptions of who's at the door
 
 ## 📋 Requirements
 
 - Home Assistant OS, Supervised, or Container
-- Compatible doorbell camera with RTSP/HTTP stream
-- Minimum 2GB RAM (4GB recommended)
+- Compatible doorbell camera with RTSP/HTTP stream or Home Assistant camera entity
+- Minimum 2GB RAM (4GB recommended for face recognition)
 - 10GB free storage space
+
+## 🚀 Quick Start
+
+### 1. Installation
+
+#### Method 1: Add Repository to Home Assistant (Recommended)
+
+1. In Home Assistant, go to **Settings** → **Add-ons** → **Add-on Store**
+2. Click the **⋮** menu in the top right corner
+3. Select **Repositories**
+4. Add this repository URL: `https://github.com/Beast12/whorang`
+5. Find "Doorbell Face Recognition" in the add-on store
+6. Click **Install**
+
+#### Method 2: Manual Installation
+
+```bash
+cd /usr/share/hassio/addons/local/
+git clone https://github.com/Beast12/whorang.git
+```
+
+Then restart Home Assistant and find the add-on under **Local Add-ons**.
+
+### 2. Configuration
+
+Configure the add-on with your camera settings:
+
+```yaml
+camera_entity: "camera.your_doorbell_camera"  # Or use camera_url for RTSP
+camera_url: "rtsp://192.168.1.100:554/stream"
+storage_path: "/share/doorbell"
+retention_days: 30
+face_confidence_threshold: 0.6
+notification_webhook: ""
+database_encryption: false
+```
+
+**Configuration Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `camera_entity` | string | "" | Home Assistant camera entity ID |
+| `camera_url` | string | Required | RTSP or HTTP URL of your doorbell camera |
+| `storage_path` | string | `/share/doorbell` | Path to store images and database |
+| `retention_days` | integer | 30 | Days to keep events (1-365) |
+| `face_confidence_threshold` | float | 0.6 | Confidence threshold for face recognition (0.1-1.0) |
+| `notification_webhook` | string | "" | Optional webhook URL for external notifications |
+| `database_encryption` | boolean | false | Enable database encryption for face data |
+
+### 3. Setup Home Assistant Integration
+
+#### Step 1: Add REST Command
+
+Add this to your `configuration.yaml`:
+
+```yaml
+rest_command:
+  doorbell_ring:
+    url: "http://d4f73725-doorbell-face-recognition:8099/api/doorbell/ring"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    payload: >-
+      ai_message={{ ai_message | urlencode }}&ai_title={{ ai_title | urlencode }}&image_path={{ image_path | urlencode }}&image_url={{ image_url | urlencode }}
+    timeout: 30
+```
+
+> **Note:** The addon slug `d4f73725-doorbell-face-recognition` may vary. Check your addon details page for the exact address.
+
+**Restart Home Assistant** after adding the REST command.
+
+#### Step 2: Create Doorbell Automation
+
+**Simple Automation (Face Recognition Only):**
+
+```yaml
+alias: Simple Doorbell Face Recognition
+description: Trigger face recognition when doorbell is pressed
+triggers:
+  - entity_id: binary_sensor.your_doorbell_button
+    from: "off"
+    to: "on"
+    trigger: state
+actions:
+  - target:
+      entity_id: camera.your_doorbell_camera
+    data:
+      filename: "{{ snapshot_path }}"
+    action: camera.snapshot
+  - action: rest_command.doorbell_ring
+    data:
+      ai_message: "Doorbell pressed"
+      ai_title: "Visitor at the door"
+      image_path: "{{ snapshot_path }}"
+      image_url: "{{ snapshot_url }}"
+variables:
+  timestamp: "{{ now().timestamp() | int }}"
+  snapshot_path: /config/www/doorbell_snapshot_{{ timestamp }}.jpg
+  snapshot_url: https://your-home-assistant-url.com/local/doorbell_snapshot_{{ timestamp }}.jpg
+```
+
+**Advanced Automation (with AI Descriptions):**
+
+For a complete example with AI-generated descriptions, mobile notifications, TTS announcements, and more, see the [detailed automation guide](doorbell-addon/AUTOMATION.md).
+
+#### Step 3: Customize Your Setup
+
+Replace these placeholders:
+
+| Placeholder | Replace With | How to Find |
+|-------------|--------------|-------------|
+| `binary_sensor.your_doorbell_button` | Your doorbell button entity | Developer Tools → States → Search for "doorbell" |
+| `camera.your_doorbell_camera` | Your doorbell camera entity | Settings → Devices → Your Camera → Entities |
+| `https://your-home-assistant-url.com` | Your Home Assistant external URL | Settings → System → Network → External URL |
+
+### 4. Add People for Face Recognition
+
+1. Open the add-on **Web UI** (port 8099)
+2. Go to the **People** page
+3. Click **"Add New Person"** and enter a name
+4. Upload face images using **"Add Face Image"** button
+5. The system will extract and store face encodings
+
+**Tips for best results:**
+- Upload multiple photos per person (3-5 recommended)
+- Use clear, well-lit photos
+- Include different angles and expressions
+- Ensure face is clearly visible
+
+### 5. Test the Integration
+
+1. Press your doorbell to trigger the automation
+2. Check the addon **Dashboard** - you should see a new event
+3. If you've added people, they should be recognized
+4. View events in the **Gallery** with filtering options
+
+## 📊 Home Assistant Integration
+
+### Sensors
+
+The addon creates the following sensors:
+
+- `sensor.doorbell_last_event` - Timestamp of last doorbell event
+- `sensor.doorbell_known_faces_today` - Count of known faces detected today
+- `sensor.doorbell_unknown_faces_today` - Count of unknown faces detected today
+- `sensor.doorbell_total_events` - Total number of events
+- `sensor.doorbell_person_detected` - Name of last detected person
+- `sensor.doorbell_confidence` - Confidence score of last detection
+
+### Events
+
+The addon fires these events for automations:
+
+- `doorbell_face_detected` - Any face detected
+- `doorbell_known_person` - Known person recognized
+- `doorbell_unknown_person` - Unknown person detected
+
+### Example Automation Using Events
+
+```yaml
+alias: Notify When Known Person Arrives
+triggers:
+  - platform: event
+    event_type: doorbell_known_person
+actions:
+  - service: notify.mobile_app
+    data:
+      message: "{{ trigger.event.data.person_name }} is at the door!"
+      title: "Welcome Home"
+```
+
+## 🖥️ Web Interface
+
+Access the web interface at `http://your-ha-ip:8099` or through the Home Assistant ingress.
+
+### Dashboard
+- View recent doorbell events
+- Statistics: total events, known/unknown faces, registered people
+- Quick access to gallery and settings
+
+### Gallery
+- Browse all doorbell events with images
+- Filter by known/unknown faces
+- Filter by specific person
+- View AI descriptions and weather data
+- Label unknown faces
+
+### People Management
+- Add/edit/delete registered people
+- Upload multiple face images per person
+- View face encoding count
+- View events filtered by person
+
+### Settings
+- Configure camera entity or URL
+- Adjust face recognition confidence threshold
+- Set retention period for events
+- Configure weather integration
+- View system statistics
+
+## 🔧 Troubleshooting
+
+### No Events Appearing
+
+- Check Home Assistant logs for REST command errors
+- Verify the addon slug in the REST command URL
+- Ensure the automation is triggering (check automation traces)
+- Test camera connectivity using the "Capture" button in settings
+
+### Face Recognition Not Working
+
+- Ensure you've added people with face images first
+- Check face confidence threshold (lower = more lenient)
+- Verify images are clear and well-lit
+- Check addon logs for face recognition errors
+
+### Camera Connection Issues
+
+- Test RTSP URL directly with VLC or similar
+- Verify camera credentials in URL
+- Check network connectivity to camera
+- Try using Home Assistant camera entity instead
+
+### AI Descriptions Not Showing
+
+- The LLM Vision integration is optional
+- Face recognition works without AI descriptions
+- Check LLM Vision integration configuration
+- Verify provider ID and model settings
+
+## 📖 Additional Documentation
+
+- **[Detailed Automation Examples](doorbell-addon/AUTOMATION.md)** - Complete automation configurations
+- **[API Reference](doorbell-addon/API.md)** - REST API documentation
+- **[Changelog](doorbell-addon/CHANGELOG.md)** - Version history and updates
+- **[Testing Guide](doorbell-addon/TESTING.md)** - Local development and testing
 
 ## 🏗️ Architecture
 
@@ -53,17 +282,9 @@ A production-ready Home Assistant community add-on that replicates Google Nest D
                        └──────────────────┘
 ```
 
-## 📖 Documentation
-
-- **[Installation Guide](doorbell-addon/README.md#installation)** - Step-by-step setup instructions
-- **[Configuration](doorbell-addon/README.md#configuration)** - All configuration options explained
-- **[API Reference](doorbell-addon/README.md#api-reference)** - REST API and WebSocket documentation
-- **[Troubleshooting](doorbell-addon/README.md#troubleshooting)** - Common issues and solutions
-- **[Home Assistant Integration](doorbell-addon/README.md#home-assistant-integration)** - Sensors and automations
-
 ## 🛠️ Development
 
-### Building
+### Building Locally
 
 ```bash
 git clone https://github.com/Beast12/whorang.git
@@ -71,34 +292,33 @@ cd whorang/doorbell-addon
 docker build -t doorbell-face-recognition .
 ```
 
-### Testing
+### Running Tests
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
 # Run linting
-flake8 src/
-black src/
-isort src/
+flake8 doorbell-addon/src/
+black doorbell-addon/src/
+isort doorbell-addon/src/
 
 # Type checking
-mypy src/
+mypy doorbell-addon/src/ --config-file doorbell-addon/mypy.ini
 ```
 
 ### CI/CD Pipeline
 
 This project uses GitHub Actions for:
-- ✅ Multi-architecture builds (amd64, arm64, armv7, armhf, i386)
+- ✅ Multi-architecture builds (amd64, aarch64)
 - ✅ Automated testing and linting
-- ✅ Security scanning with Trivy
 - ✅ Version consistency validation
-- ✅ Automated releases with changelog generation
+- ✅ Automated releases with changelog
 - ✅ Container registry publishing (GHCR)
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -106,34 +326,42 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 Changelog
-
-### v1.0.0 (2024-08-19)
-- 🎉 Initial release
-- ✨ Face recognition with face_recognition library
-- 🖥️ Responsive web interface
-- 🏠 Home Assistant integration
-- 🐳 Multi-architecture Docker support
-- 🔒 Optional database encryption
-- 📊 Event gallery and management
-- ⚙️ Configurable settings
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [face_recognition](https://github.com/ageitgey/face_recognition) by Adam Geitgey
+- [face_recognition](https://github.com/ageitgey/face_recognition) library by Adam Geitgey
 - [Home Assistant](https://www.home-assistant.io/) community
 - [hassio-addons](https://github.com/hassio-addons) base images
-- All contributors and beta testers
+- All contributors and testers
 
 ## 🆘 Support
 
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/Beast12/whorang/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/Beast12/whorang/discussions)
 - 🏠 **Community**: [Home Assistant Forum](https://community.home-assistant.io/)
+
+---
+
+## 💖 Support the Project
+
+If you find WhoRang useful, consider supporting its development:
+
+<div align="center">
+
+<a href="https://www.buymeacoffee.com/koen1203" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
+</a>
+
+**Or scan the QR code:**
+
+<img src="bmc_qr.png" alt="Buy Me A Coffee QR Code" width="150" height="150">
+
+*Your support helps maintain and improve WhoRang!*
+
+</div>
 
 ---
 
