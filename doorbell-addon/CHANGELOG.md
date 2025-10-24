@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.72] - 2025-10-24
+
+### Fixed
+- **Dashboard Card Navigation:** Fixed 404 errors when clicking dashboard cards in Home Assistant ingress
+- **Ingress Compatibility:** Changed card onclick URLs from absolute paths to relative paths
+- All dashboard cards now properly navigate through Home Assistant ingress proxy
+
+### Technical
+- Updated dashboard.html card onclick handlers to use relative URLs (gallery, people) instead of absolute (/gallery, /people)
+- Ensures proper URL resolution in Home Assistant ingress environment
+- Maintains compatibility with both direct access and ingress proxy
+
+### User Impact
+- Dashboard cards now work correctly when accessed through Home Assistant
+- No more 404 errors when clicking Total Events, Known Faces, Unknown Faces, or Registered People cards
+- Seamless navigation experience in ingress environment
+
 ## [1.0.71] - 2025-10-23
 
 ### Added
