@@ -3,12 +3,13 @@
 [![Version](https://img.shields.io/badge/version-1.0.75-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
+[![Build and Publish Doorbell Face Recognition Addon](https://github.com/Beast12/whorang/actions/workflows/build.yml/badge.svg)](https://github.com/Beast12/whorang/actions/workflows/build.yml)
 
-AI-powered doorbell with face recognition capabilities for Home Assistant. This add-on provides event-driven face detection and recognition, triggered when your doorbell is pressed, allowing you to identify known visitors and receive notifications when unknown faces are detected at your door.
+Face recognition doorbell add-on for Home Assistant. This add-on provides event-driven face detection and recognition, triggered when your doorbell is pressed, allowing you to identify known visitors and receive notifications when unknown faces are detected at your door.
 
 ## ✨ Features
 
-- 🎯 **AI-Powered Face Recognition** - Uses the face_recognition library for accurate face detection and identification
+- 🎯 **Face Recognition** - Uses the face_recognition library (ML-based) for accurate face detection and identification
 - 🔔 **Event-Driven Processing** - Face recognition triggered by doorbell ring events, not continuous monitoring
 - 🏠 **Native Home Assistant Integration** - Sensors, notifications, and automations
 - 🖥️ **Beautiful Web Interface** - Modern, responsive UI for managing faces and viewing events
@@ -19,7 +20,7 @@ AI-powered doorbell with face recognition capabilities for Home Assistant. This 
 - 📊 **Event Gallery** - Browse and manage doorbell events with filtering
 - ⚙️ **Configurable Settings** - Adjustable confidence thresholds and retention policies
 - 🌤️ **Weather Integration** - Capture weather conditions with each doorbell event
-- 🤖 **AI Descriptions** - Optional AI-generated descriptions of who's at the door
+- 🤖 **AI Description Support** - Can receive and display AI-generated descriptions from external integrations (e.g., LLM Vision)
 
 ## 📋 Requirements
 

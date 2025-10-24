@@ -2,7 +2,7 @@
 name: "Doorbell Face Recognition"
 version: "1.0.75"
 slug: "doorbell_face_recognition"
-description: "AI-powered doorbell with face recognition capabilities"
+description: "Face recognition doorbell add-on with ML-based detection"
 url: "https://github.com/Beast12/whorang"
 arch:
   - amd64

@@ -505,7 +505,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial release of Doorbell Face Recognition add-on
-- AI-powered face recognition using face_recognition library
+- ML-based face recognition using face_recognition library
 - Real-time doorbell camera monitoring with RTSP/HTTP support
 - Beautiful, responsive web interface for face management
 - Home Assistant integration with sensors and notifications

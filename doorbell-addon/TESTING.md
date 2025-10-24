@@ -146,4 +146,4 @@ Once testing is complete, you can:
 3. **Publish to Home Assistant Community Add-ons**
 4. **Create HACS integration** for easy updates
 
-Your addon is now production-ready with full AI-powered face recognition!
+Your addon is now production-ready with full ML-based face recognition!
