@@ -254,7 +254,94 @@ Access the web interface at `http://your-ha-ip:8099` or through the Home Assista
 - Adjust face recognition confidence threshold
 - Set retention period for events
 - Configure weather integration
+- Configure webhook notifications (Gotify, etc.)
 - View system statistics
+
+## 🔔 Webhook Notifications
+
+The addon supports sending notifications to external webhook services like Gotify, in addition to Home Assistant's built-in notification system.
+
+### Gotify Integration
+
+[Gotify](https://gotify.net/) is a self-hosted notification server. The addon automatically detects Gotify webhooks and formats notifications properly.
+
+#### Setup Steps:
+
+1. **Get Your Gotify URL and Token:**
+   - Open your Gotify web interface
+   - Go to **Apps** → Create a new application (e.g., "Doorbell")
+   - Copy the generated token
+   - Your webhook URL format: `https://gotify.example.com/message?token=YOUR_TOKEN`
+
+2. **Configure in Addon Settings:**
+   - Open the addon **Web UI** (Settings page)
+   - Scroll to the **Notifications** section
+   - Paste your Gotify URL in the **Webhook URL** field:
+     ```
+     https://gotify.example.com/message?token=AbCdEfGh123456
+     ```
+   - Click **Save Webhook URL**
+
+3. **Test the Integration:**
+   - Click the **Test Notifications** button
+   - You should receive a test notification in Gotify
+   - Check both Home Assistant notifications and Gotify
+
+#### Gotify Notification Format
+
+The addon sends rich notifications to Gotify with the following structure:
+
+```json
+{
+  "title": "Known Person Detected: John Doe",
+  "message": "John Doe is at the door (confidence: 0.92)",
+  "priority": 5,
+  "extras": {
+    "client::display": {
+      "contentType": "text/markdown"
+    },
+    "doorbell": {
+      "event": "face_detected",
+      "person_name": "John Doe",
+      "confidence": 0.92,
+      "is_known": true,
+      "image_path": "/share/doorbell/images/event_123.jpg",
+      "timestamp": "2025-10-24T15:30:00"
+    }
+  }
+}
+```
+
+### Generic Webhook Support
+
+For other webhook services, the addon sends a JSON payload with event data:
+
+```json
+{
+  "title": "Known Person Detected: John Doe",
+  "message": "John Doe is at the door (confidence: 0.92)",
+  "event": "face_detected",
+  "person_name": "John Doe",
+  "confidence": 0.92,
+  "is_known": true,
+  "image_path": "/share/doorbell/images/event_123.jpg",
+  "timestamp": "2025-10-24T15:30:00"
+}
+```
+
+Simply enter your webhook URL in the settings, and the addon will POST this JSON data to your endpoint.
+
+### Home Assistant Notifications
+
+Home Assistant notifications are **always enabled** and work alongside webhook notifications. The addon uses the `notify.notify` service, which works with:
+
+- **Mobile App** notifications (iOS/Android)
+- **Telegram** bot notifications
+- **Pushover** notifications
+- **Email** notifications
+- Any other Home Assistant notification platform
+
+No additional configuration needed - notifications are sent automatically when faces are detected.
 
 ## 🔧 Troubleshooting
 
