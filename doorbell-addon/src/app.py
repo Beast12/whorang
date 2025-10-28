@@ -783,6 +783,68 @@ async def test_notifications():
         )
 
 
+@app.post("/api/storage/cleanup", tags=["Storage"], summary="Cleanup old data")
+async def cleanup_storage():
+    """
+    Manually trigger cleanup of old data based on retention policy.
+
+    Deletes images and events older than the configured retention period.
+    Returns the number of events cleaned up.
+    """
+    try:
+        # Get count before cleanup
+        events_before = len(db.get_doorbell_events(limit=100000))
+
+        # Run cleanup
+        db.cleanup_old_events()
+
+        # Get count after cleanup
+        events_after = len(db.get_doorbell_events(limit=100000))
+
+        cleaned_count = events_before - events_after
+
+        logger.info(
+            "Manual storage cleanup completed",
+            events_cleaned=cleaned_count,
+            retention_days=settings.retention_days,
+        )
+
+        return {
+            "success": True,
+            "message": f"Cleanup completed! Removed {cleaned_count} old events.",
+            "events_cleaned": cleaned_count,
+            "retention_days": settings.retention_days,
+        }
+    except Exception as e:
+        logger.error("Storage cleanup failed", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(e)}")
+
+
+@app.get("/api/storage/info", tags=["Storage"], summary="Get storage information")
+async def get_storage_info_api():
+    """
+    Get current storage usage information.
+
+    Returns storage path, total space, used space, and usage percentage.
+    """
+    try:
+        storage_info = get_storage_usage()
+
+        return {
+            "success": True,
+            "storage_path": settings.storage_path,
+            "total_gb": storage_info.get("total_gb", 0),
+            "used_gb": storage_info.get("used_gb", 0),
+            "free_gb": storage_info.get("free_gb", 0),
+            "usage_percent": storage_info.get("usage_percent", 0),
+        }
+    except Exception as e:
+        logger.error("Failed to get storage info", error=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get storage info: {str(e)}"
+        )
+
+
 @app.post("/api/camera/test")
 async def test_camera_connection(request: Request):
     """Test camera connection."""

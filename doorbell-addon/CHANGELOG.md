@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.79] - 2025-10-28
+
+### Added
+- **Storage Cleanup API Endpoint:** POST /api/storage/cleanup for manual data cleanup
+- **Storage Info API Endpoint:** GET /api/storage/info for real-time storage usage
+- **Functional Cleanup Button:** "Cleanup Old Data" now actually deletes old events
+- **Live Storage Refresh:** "Refresh Storage Info" updates without page reload
+- **Cleanup Confirmation:** Shows number of events cleaned up after operation
+
+### Fixed
+- **Cleanup Old Data Button:** Was showing fake alert, now calls actual API endpoint
+- **Refresh Storage Info:** Was just reloading page, now updates dynamically via API
+- **Storage Management:** Fully functional manual cleanup based on retention policy
+
+### Changed
+- **JavaScript Implementation:** Replaced placeholder functions with real API calls
+- **User Feedback:** Better error messages and success notifications for storage operations
+- **Storage Display:** Real-time updates to storage usage progress bar and statistics
+
+### Technical Implementation
+- Added cleanup_storage() endpoint that counts and removes old events
+- Added get_storage_info_api() endpoint for storage statistics
+- Enhanced cleanupOldData() JavaScript with proper fetch() API call
+- Enhanced refreshStorageInfo() JavaScript with dynamic DOM updates
+- Proper error handling and fallback to page reload if API fails
+
+### User Impact
+- Storage management features now fully functional
+- Users can manually trigger cleanup without waiting for automatic cleanup
+- Real-time storage usage updates improve monitoring
+- Clear feedback on cleanup operations (number of events removed)
+
 ## [1.0.78] - 2025-10-24
 
 ### Fixed
