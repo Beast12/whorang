@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.80] - 2025-10-28
+
+### Fixed
+- **Data Retention Field:** Removed readonly attribute - now editable
+- **Storage Path Field:** Removed readonly attribute - now editable
+- **Settings Persistence:** Both fields now save to persistent storage
+
+### Added
+- **Save Storage Settings Button:** New button to save retention and storage path changes
+- **API Endpoint Support:** POST /api/settings now handles retention_days and storage_path
+- **Settings Persistence:** retention_days and storage_path saved to settings.json
+- **Input Validation:** Validates retention days (1-365) and storage path (non-empty)
+- **Field Descriptions:** Added helpful text under storage path field
+
+### Changed
+- **Storage Management UI:** Both input fields now fully editable with save button
+- **Settings API:** Enhanced to accept and validate storage configuration
+- **Config Persistence:** save_to_file() and load_from_file() include storage settings
+
+### Technical Implementation
+- Removed readonly attributes from retention-days and storage-path inputs
+- Added saveStorageSettings() JavaScript function with validation
+- Enhanced POST /api/settings endpoint with retention_days and storage_path handling
+- Added validation: retention_days (1-365), storage_path (non-empty)
+- Updated config.py save_to_file() to include retention_days and storage_path
+- Updated config.py load_from_file() to restore retention_days and storage_path
+- Settings now persist across addon restarts
+
+### User Impact
+- Users can now change data retention period through UI
+- Users can modify storage path if needed
+- Settings persist across addon restarts and Home Assistant reboots
+- Clear validation messages for invalid input
+- Better control over storage management
+
 ## [1.0.79] - 2025-10-28
 
 ### Added

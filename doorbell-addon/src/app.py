@@ -734,6 +734,26 @@ async def update_settings(request: Request):
         if "notification_webhook" in data:
             settings.notification_webhook = data["notification_webhook"]
             logger.info("Notification webhook updated via settings")
+        if "retention_days" in data:
+            retention_days = int(data["retention_days"])
+            if 1 <= retention_days <= 365:
+                settings.retention_days = retention_days
+                logger.info(
+                    "Retention days updated via settings",
+                    retention_days=settings.retention_days,
+                )
+            else:
+                raise ValueError("Retention days must be between 1 and 365")
+        if "storage_path" in data:
+            storage_path = data["storage_path"].strip()
+            if storage_path:
+                settings.storage_path = storage_path
+                logger.info(
+                    "Storage path updated via settings",
+                    storage_path=settings.storage_path,
+                )
+            else:
+                raise ValueError("Storage path cannot be empty")
 
         # Save settings to file for persistence
         settings.save_to_file()

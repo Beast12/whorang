@@ -115,14 +115,19 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label for="retention-days" class="form-label">Data Retention (Days)</label>
-                    <input type="number" class="form-control" id="retention-days" value="{{ settings.retention_days }}" min="1" max="365" readonly>
+                    <input type="number" class="form-control" id="retention-days" value="{{ settings.retention_days }}" min="1" max="365">
                     <div class="form-text">Images and events older than this will be automatically deleted</div>
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label">Storage Path</label>
-                    <input type="text" class="form-control" value="{{ settings.storage_path }}" readonly>
+                    <label for="storage-path" class="form-label">Storage Path</label>
+                    <input type="text" class="form-control" id="storage-path" value="{{ settings.storage_path }}">
+                    <div class="form-text">Path where doorbell images and data are stored</div>
                 </div>
+                
+                <button class="btn btn-success mb-3" onclick="saveStorageSettings()">
+                    <i class="bi bi-save"></i> Save Storage Settings
+                </button>
                 
                 <!-- Storage Usage -->
                 <div class="mb-3">
@@ -514,6 +519,47 @@ function cleanupOldData() {
             }
         }
     );
+}
+
+// Save storage settings
+async function saveStorageSettings() {
+    try {
+        const retentionDays = parseInt(document.getElementById('retention-days').value);
+        const storagePath = document.getElementById('storage-path').value;
+        
+        // Validate retention days
+        if (retentionDays < 1 || retentionDays > 365) {
+            alert('Retention days must be between 1 and 365');
+            return;
+        }
+        
+        // Validate storage path
+        if (!storagePath || storagePath.trim() === '') {
+            alert('Storage path cannot be empty');
+            return;
+        }
+        
+        const response = await fetch('api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                retention_days: retentionDays,
+                storage_path: storagePath
+            })
+        });
+        
+        if (response.ok) {
+            alert('Storage settings saved successfully!');
+            await refreshStorageInfo();
+        } else {
+            const error = await response.json();
+            alert('Error saving storage settings: ' + (error.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error saving storage settings: ' + error.message);
+    }
 }
 
 // Refresh storage info

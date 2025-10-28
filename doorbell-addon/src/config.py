@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.79"
+    app_version: ClassVar[str] = "1.0.80"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -76,6 +76,8 @@ class Settings(BaseSettings):
                 "ha_access_token": self.ha_access_token,
                 "weather_entity": self.weather_entity,
                 "notification_webhook": self.notification_webhook,
+                "retention_days": self.retention_days,
+                "storage_path": self.storage_path,
             }
 
             with open(self.config_file_path, "w") as f:
@@ -105,6 +107,10 @@ class Settings(BaseSettings):
                     self.weather_entity = config_data["weather_entity"]
                 if "notification_webhook" in config_data:
                     self.notification_webhook = config_data["notification_webhook"]
+                if "retention_days" in config_data:
+                    self.retention_days = config_data["retention_days"]
+                if "storage_path" in config_data:
+                    self.storage_path = config_data["storage_path"]
         except Exception as e:
             print(f"Error loading settings: {e}")
 
