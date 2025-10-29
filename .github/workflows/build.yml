@@ -170,7 +170,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./doorbell-addon
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: ${{ needs.version-check.outputs.is_release == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.81] - 2025-10-29
+
+### Fixed
+- **Raspberry Pi Support:** Added armhf and armv7 architecture support
+- **"exec format error":** Resolved architecture mismatch on ARM 32-bit systems
+- **Docker Build:** Added linux/arm/v7 platform to GitHub Actions workflow
+
+### Added
+- **armhf Architecture:** Support for ARM 32-bit hard float (Raspberry Pi 3/4)
+- **armv7 Architecture:** Support for ARM v7 processors
+- **Multi-Platform Build:** GitHub Actions now builds for amd64, arm64, and arm/v7
+
+### Changed
+- **Architecture Support:** Expanded from 2 to 4 architectures (amd64, aarch64, armhf, armv7)
+- **Build Configuration:** Updated build.yaml with armhf and armv7 base images
+- **CI/CD Pipeline:** Enhanced to build ARM 32-bit Docker images
+
+### Technical Implementation
+- Added armhf and armv7 to config.yaml arch list
+- Added armhf and armv7 base images in build.yaml
+- Updated GitHub Actions workflow to build linux/arm/v7 platform
+- All architectures now use hassio-addons/base:18.1.0
+
+### User Impact
+- **Raspberry Pi Users:** Addon now works on all Raspberry Pi models
+- **ARM Devices:** Support for 32-bit ARM systems (not just 64-bit)
+- **No More Errors:** "exec format error" resolved for ARM 32-bit users
+- **Wider Compatibility:** Works on more Home Assistant installations
+
+### Platform Support
+- ✅ **amd64** - Intel/AMD 64-bit processors
+- ✅ **aarch64** - ARM 64-bit processors
+- ✅ **armhf** - ARM 32-bit hard float (Raspberry Pi 3/4)
+- ✅ **armv7** - ARM v7 processors
+
 ## [1.0.80] - 2025-10-28
 
 ### Fixed
