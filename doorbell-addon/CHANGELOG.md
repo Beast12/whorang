@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.83] - 2025-10-30
+
+### Fixed
+- **ARM Architecture Build:** Fixed "exec format error" on Raspberry Pi
+- **Multi-Architecture Images:** Now builds separate images per architecture
+- **Home Assistant Compatibility:** Using HA builder for proper architecture-specific images
+
+### Changed
+- **Build System:** Replaced Docker buildx with Home Assistant builder
+- **CI/CD Pipeline:** Matrix build strategy for each architecture (amd64, aarch64, armhf, armv7)
+- **Image Naming:** Proper architecture-specific image tags
+
+### Technical Implementation
+- Switched from docker/build-push-action to home-assistant/builder
+- Matrix strategy builds 4 separate images in parallel
+- Each architecture gets its own image: {image}-{arch}:{version}
+- Proper Home Assistant addon image structure
+
+### User Impact
+- **Raspberry Pi Users:** "exec format error" resolved
+- **All ARM Devices:** Proper architecture-specific images
+- **Faster Installs:** Home Assistant pulls correct image for device
+- **No More Errors:** Works on all supported architectures
+
+### Architecture-Specific Images
+- ✅ `ghcr.io/beast12/whorang-doorbell-addon-amd64:1.0.83`
+- ✅ `ghcr.io/beast12/whorang-doorbell-addon-aarch64:1.0.83`
+- ✅ `ghcr.io/beast12/whorang-doorbell-addon-armhf:1.0.83`
+- ✅ `ghcr.io/beast12/whorang-doorbell-addon-armv7:1.0.83`
+
 ## [1.0.82] - 2025-10-30
 
 ### Fixed
