@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.85] - 2025-10-30
+
+### Fixed
+- **x86/amd64 Architecture:** Fixed "exec format error" on Intel/AMD systems
+- **Image Name Template:** Added {arch} placeholder to config.yaml image field
+- **Architecture Detection:** Home Assistant now pulls correct architecture-specific image
+
+### Changed
+- **config.yaml:** Image name changed from static to architecture-aware template
+- **Image Template:** `ghcr.io/beast12/whorang-doorbell-addon` → `ghcr.io/beast12/whorang-doorbell-addon-{arch}`
+
+### Technical Implementation
+- Added {arch} placeholder to image field in config.yaml
+- Home Assistant substitutes {arch} with actual architecture (amd64, aarch64, armhf, armv7)
+- Ensures correct image is pulled for each platform
+- Matches image naming pattern from build.yaml
+
+### User Impact
+- **x86/amd64 Users:** Addon now starts correctly
+- **All Architectures:** Each platform pulls its correct image
+- **No More Cross-Architecture Errors:** {arch} template prevents wrong image pulls
+- **Universal Fix:** Works on all supported platforms
+
+### Root Cause
+The config.yaml had a static image name without {arch} placeholder, causing Home Assistant to pull a random architecture image instead of the platform-specific one. The build.yaml correctly created architecture-specific images (whorang-doorbell-addon-amd64, whorang-doorbell-addon-aarch64, etc.), but config.yaml wasn't telling Home Assistant which one to use.
+
 ## [1.0.84] - 2025-10-30
 
 ### Fixed

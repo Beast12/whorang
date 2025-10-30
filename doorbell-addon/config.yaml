@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "Doorbell Face Recognition"
-version: "1.0.84"
+version: "1.0.85"
 slug: "doorbell_face_recognition"
 description: "Face recognition doorbell add-on with ML-based detection"
 url: "https://github.com/Beast12/whorang"
@@ -43,4 +43,4 @@ panel_title: "Doorbell Face Recognition"
 ingress: true
 ingress_port: 8099
 homeassistant_api: true
-image: "ghcr.io/beast12/whorang-doorbell-addon"
+image: "ghcr.io/beast12/whorang-doorbell-addon-{arch}"
