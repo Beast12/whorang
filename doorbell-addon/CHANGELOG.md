@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.82] - 2025-10-30
+
+### Fixed
+- **External Snapshot Support:** Doorbell endpoint now accepts external image parameters
+- **Automation Compatibility:** Restored support for Frigate/camera snapshot integration
+- **Parameter Validation:** Endpoint no longer rejects ai_title, image_path, image_url parameters
+
+### Added
+- **ai_title Parameter:** Accept AI-generated title from automation
+- **image_path Parameter:** Accept external snapshot path (e.g., from Frigate)
+- **image_url Parameter:** Accept external snapshot URL for reference
+- **Fallback Logic:** Use external image if provided, otherwise capture from camera
+
+### Changed
+- **Doorbell Ring Endpoint:** Enhanced to support both external snapshots and camera capture
+- **Image Source Flexibility:** Can now use pre-captured snapshots from automations
+- **Logging:** Added detailed logging for external vs. camera-captured images
+
+### Technical Implementation
+- Modified /api/doorbell/ring to accept 4 Form parameters instead of 1
+- Added image_path validation and fallback to camera capture
+- Preserved backward compatibility - still works without external parameters
+- Enhanced logging to track image source (external vs. camera)
+
+### User Impact
+- **Existing Automations Work Again:** Automations sending external snapshots now function
+- **Frigate Integration:** Can use Frigate snapshots instead of capturing from camera
+- **Flexibility:** Choose between external snapshot or camera capture per event
+- **No Breaking Changes:** Endpoint still works without any parameters
+
+### Backward Compatibility
+- ✅ Works with no parameters (captures from camera)
+- ✅ Works with only ai_message (captures from camera)
+- ✅ Works with all parameters (uses external snapshot)
+- ✅ Falls back to camera if external image doesn't exist
+
 ## [1.0.81] - 2025-10-29
 
 ### Fixed
