@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.84] - 2025-10-30
+
+### Fixed
+- **ARM 32-bit Build:** Fixed watchfiles Rust compilation error on armhf
+- **Dockerfile:** Removed [standard] extras from uvicorn to avoid Rust dependency
+- **Build Compatibility:** All architectures now build successfully
+
+### Changed
+- **uvicorn Installation:** Changed from `uvicorn[standard]` to `uvicorn` (without extras)
+- **Dependency Strategy:** Avoid Rust-dependent packages on ARM 32-bit platforms
+
+### Technical Implementation
+- Removed [standard] extras from uvicorn installation
+- Prevents watchfiles dependency which requires Rust toolchain
+- Rust target arm-unknown-linux-musleabihf not supported by rustup
+- Basic uvicorn still provides full ASGI server functionality
+
+### User Impact
+- **ARM 32-bit Devices:** Builds now complete successfully
+- **Raspberry Pi Users:** No more build failures
+- **Functionality:** No impact - uvicorn works the same without [standard] extras
+- **Performance:** Minimal difference - [standard] only adds auto-reload features
+
+### Note
+The [standard] extras for uvicorn include:
+- watchfiles (for auto-reload) - requires Rust
+- websockets (for WebSocket support) - not needed
+- httptools (for faster parsing) - optional
+
+Basic uvicorn provides all necessary ASGI server functionality for the addon.
+
 ## [1.0.83] - 2025-10-30
 
 ### Fixed

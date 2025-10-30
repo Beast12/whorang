@@ -64,7 +64,8 @@ RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install dependencies in order
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir fastapi uvicorn[standard] jinja2 python-multipart
+# Use uvicorn without [standard] for ARM builds to avoid Rust compilation issues
+RUN pip3 install --no-cache-dir fastapi uvicorn jinja2 python-multipart
 RUN pip3 install --no-cache-dir sqlalchemy httpx aiofiles python-dateutil
 RUN pip3 install --no-cache-dir paho-mqtt requests pydantic pydantic-settings structlog
 RUN pip3 install --no-cache-dir "cryptography>=42.0.0" "passlib[bcrypt]"
