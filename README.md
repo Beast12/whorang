@@ -1,6 +1,6 @@
 # WhoRang - Doorbell Face Recognition Add-on
 
-[![Version](https://img.shields.io/badge/version-1.0.87-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.88-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 [![Build and Publish Doorbell Face Recognition Addon](https://github.com/Beast12/whorang/actions/workflows/build.yml/badge.svg)](https://github.com/Beast12/whorang/actions/workflows/build.yml)

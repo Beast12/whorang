@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.88] - 2025-10-31
+
+### Fixed
+- **Official HA Compliance:** Now follows official Home Assistant addon publishing guidelines
+- **Image Naming:** Corrected to use {arch} placeholder as per HA docs
+- **Builder Configuration:** Fixed Home Assistant builder to use explicit arch-specific image names
+- **Package Visibility:** Properly sets each architecture package to public
+
+### Changed
+- **Build System:** Using Home Assistant builder with correct image naming
+- **Image Template:** Added {arch} placeholder in config.yaml and build.yaml
+- **Package Names:** Explicitly set to whorang-doorbell-addon-{arch} format
+- **CI/CD:** Fixed builder args to create properly named packages
+
+### Technical Implementation
+- config.yaml: `image: "ghcr.io/beast12/whorang-doorbell-addon-{arch}"`
+- build.yaml: `image: "ghcr.io/beast12/whorang-doorbell-addon-{arch}:1.0.88"`
+- Builder args: `--image whorang-doorbell-addon-${{ matrix.arch }}`
+- Creates 4 packages: whorang-doorbell-addon-amd64, -aarch64, -armhf, -armv7
+
+### User Impact
+- **Follows HA Standards:** Compliant with official Home Assistant documentation
+- **Proper Architecture Support:** Each platform gets correct image
+- **Automatic Visibility:** Packages automatically set to public after build
+- **Works on All Platforms:** amd64, aarch64, armhf, armv7
+
+### Documentation Reference
+Following official Home Assistant addon publishing guidelines:
+https://developers.home-assistant.io/docs/add-ons/publishing/
+
+The {arch} placeholder is replaced by Home Assistant with the actual architecture when loading the image.
+
 ## [1.0.87] - 2025-10-31
 
 ### Fixed
