@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.86] - 2025-10-31
+
+### Fixed
+- **Docker Image Visibility:** Fixed 403 Forbidden error when pulling images
+- **GitHub Packages:** Corrected "Make image public" workflow step
+- **Architecture-Specific Packages:** Each arch package now properly set to public
+
+### Changed
+- **CI/CD Workflow:** Updated make-public step to use architecture-specific package names
+- **Package Naming:** Workflow now targets correct package (e.g., whorang-doorbell-addon-amd64)
+
+### Technical Implementation
+- Fixed GitHub API call to use `${{ env.IMAGE_NAME }}-${{ matrix.arch }}`
+- Each architecture package (amd64, aarch64, armhf, armv7) now made public separately
+- Added error handling to prevent workflow failure if already public
+
+### User Impact
+- **Installation Works:** No more 403 Forbidden errors
+- **All Architectures:** Images accessible on all platforms
+- **Public Packages:** Docker images now properly public on GHCR
+
+### Root Cause
+The workflow was trying to make `whorang-doorbell-addon` public, but the actual packages are named `whorang-doorbell-addon-amd64`, `whorang-doorbell-addon-aarch64`, etc. The API call was targeting a non-existent package, leaving all architecture-specific packages private.
+
 ## [1.0.85] - 2025-10-30
 
 ### Fixed
