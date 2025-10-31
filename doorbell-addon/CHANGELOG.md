@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.87] - 2025-10-31
+
+### Fixed
+- **Package Structure:** Reverted to single multi-arch package instead of separate arch packages
+- **Repository Cleanup:** Now uses only `whorang-doorbell-addon` package in Beast12/whorang
+- **Image Naming:** Removed architecture-specific package creation
+
+### Changed
+- **Build System:** Reverted from Home Assistant builder to Docker buildx
+- **Package Strategy:** Single package with multi-arch manifest instead of 4 separate packages
+- **Image Reference:** Removed {arch} placeholder from config.yaml
+
+### Technical Implementation
+- Restored Docker buildx multi-architecture build
+- Single package: `ghcr.io/beast12/whorang-doorbell-addon`
+- Multi-arch manifest supports: linux/amd64, linux/arm64, linux/arm/v7
+- Docker automatically pulls correct architecture from manifest
+
+### User Impact
+- **Cleaner Package Structure:** Only one package to manage
+- **Automatic Architecture Selection:** Docker handles architecture detection
+- **No More Separate Packages:** Eliminates amd64, arm64, arm/v7 individual packages
+- **Correct Repository:** All images in Beast12/whorang repository
+
+### Root Cause
+Home Assistant builder creates separate packages per architecture (amd64, arm64, arm/v7), but we need a single package with a multi-architecture manifest. Docker buildx creates the correct structure that Home Assistant can use.
+
 ## [1.0.86] - 2025-10-31
 
 ### Fixed
