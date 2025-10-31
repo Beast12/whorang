@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.89] - 2025-10-31
+
+### Changed
+- **Documentation:** Replaced technical README with user-friendly setup guide
+- **User Experience:** Info tab now shows installation and configuration instructions
+- **Technical Docs:** Moved technical documentation to DOCS.md
+
+### Improved
+- **First-Time Setup:** Clear step-by-step instructions for new users
+- **Quick Start Guide:** Easy-to-follow configuration examples
+- **Troubleshooting:** Added common issues and solutions
+- **Navigation:** Better organization of user vs. technical documentation
+
+### User Impact
+- **Better Onboarding:** New users see helpful setup instructions immediately
+- **Reduced Confusion:** Technical details no longer shown by default
+- **Quick Reference:** Configuration options clearly explained
+- **Easy Access:** Technical docs still available in DOCS.md for developers
+
+### Files Changed
+- `doorbell-addon/README.md` - Now user-facing documentation
+- `doorbell-addon/DOCS.md` - Technical documentation (renamed from README.md)
+
 ## [1.0.88] - 2025-10-31
 
 ### Fixed
