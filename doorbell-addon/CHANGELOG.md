@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.91] - 2025-11-03
+
+### Fixed
+- **STABILITY:** Reverted to proven v1.0.70 behavior - addon always captures from camera
+- **DNS Timeout:** Removed /config mapping that was causing addon startup issues
+- **Reliability:** External image path feature temporarily disabled for stability
+
+### Changed
+- **Camera Capture:** Addon now always captures directly from camera entity/URL
+- **External Paths:** image_path parameter accepted but ignored (falls back to camera)
+- **Directory Mapping:** Removed config:rw mapping to match stable v1.0.70 configuration
+
+### Technical Details
+- Reverted doorbell_ring endpoint to always use camera_manager.capture_single_frame()
+- External snapshot feature from v1.0.82 temporarily disabled
+- Simplified code path reduces potential failure points
+- No file system dependencies beyond /share directory
+
+### Why This Change
+v1.0.90 introduced /config directory mapping which caused DNS resolution issues and addon startup failures. This version reverts to the stable, proven behavior from v1.0.70 where everything worked reliably.
+
+### User Impact
+- **Guaranteed Stability:** Uses proven code path from v1.0.70
+- **Automations Work:** REST command will work reliably
+- **Events Appear:** Dashboard will show doorbell events
+- **Face Recognition:** All core features functional
+- **Trade-off:** External snapshot paths from automations are ignored (addon captures from camera instead)
+
+### Migration Note
+Your automation can keep passing image_path parameters - they will be accepted but the addon will capture from the camera instead. This ensures backward compatibility while maintaining stability.
+
 ## [1.0.90] - 2025-11-03
 
 ### Fixed

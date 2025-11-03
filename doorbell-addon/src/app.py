@@ -639,41 +639,24 @@ async def doorbell_ring(
         "Doorbell ring event received",
         ai_message=ai_message,
         ai_title=ai_title,
-        image_path=image_path,
-        image_url=image_url,
     )
     try:
-        # Use external image if provided, otherwise capture from camera
-        if image_path:
-            logger.info("Using external snapshot", image_path=image_path)
-            # Verify the external image exists
-            if not os.path.exists(image_path):
-                logger.warning(
-                    "External image path does not exist, falling back to camera capture",
-                    image_path=image_path,
-                )
-                image_path = None
+        # Always capture from camera (stable v1.0.70 behavior)
+        # External image paths are accepted but ignored for stability
+        if not camera_manager:
+            raise HTTPException(status_code=503, detail="Camera manager not available")
+
+        # Capture frame from doorbell camera
+        image_path = camera_manager.capture_single_frame()
 
         if not image_path:
-            # Check if camera_manager is available
-            if not camera_manager:
-                raise HTTPException(
-                    status_code=503, detail="Camera manager not available"
-                )
+            logger.error("Failed to capture frame from doorbell")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to capture frame from doorbell camera",
+            )
 
-            # Capture frame from doorbell camera
-            image_path = camera_manager.capture_single_frame()
-
-            if not image_path:
-                logger.error("Failed to capture frame from doorbell")
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to capture frame from doorbell camera",
-                )
-
-            logger.info("Doorbell frame captured successfully", image_path=image_path)
-        else:
-            logger.info("Using provided external image", image_path=image_path)
+        logger.info("Doorbell frame captured successfully", image_path=image_path)
 
         # Process the captured frame for face recognition
         results = await face_manager.process_doorbell_image(image_path, ai_message)

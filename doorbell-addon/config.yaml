@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "Doorbell Face Recognition"
-version: "1.0.90"
+version: "1.0.91"
 slug: "doorbell_face_recognition"
 description: "Face recognition doorbell add-on with ML-based detection"
 url: "https://github.com/Beast12/whorang"
@@ -16,7 +16,6 @@ map:
   - "share:rw"
   - "ssl"
   - "media:rw"
-  - "config:rw"
 options:
   camera_entity: ""
   camera_url: "rtsp://192.168.1.100:554/stream"
