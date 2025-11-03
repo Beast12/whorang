@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.90] - 2025-11-03
+
+### Fixed
+- **Critical:** Added `/config` directory mapping to addon configuration
+- **REST Command Error:** Addon can now access `/config/www/` snapshots from automations
+- **Client Error:** Resolved "Client error occurred" when calling doorbell ring endpoint
+
+### Changed
+- **Directory Mapping:** Added `config:rw` to mapped directories in config.yaml
+- **File Access:** Addon now has read/write access to Home Assistant config directory
+
+### Technical Details
+- Added `/config` mount point to allow access to `/config/www/` directory
+- Automation snapshots saved to `/config/www/doorbell_snapshot_*.jpg` are now accessible
+- REST command `doorbell_ring` can now process external image paths correctly
+
+### Root Cause
+The addon only had access to `/share`, `/ssl`, and `/media` directories. When automations saved snapshots to `/config/www/` and passed the path to the addon, the file couldn't be found because `/config` wasn't mounted in the container.
+
+### User Impact
+- **Automations Work:** REST command no longer fails with client errors
+- **Events Appear:** Doorbell events now show up in dashboard
+- **Face Recognition:** External snapshots from automations are processed correctly
+- **No More 404s:** Image paths from automations are now accessible
+
 ## [1.0.89] - 2025-10-31
 
 ### Changed
