@@ -418,9 +418,53 @@ async function updateCameraStatus() {
     }
 }
 
+async function saveWeatherSettings() {
+    const button = event.target;
+    const weatherEntity = document.getElementById('weather-entity');
+    
+    if (!weatherEntity) {
+        showNotification('Weather entity field not found', 'error');
+        return;
+    }
+    
+    // Update button state
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Saving...';
+    
+    try {
+        const settings = {
+            weather_entity: weatherEntity.value || null
+        };
+        
+        const response = await fetch('api/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (response.ok) {
+            showNotification('Weather settings saved successfully!', 'success');
+        } else {
+            const error = await response.json();
+            showNotification('Error saving weather settings: ' + error.detail, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Save weather settings error:', error);
+        showNotification('Network error while saving weather settings', 'error');
+    } finally {
+        // Restore button state
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-save"></i> Save Weather Settings';
+    }
+}
+
 // Export functions for global access
 window.testCamera = testCamera;
 window.saveSettings = saveSettings;
 window.updateConfidenceValue = updateConfidenceValue;
 window.refreshCameraEntities = refreshCameraEntities;
 window.updateCameraStatus = updateCameraStatus;
+window.saveWeatherSettings = saveWeatherSettings;

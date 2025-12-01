@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.92] - 2025-12-01
+
+### Fixed
+- **Weather Integration UI:** Added missing save button to Weather Integration section in settings page
+- **User Experience:** Users can now properly save their weather entity selection
+
+### Added
+- Save Weather Settings button in Weather Integration section
+- `saveWeatherSettings()` JavaScript function for dedicated weather entity saving
+
+### Technical Details
+- Added save button to settings.html Weather Integration card
+- Implemented saveWeatherSettings() function in settings.js
+- Function sends weather_entity to /api/settings endpoint
+- Displays success/error notifications using existing notification system
+
+### User Impact
+- Weather entity selection can now be saved independently
+- Clear visual feedback when weather settings are saved
+- Consistent with other settings sections (Camera, Storage, etc.)
+
 ## [1.0.91] - 2025-11-03
 
 ### Fixed
