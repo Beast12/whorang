@@ -7,7 +7,6 @@ url: "https://github.com/Beast12/whorang"
 arch:
   - amd64
   - aarch64
-  - armhf
 startup: services
 boot: auto
 init: false

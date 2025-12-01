@@ -8,14 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.94] - 2025-12-01
 
 ### Fixed
-- **Build Configuration:** Removed unsupported `armv7` architecture flag
-- **GitHub Actions:** Fixed build failure "Argument '--armv7' unknown"
-- **Architecture Support:** Now correctly builds for amd64, aarch64, and armhf only
+- **Build Configuration:** Removed unsupported architecture flags (armv7, armhf)
+- **GitHub Actions:** Fixed build failures with unknown architecture arguments
+- **Architecture Support:** Now correctly builds only for amd64 and aarch64
 
 ### Technical Details
-- Home Assistant build system uses `armhf` for ARMv7 devices (Raspberry Pi 3)
-- Removed `armv7` from config.yaml and build.yaml
-- Supported architectures: amd64 (x86_64), aarch64 (ARM64), armhf (ARMv7)
+- Home Assistant builder only supports `--amd64` and `--aarch64` flags
+- Removed armv7 and armhf from config.yaml, build.yaml, and GitHub Actions workflow
+- Supported devices:
+  - **amd64**: x86_64 systems (PCs, servers, VMs)
+  - **aarch64**: ARM 64-bit (Raspberry Pi 3/4/5 with 64-bit OS, Home Assistant Green/Yellow)
+- Note: Raspberry Pi 3/4/5 can run aarch64 (64-bit) OS for better performance
 
 ## [1.0.93] - 2025-12-01
 
