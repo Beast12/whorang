@@ -3,7 +3,6 @@ build_from:
   aarch64: "ghcr.io/hassio-addons/base/aarch64:18.1.0"
   amd64: "ghcr.io/hassio-addons/base/amd64:18.1.0"
   armhf: "ghcr.io/hassio-addons/base/armhf:18.1.0"
-  armv7: "ghcr.io/hassio-addons/base/armv7:18.1.0"
 image: "ghcr.io/beast12/whorang-doorbell-addon-{arch}:1.0.93"
 labels:
   org.opencontainers.image.title: "doorbell-face-recognition:1.0.93"
