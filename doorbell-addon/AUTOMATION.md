@@ -14,36 +14,37 @@ This automation includes:
 - Face recognition processing
 
 ```yaml
-alias: Smart Doorbell Notification with AI
-description: Send notification with AI-generated message when doorbell is pressed
+alias: Smart Doorbell Notification with AI (Example)
+description: >-
+  Example automation: Send notification with AI-generated message and show live 
+  feed when doorbell is pressed. Replace all placeholder entities with your own devices.
 triggers:
-  - entity_id: binary_sensor.your_doorbell_button
+  - entity_id: binary_sensor.your_doorbell_button  # Replace with your doorbell button sensor
     from: "off"
     to: "on"
     trigger: state
 actions:
-  # 1. Capture snapshot from doorbell camera
+  # Take a snapshot from the doorbell camera
   - target:
-      entity_id: camera.your_doorbell_camera
+      entity_id: camera.your_doorbell_camera  # Replace with your doorbell camera entity
     data:
       filename: "{{ snapshot_path }}"
     action: camera.snapshot
   
-  # 2. Play doorbell sound on speakers (optional)
+  # Optional: Play doorbell sound on media players
   - target:
-      device_id:
-        - device_id_speaker_1
-        - device_id_speaker_2
-        - device_id_speaker_3
+      entity_id:
+        - media_player.living_room_speaker  # Replace with your media player entities
+        - media_player.kitchen_speaker
     data:
       media:
-        media_content_id: /local/sounds/doorbell.mp3
+        media_content_id: /local/sounds/doorbell.mp3  # Path to your doorbell sound file
         media_content_type: music
         metadata: {}
     action: media_player.play_media
     enabled: true
   
-  # 3. Generate AI description of who's at the door (requires LLM Vision integration)
+  # Analyze the snapshot with AI to generate description
   - data:
       remember: false
       use_memory: false
@@ -53,7 +54,7 @@ actions:
       temperature: 0.2
       generate_title: true
       expose_images: true
-      provider: your_llm_provider_id
+      provider: YOUR_PROVIDER_ID  # Replace with your LLM Vision provider ID
       message: >-
         You are my sarcastic funny security guard. Describe what you see. Don't
         mention trees, bushes, grass, landscape, driveway, light fixtures, yard,
@@ -61,14 +62,14 @@ actions:
         short in one funny one liner of max 10 words. Only describe the person,
         vehicle or the animal.
       image_file: "{{ snapshot_path }}"
-      model: gpt-4o-mini
+      model: gpt-4o-mini  # Or your preferred vision model
     response_variable: ai_description
     action: llmvision.image_analyzer
   
-  # 4. Send notifications and process face recognition in parallel
+  # Send notifications and display video in parallel
   - parallel:
-      # Send mobile notification to first phone
-      - action: notify.mobile_app_phone_1
+      # Notification to first mobile device
+      - action: notify.mobile_app_your_phone  # Replace with your mobile app notify service
         data:
           message: "{{ ai_description.response_text }}"
           title: "{{ ai_description.title }}"
@@ -83,12 +84,12 @@ actions:
                 uri: "{{ snapshot_url }}"
               - action: OPEN_CAMERA
                 title: 📹 Live
-                uri: /dashboard-home/cameras
+                uri: /dashboard-home/cameras  # Replace with your camera dashboard path
               - action: DISMISS
-                title: ❌ Close
+                title: ❌ Dismiss
       
-      # Send mobile notification to second phone
-      - action: notify.mobile_app_phone_2
+      # Notification to second mobile device (optional)
+      - action: notify.mobile_app_second_phone  # Replace or remove if not needed
         data:
           message: "{{ ai_description.response_text }}"
           title: "{{ ai_description.title }}"
@@ -105,67 +106,66 @@ actions:
                 title: 📹 Live
                 uri: /dashboard-home/cameras
               - action: DISMISS
-                title: ❌ Close
+                title: ❌ Dismiss
         enabled: true
       
-      # Send to face recognition addon
-      - action: rest_command.doorbell_ring
+      # Optional: Call REST command for external integration
+      - action: rest_command.doorbell_notification  # Replace with your REST command if needed
         data:
           ai_message: "{{ ai_description.response_text }}"
           ai_title: "{{ ai_description.title }}"
           image_path: "{{ snapshot_path }}"
           image_url: "{{ snapshot_url }}"
+        enabled: false  # Disabled by default, enable if you use this
       
-      # Announce via TTS on display 1
+      # Announce on smart display in kitchen
       - data:
-          media_player_entity_id: media_player.kitchen_display
+          media_player_entity_id: media_player.kitchen_display  # Replace with your display
           message: "{{ ai_description.response_text }}"
           cache: true
         action: tts.speak
         target:
-          entity_id: tts.google_translate_en_com
+          entity_id: tts.google_translate_en_com  # Replace with your TTS service
         enabled: true
       
-      # Announce via TTS on display 2
+      # Announce on smart display in office
       - data:
-          media_player_entity_id: media_player.office_display
+          media_player_entity_id: media_player.office_display  # Replace with your display
           message: "{{ ai_description.response_text }}"
           cache: true
         action: tts.speak
         target:
-          entity_id: tts.google_translate_en_com
+          entity_id: tts.google_translate_en_com  # Replace with your TTS service
         enabled: true
   
-  # 5. Show snapshot on displays
-  - target:
-      device_id:
-        - device_id_display_1
-        - device_id_display_2
+  # Stream live camera feed to Google Nest Hubs or smart displays
+  - action: camera.play_stream
+    target:
+      entity_id: camera.your_doorbell_camera  # Replace with your doorbell camera entity
     data:
-      media:
-        media_content_id: "{{ snapshot_url }}"
-        media_content_type: image/jpeg
-        metadata: {}
-    action: media_player.play_media
-    enabled: true
+      media_player:
+        - media_player.kitchen_display  # Replace with your smart display entities
+        - media_player.office_display
+      format: hls  # Use 'hls' for most devices, 'dash' as alternative
   
-  # 6. Wait 15 seconds then stop displaying
+  # Wait before stopping the stream
   - delay:
-      seconds: 15
+      seconds: 20  # Adjust duration as needed
   
-  # 7. Stop media playback on displays
+  # Stop the video stream on displays
   - target:
-      device_id:
-        - device_id_display_1
-        - device_id_display_2
+      entity_id:
+        - media_player.kitchen_display  # Match the displays from camera.play_stream
+        - media_player.office_display
     action: media_player.media_stop
     data: {}
     enabled: true
 
+# Variables for file paths and URLs
 variables:
   timestamp: "{{ now().timestamp() | int }}"
   snapshot_path: /config/www/doorbell_snapshot_{{ timestamp }}.jpg
-  snapshot_url: https://your-home-assistant-url.com/local/doorbell_snapshot_{{ timestamp }}.jpg
+  snapshot_url: https://your-ha-instance.com/local/doorbell_snapshot_{{ timestamp }}.jpg  # Replace with your Home Assistant URL
 ```
 
 ## Automation Using Addon Events
