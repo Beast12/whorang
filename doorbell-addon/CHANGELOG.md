@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.94] - 2025-12-01
+
+### Fixed
+- **Build Configuration:** Removed unsupported `armv7` architecture flag
+- **GitHub Actions:** Fixed build failure "Argument '--armv7' unknown"
+- **Architecture Support:** Now correctly builds for amd64, aarch64, and armhf only
+
+### Technical Details
+- Home Assistant build system uses `armhf` for ARMv7 devices (Raspberry Pi 3)
+- Removed `armv7` from config.yaml and build.yaml
+- Supported architectures: amd64 (x86_64), aarch64 (ARM64), armhf (ARMv7)
+
 ## [1.0.93] - 2025-12-01
 
 ### Fixed
