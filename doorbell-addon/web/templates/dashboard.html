@@ -432,7 +432,7 @@ async function submitLabel() {
         const formData = new FormData();
         formData.append('person_id', finalPersonId);
         
-        const response = await fetch(`/api/events/${eventId}/label`, {
+        const response = await fetch(`api/events/${eventId}/label`, {
             method: 'POST',
             body: formData
         });
@@ -469,7 +469,7 @@ async function submitAddFace() {
         const formData = new FormData();
         formData.append('image', imageFile);
         
-        const response = await fetch(`/api/persons/${personId}/faces`, {
+        const response = await fetch(`api/persons/${personId}/faces`, {
             method: 'POST',
             body: formData
         });

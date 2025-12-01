@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.93] - 2025-12-01
+
+### Fixed
+- **Event Labeling 404 Error:** Fixed absolute API paths causing 404 errors when labeling events
+- **Add Face Functionality:** Fixed absolute API path for adding faces to persons
+- **Ingress Compatibility:** All API calls now use relative paths for proper Home Assistant ingress routing
+
+### Technical Details
+- Changed `/api/events/${eventId}/label` to `api/events/${eventId}/label` in dashboard.html
+- Changed `/api/persons/${personId}/faces` to `api/persons/${personId}/faces` in dashboard.html
+- Consistent with image path fix from v1.0.47 - absolute paths don't work through ingress
+
+### User Impact
+- Event labeling now works correctly through Home Assistant ingress
+- Users can successfully assign person labels to doorbell events
+- Adding additional face images to persons now functions properly
+- No more "404 Not Found" errors when using these features
+
 ## [1.0.92] - 2025-12-01
 
 ### Fixed
