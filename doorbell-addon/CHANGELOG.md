@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.96] - 2025-12-02
+
+### Fixed
+- **Critical Script Loading Issue:** Removed `defer` attribute from settings.js to fix function availability
+- **saveWeatherSettings Still Undefined:** Fixed timing issue where deferred script loaded after onclick handlers executed
+- **Script Load Order:** settings.js now loads synchronously in head to ensure functions are available
+
+### Technical Details
+- Changed `<script src="static/js/settings.js" defer>` to `<script src="static/js/settings.js">`
+- Deferred loading was causing functions to be unavailable when onclick handlers tried to call them
+- Synchronous loading ensures all exported functions (saveWeatherSettings, testCamera, saveSettings, etc.) are available immediately
+
+### User Impact
+- Weather entity save button now actually works (for real this time!)
+- All settings buttons function correctly without JavaScript errors
+- No more "saveWeatherSettings is not defined" errors
+
 ## [1.0.95] - 2025-12-02
 
 ### Fixed
