@@ -340,16 +340,12 @@
 
 {% block extra_scripts %}
 <script>
+// Additional settings page functionality that extends settings.js
+
 // Load statistics on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadStatistics();
-    checkCameraStatus();
 });
-
-// Update confidence threshold display
-function updateConfidenceValue(value) {
-    document.getElementById('confidence-value').textContent = value + '%';
-}
 
 // Load system statistics
 async function loadStatistics() {
@@ -394,45 +390,6 @@ async function loadStatistics() {
     } catch (error) {
         console.error('Error loading statistics:', error);
         document.getElementById('stats-container').innerHTML = '<p class="text-danger">Error loading statistics</p>';
-    }
-}
-
-// Test camera connection
-async function testCamera() {
-    const statusElement = document.getElementById('camera-status');
-    statusElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Testing...';
-    
-    try {
-        const response = await fetch('api/camera/capture', { method: 'POST' });
-        
-        if (response.ok) {
-            statusElement.innerHTML = '<span class="badge bg-success">✓ Camera Connected</span>';
-            document.getElementById('camera-connection-status').className = 'badge bg-success';
-            document.getElementById('camera-connection-status').textContent = 'Connected';
-        } else {
-            statusElement.innerHTML = '<span class="badge bg-danger">✗ Camera Error</span>';
-            document.getElementById('camera-connection-status').className = 'badge bg-danger';
-            document.getElementById('camera-connection-status').textContent = 'Error';
-        }
-    } catch (error) {
-        statusElement.innerHTML = '<span class="badge bg-danger">✗ Connection Failed</span>';
-        document.getElementById('camera-connection-status').className = 'badge bg-danger';
-        document.getElementById('camera-connection-status').textContent = 'Failed';
-    }
-}
-
-// Check camera status on load
-async function checkCameraStatus() {
-    try {
-        // This is a lightweight check - we'll just see if we can reach the API
-        const response = await fetch('api/settings');
-        if (response.ok) {
-            document.getElementById('camera-connection-status').className = 'badge bg-success';
-            document.getElementById('camera-connection-status').textContent = 'Ready';
-        }
-    } catch (error) {
-        document.getElementById('camera-connection-status').className = 'badge bg-warning';
-        document.getElementById('camera-connection-status').textContent = 'Unknown';
     }
 }
 
@@ -607,6 +564,22 @@ async function exportData() {
         alert('Data export feature coming soon! This will allow you to backup your face encodings and settings.');
     } catch (error) {
         alert('Error exporting data: ' + error.message);
+    }
+}
+
+// Capture test frame
+async function captureFrame() {
+    try {
+        const response = await fetch('api/camera/capture', { method: 'POST' });
+        
+        if (response.ok) {
+            alert('Test frame captured successfully!');
+        } else {
+            const error = await response.json();
+            alert('Error capturing frame: ' + (error.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error capturing frame: ' + error.message);
     }
 }
 

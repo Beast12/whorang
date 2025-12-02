@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.95] - 2025-12-02
+
+### Fixed
+- **Weather Settings Save Button:** Fixed "saveWeatherSettings is not defined" JavaScript error
+- **Function Conflict:** Removed duplicate function definitions from inline script that were overriding external settings.js
+- **Code Organization:** Cleaned up settings.html to properly use external settings.js module
+
+### Technical Details
+- Removed duplicate function definitions (testCamera, saveSettings, updateConfidenceValue, etc.) from inline script
+- External settings.js now properly handles all settings functionality including saveWeatherSettings()
+- Inline script now only contains page-specific functions (loadStatistics, testNotifications, etc.)
+- Fixed function scope conflicts between inline and external JavaScript
+
+### User Impact
+- Weather entity save button now works correctly
+- No more JavaScript console errors when clicking "Save Weather Settings"
+- Improved code maintainability and reduced duplication
+
 ## [1.0.94] - 2025-12-01
 
 ### Fixed
