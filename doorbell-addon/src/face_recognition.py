@@ -63,7 +63,7 @@ class FaceRecognitionManager:
         """
         try:
             # Load image
-            image = face_recognition.load_image_from_file(image_path)  # type: ignore
+            image = face_recognition.load_image_file(image_path)  # type: ignore
 
             # Get face locations and encodings
             face_locations = face_recognition.face_locations(image)  # type: ignore
@@ -209,7 +209,7 @@ class FaceRecognitionManager:
                 person = self.db.add_person(person_name)
 
             # Load image and extract face encoding
-            image = face_recognition.load_image_from_file(image_path)  # type: ignore
+            image = face_recognition.load_image_file(image_path)  # type: ignore
 
             if face_location:
                 # Use specific face location
