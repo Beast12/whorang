@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.97] - 2025-12-02
+
+### Fixed
+- **CRITICAL: Face Recognition Function Name Error** - Fixed incorrect function name causing "Could not extract face from image" error
+- **Add Face to Person Feature Broken** - Users were unable to add face images to persons due to wrong API call
+
+### Technical Details
+- **Bug**: Code was calling `face_recognition.load_image_from_file()` which doesn't exist
+- **Fix**: Changed to correct function name `face_recognition.load_image_file()`
+- **Affected**: Two locations in face_recognition.py (lines 66 and 212)
+- **Error Message**: `module 'face_recognition' has no attribute 'load_image_from_file'`
+
+### User Impact
+- ✅ Users can now successfully add face images to persons
+- ✅ Face detection and recognition works correctly
+- ✅ Manual face capture and enrollment now functional
+- ✅ No more "Could not extract face from image" errors
+
+### Root Cause
+- Typo in function name - added extra "from" in the middle
+- This affected both automatic face detection and manual face enrollment
+- Critical bug that prevented core functionality from working
+
 ## [1.0.96] - 2025-12-02
 
 ### Fixed
