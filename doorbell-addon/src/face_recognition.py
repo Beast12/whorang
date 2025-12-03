@@ -223,14 +223,12 @@ class FaceRecognitionManager:
                     print(f"No faces found in {image_path}")
                     return False
                 face_encodings = face_recognition.face_encodings(image, face_locations)  # type: ignore
+                # Set face_location for thumbnail creation
+                face_location = face_locations[0]
 
             if not face_encodings:
                 print(f"Could not extract face encoding from {image_path}")
                 return False
-
-            # Get face location for thumbnail
-            if not face_location:
-                face_location = face_locations[0]
 
             # Create thumbnail
             thumbnail_dir = os.path.join(self.db.storage_path, "face_thumbnails")

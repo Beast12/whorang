@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.100] - 2025-12-03
+
+### Fixed
+- **CRITICAL HOTFIX: Face Encoding Variable Scope Error** - Fixed "Could not extract face from image" error introduced in v1.0.99
+- **Add Face to Person Broken** - Users unable to add face images due to undefined variable error
+
+### Technical Details
+- **Bug**: In v1.0.99, `face_location` variable was only defined in the `else` block but referenced outside its scope
+- **Error**: `NameError: name 'face_locations' is not defined` when face_location was provided
+- **Impact**: Completely broke face image addition functionality introduced in v1.0.99
+- **Fix**: Moved `face_location = face_locations[0]` assignment inside the `else` block where `face_locations` is defined
+- **Location**: `face_recognition.py` line 227
+
+### Root Cause
+- Variable scope issue introduced when adding thumbnail creation feature
+- `face_locations` list only created when no face_location provided
+- Attempted to access `face_locations[0]` outside its scope
+- Classic Python variable scoping error
+
+### User Impact
+- ✅ Face image addition now works correctly again
+- ✅ Thumbnail creation works for both manual and automatic face detection
+- ✅ All face encoding management features fully functional
+
+### Lesson Learned
+- Always ensure variables are defined in all code paths before use
+- Test both branches of conditional logic (with and without face_location)
+- Variable scope errors can break critical functionality
+- Hotfix released within 2 hours of user report
+
 ## [1.0.99] - 2025-12-03
 
 ### Added
