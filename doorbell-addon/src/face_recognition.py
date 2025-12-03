@@ -231,7 +231,7 @@ class FaceRecognitionManager:
                 return False
 
             # Create thumbnail
-            thumbnail_dir = os.path.join(self.db.storage_path, "face_thumbnails")
+            thumbnail_dir = os.path.join(settings.storage_path, "face_thumbnails")
             os.makedirs(thumbnail_dir, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

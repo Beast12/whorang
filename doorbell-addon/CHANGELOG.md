@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.101] - 2025-12-03
+
+### Fixed
+- **CRITICAL HOTFIX: AttributeError in Face Thumbnail Creation** - Fixed "DatabaseManager object has no attribute 'storage_path'" error
+- **Face Image Addition Still Broken** - v1.0.100 didn't fully fix the issue due to incorrect attribute access
+
+### Technical Details
+- **Bug**: In v1.0.100, tried to access `self.db.storage_path` but `DatabaseManager` doesn't have this attribute
+- **Error**: `AttributeError: 'DatabaseManager' object has no attribute 'storage_path'`
+- **Impact**: Face image addition still completely broken despite v1.0.100 fix
+- **Fix**: Changed `self.db.storage_path` to `settings.storage_path` in thumbnail creation
+- **Location**: `face_recognition.py` line 234
+
+### Root Cause
+- `DatabaseManager` class doesn't expose `storage_path` as an instance attribute
+- Uses `settings.storage_path` internally but doesn't provide public access
+- Incorrect assumption that `db` object would have `storage_path` attribute
+- Should have used `settings.storage_path` directly (already imported)
+
+### Code Fix
+```python
+# BEFORE (v1.0.100 - BROKEN):
+thumbnail_dir = os.path.join(self.db.storage_path, "face_thumbnails")
+
+# AFTER (v1.0.101 - FIXED):
+thumbnail_dir = os.path.join(settings.storage_path, "face_thumbnails")
+```
+
+### User Impact
+- ✅ Face image addition now actually works
+- ✅ Thumbnail creation functional
+- ✅ All face encoding management features operational
+
+### Lesson Learned
+- Always check class attributes before accessing them
+- Don't assume objects expose internal dependencies
+- Test the actual fix, not just the code compilation
+- v1.0.100 passed linting but had runtime error
+
 ## [1.0.100] - 2025-12-03
 
 ### Fixed
