@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.98] - 2025-12-03
+
+### Fixed
+- **UI: Light Mode Text Visibility** - Fixed weather and AI message text being invisible in light mode
+- **Dashboard & Gallery Pages** - Weather and AI message information now visible without hovering
+
+### Technical Details
+- **Problem**: Used `text-light` class and light colors (`#e9ecef`, `#adb5bd`) designed for dark backgrounds
+- **Result**: White text on white background in light mode - completely invisible
+- **Fix**: Changed to Bootstrap adaptive classes:
+  - AI messages: `text-light` → `text-muted` (adapts to light/dark mode)
+  - Weather info: `text-light` → `text-secondary` (adapts to light/dark mode)
+- **Affected Files**: 
+  - `dashboard.html` - Events table AI message and weather columns
+  - `gallery.html` - Event cards AI message and weather information
+
+### User Impact
+- ✅ Weather information now visible in light mode without hovering
+- ✅ AI messages now readable in light mode without hovering
+- ✅ Text properly adapts to both light and dark color schemes
+- ✅ Improved accessibility and usability in light mode
+
+### Root Cause
+- Hard-coded light colors suitable only for dark backgrounds
+- No consideration for light mode color scheme
+- Bootstrap's adaptive text classes provide automatic theme adaptation
+
 ## [1.0.97] - 2025-12-02
 
 ### Fixed
