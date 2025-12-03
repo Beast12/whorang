@@ -412,6 +412,118 @@ async def add_face_to_person(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/persons/{person_id}/faces")
+async def get_person_face_encodings(person_id: int):
+    """Get all face encodings for a specific person with metadata."""
+    try:
+        person = db.get_person(person_id)
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
+
+        face_encodings = db.get_face_encodings(person_id)
+
+        encodings_data = []
+        for encoding in face_encodings:
+            encodings_data.append(
+                {
+                    "id": encoding.id,
+                    "person_id": encoding.person_id,
+                    "confidence": encoding.confidence,
+                    "created_at": (
+                        encoding.created_at.isoformat() if encoding.created_at else None
+                    ),
+                    "source_image_path": encoding.source_image_path,
+                    "thumbnail_path": encoding.thumbnail_path,
+                    "has_thumbnail": (
+                        encoding.thumbnail_path is not None
+                        and os.path.exists(encoding.thumbnail_path)
+                    ),
+                }
+            )
+
+        return {
+            "person_id": person_id,
+            "person_name": person.name,
+            "face_count": len(encodings_data),
+            "encodings": encodings_data,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error getting face encodings",
+            person_id=person_id,
+            error=str(e),
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/persons/{person_id}/faces/{encoding_id}")
+async def delete_face_encoding(person_id: int, encoding_id: int):
+    """Delete a specific face encoding."""
+    try:
+        # Verify person exists
+        person = db.get_person(person_id)
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
+
+        # Get the encoding to verify it belongs to this person
+        encodings = db.get_face_encodings(person_id)
+        encoding_to_delete = None
+        for enc in encodings:
+            if enc.id == encoding_id:
+                encoding_to_delete = enc
+                break
+
+        if not encoding_to_delete:
+            raise HTTPException(
+                status_code=404,
+                detail="Face encoding not found for this person",
+            )
+
+        # Delete thumbnail file if it exists
+        if encoding_to_delete.thumbnail_path and os.path.exists(
+            encoding_to_delete.thumbnail_path
+        ):
+            try:
+                os.remove(encoding_to_delete.thumbnail_path)
+            except Exception as e:
+                logger.warning(
+                    "Could not delete thumbnail file",
+                    path=encoding_to_delete.thumbnail_path,
+                    error=str(e),
+                )
+
+        # Delete from database
+        db.delete_face_encoding(encoding_id)
+
+        # Reload face encodings in recognition manager
+        face_manager.load_known_faces()
+
+        logger.info(
+            "Face encoding deleted",
+            person_id=person_id,
+            encoding_id=encoding_id,
+        )
+
+        return {
+            "message": "Face encoding deleted successfully",
+            "encoding_id": encoding_id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error deleting face encoding",
+            person_id=person_id,
+            encoding_id=encoding_id,
+            error=str(e),
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.put("/api/persons/{person_id}")
 async def update_person(person_id: int, name: str = Form(...)):
     """Update a person's name."""
@@ -569,6 +681,33 @@ async def get_image(image_name: str):
         raise
     except Exception as e:
         logger.error("Error serving image", image_name=image_name, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/thumbnails/{thumbnail_name}")
+async def get_thumbnail(thumbnail_name: str):
+    """Serve face encoding thumbnail files."""
+    try:
+        # Sanitize thumbnail name
+        thumbnail_name = sanitize_filename(thumbnail_name)
+
+        # Check face_thumbnails directory
+        thumbnail_dir = os.path.join(settings.storage_path, "face_thumbnails")
+        thumbnail_path = os.path.join(thumbnail_dir, thumbnail_name)
+
+        if os.path.exists(thumbnail_path):
+            return FileResponse(thumbnail_path)
+
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error serving thumbnail",
+            thumbnail_name=thumbnail_name,
+            error=str(e),
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -40,6 +40,9 @@
                         <button class="btn btn-outline-primary" onclick="addFaceModal({{ person.id }}, '{{ person.name }}')">
                             <i class="bi bi-plus-circle"></i> Add Face Image
                         </button>
+                        <button class="btn btn-outline-success" onclick="viewFaceEncodings({{ person.id }}, '{{ person.name }}')">
+                            <i class="bi bi-images"></i> View Face Encodings (<span id="face-count-btn-{{ person.id }}">0</span>)
+                        </button>
                         <button class="btn btn-outline-info" onclick="viewPersonEvents({{ person.id }})">
                             <i class="bi bi-calendar-event"></i> View Events
                         </button>
@@ -139,6 +142,43 @@
     </div>
 </div>
 
+<!-- Face Encodings Modal -->
+<div class="modal fade" id="faceEncodingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-images"></i> Face Encodings for <span id="encodings-person-name"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="encodings-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading face encodings...</p>
+                </div>
+                <div id="encodings-content" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> These are the face images used for recognition. Each image contributes to improving accuracy.
+                    </div>
+                    <div id="encodings-grid" class="row g-3">
+                        <!-- Encodings will be loaded here -->
+                    </div>
+                    <div id="encodings-empty" style="display: none;" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">No face encodings yet. Add a face image to get started.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deletePersonModal" tabindex="-1">
     <div class="modal-dialog">
@@ -177,13 +217,141 @@ async function loadFaceCounts() {
             const persons = await response.json();
             persons.forEach(person => {
                 const countElement = document.getElementById(`face-count-${person.id}`);
+                const btnCountElement = document.getElementById(`face-count-btn-${person.id}`);
                 if (countElement) {
                     countElement.textContent = person.face_count || 0;
+                }
+                if (btnCountElement) {
+                    btnCountElement.textContent = person.face_count || 0;
                 }
             });
         }
     } catch (error) {
         console.error('Error loading face counts:', error);
+    }
+}
+
+// View face encodings for a person
+async function viewFaceEncodings(personId, personName) {
+    // Set person name in modal
+    document.getElementById('encodings-person-name').textContent = personName;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('faceEncodingsModal'));
+    modal.show();
+    
+    // Show loading state
+    document.getElementById('encodings-loading').style.display = 'block';
+    document.getElementById('encodings-content').style.display = 'none';
+    
+    try {
+        const response = await fetch(`api/persons/${personId}/faces`);
+        if (!response.ok) {
+            throw new Error('Failed to load face encodings');
+        }
+        
+        const data = await response.json();
+        const encodingsGrid = document.getElementById('encodings-grid');
+        const encodingsEmpty = document.getElementById('encodings-empty');
+        
+        // Clear previous content
+        encodingsGrid.innerHTML = '';
+        
+        if (data.encodings && data.encodings.length > 0) {
+            // Show encodings
+            data.encodings.forEach(encoding => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4';
+                
+                const card = document.createElement('div');
+                card.className = 'card h-100';
+                
+                // Thumbnail
+                if (encoding.has_thumbnail && encoding.thumbnail_path) {
+                    const thumbnailName = encoding.thumbnail_path.split('/').pop();
+                    const img = document.createElement('img');
+                    img.src = `api/thumbnails/${thumbnailName}`;
+                    img.className = 'card-img-top';
+                    img.alt = 'Face encoding';
+                    img.style.objectFit = 'cover';
+                    img.style.height = '200px';
+                    card.appendChild(img);
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'card-img-top bg-secondary d-flex align-items-center justify-content-center';
+                    placeholder.style.height = '200px';
+                    placeholder.innerHTML = '<i class="bi bi-person-circle fs-1 text-white"></i>';
+                    card.appendChild(placeholder);
+                }
+                
+                // Card body
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const details = document.createElement('small');
+                details.className = 'text-muted';
+                details.innerHTML = `
+                    <strong>ID:</strong> ${encoding.id}<br>
+                    <strong>Added:</strong> ${encoding.created_at ? new Date(encoding.created_at).toLocaleString() : 'Unknown'}<br>
+                    <strong>Confidence:</strong> ${(encoding.confidence * 100).toFixed(1)}%
+                `;
+                cardBody.appendChild(details);
+                
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-sm btn-danger w-100 mt-2';
+                deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+                deleteBtn.onclick = () => deleteEncoding(personId, encoding.id, personName);
+                cardBody.appendChild(deleteBtn);
+                
+                card.appendChild(cardBody);
+                col.appendChild(card);
+                encodingsGrid.appendChild(col);
+            });
+            
+            encodingsEmpty.style.display = 'none';
+        } else {
+            // Show empty state
+            encodingsEmpty.style.display = 'block';
+        }
+        
+        // Hide loading, show content
+        document.getElementById('encodings-loading').style.display = 'none';
+        document.getElementById('encodings-content').style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading face encodings:', error);
+        alert('Error loading face encodings: ' + error.message);
+        modal.hide();
+    }
+}
+
+// Delete a face encoding
+async function deleteEncoding(personId, encodingId, personName) {
+    if (!confirm('Are you sure you want to delete this face encoding? This will affect recognition accuracy.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`api/persons/${personId}/faces/${encodingId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to delete face encoding');
+        }
+        
+        // Reload the encodings view
+        viewFaceEncodings(personId, personName);
+        
+        // Reload face counts
+        loadFaceCounts();
+        
+        alert('Face encoding deleted successfully!');
+        
+    } catch (error) {
+        console.error('Error deleting face encoding:', error);
+        alert('Error deleting face encoding: ' + error.message);
     }
 }
 
