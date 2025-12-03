@@ -337,6 +337,18 @@ class DatabaseManager:
                     decrypted_encoding = self._decrypt_data(row["encoding"])
                     encoding_array = np.array(json.loads(decrypted_encoding))
 
+                    # Handle optional fields that may not exist in older databases
+                    source_image_path = None
+                    thumbnail_path = None
+                    try:
+                        source_image_path = row["source_image_path"]
+                    except (KeyError, IndexError):
+                        pass
+                    try:
+                        thumbnail_path = row["thumbnail_path"]
+                    except (KeyError, IndexError):
+                        pass
+
                     encodings.append(
                         FaceEncoding(
                             id=row["id"],
@@ -344,8 +356,8 @@ class DatabaseManager:
                             encoding=encoding_array,
                             confidence=row["confidence"],
                             created_at=datetime.fromisoformat(row["created_at"]),
-                            source_image_path=row.get("source_image_path"),
-                            thumbnail_path=row.get("thumbnail_path"),
+                            source_image_path=source_image_path,
+                            thumbnail_path=thumbnail_path,
                         )
                     )
                 except Exception as e:
