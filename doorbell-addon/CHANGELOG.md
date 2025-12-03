@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.102] - 2025-12-03
+
+### Fixed
+- **CRITICAL HOTFIX: sqlite3.Row .get() Method Error** - Fixed "'sqlite3.Row' object has no attribute 'get'" error when loading face encodings
+- **Face Encodings Not Loading** - Existing face encodings couldn't be loaded due to incorrect Row object access
+
+### Technical Details
+- **Bug**: Used `row.get("source_image_path")` on sqlite3.Row object which doesn't have `.get()` method
+- **Error**: `AttributeError: 'sqlite3.Row' object has no attribute 'get'`
+- **Impact**: Face encodings couldn't be loaded, breaking face recognition functionality
+- **Symptom**: "Face added successfully!" but errors in logs when loading encodings
+- **Fix**: Changed to bracket notation with try/except for optional fields
+- **Location**: `database.py` lines 347-348 (now 343-350)
+
+### Root Cause
+- sqlite3.Row objects support bracket notation `row["column"]` but not dictionary `.get()` method
+- Attempted to use `.get()` for optional fields that may not exist in older databases
+- Should have used try/except with bracket notation instead
+
+### Code Fix
+```python
+# BEFORE (v1.0.101 - BROKEN):
+source_image_path=row.get("source_image_path"),
+thumbnail_path=row.get("thumbnail_path"),
+
+# AFTER (v1.0.102 - FIXED):
+source_image_path = None
+thumbnail_path = None
+try:
+    source_image_path = row["source_image_path"]
+except (KeyError, IndexError):
+    pass
+try:
+    thumbnail_path = row["thumbnail_path"]
+except (KeyError, IndexError):
+    pass
+```
+
+### User Impact
+- ✅ Face encodings now load correctly
+- ✅ Face recognition works properly
+- ✅ Backward compatible with older databases missing new columns
+- ✅ No more errors in logs when loading encodings
+
+### Lesson Learned
+- sqlite3.Row objects are not dictionaries
+- Row objects support `row["key"]` but not `row.get("key")`
+- Must use try/except for optional columns instead of .get()
+- Test with actual database operations, not just code compilation
+
 ## [1.0.101] - 2025-12-03
 
 ### Fixed
