@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.99] - 2025-12-03
+
+### Added
+- **🎉 MAJOR FEATURE: Face Encodings Management** - Complete system to view and manage individual face encodings
+- **View Face Encodings** - New button on People Management page to view all face samples for each person
+- **Face Encoding Gallery** - Visual thumbnail gallery showing all face images used for recognition
+- **Encoding Metadata** - Display encoding ID, date added, and confidence score for each face sample
+- **Delete Individual Encodings** - Remove poor quality or duplicate face encodings to improve accuracy
+- **Automatic Thumbnails** - Face thumbnails automatically created and stored when adding new faces
+- **New API Endpoints**:
+  - `GET /api/persons/{person_id}/faces` - Get all face encodings with metadata
+  - `DELETE /api/persons/{person_id}/faces/{encoding_id}` - Delete specific encoding
+  - `GET /api/thumbnails/{thumbnail_name}` - Serve face encoding thumbnails
+
+### Technical Details
+- **Database Schema**: Added `source_image_path` and `thumbnail_path` columns to `face_encodings` table
+- **Automatic Migration**: Existing databases automatically upgraded with new columns
+- **Thumbnail Storage**: Face thumbnails (150x150px) stored in `/share/doorbell/face_thumbnails/`
+- **Backend Changes**:
+  - Updated `FaceEncoding` model with new fields
+  - Modified `add_face_encoding()` to accept image paths
+  - Added `delete_face_encoding()` method
+  - Enhanced `add_face_for_person()` to create thumbnails automatically
+- **Frontend Changes**:
+  - Added face encodings modal with thumbnail gallery
+  - Real-time count updates on buttons
+  - Delete confirmation for individual encodings
+  - Empty state when no encodings exist
+
+### User Benefits
+- ✅ **Transparency**: See exactly which face images are being used for recognition
+- ✅ **Quality Control**: Remove bad encodings that hurt recognition accuracy
+- ✅ **Debugging**: Understand why recognition might be failing for specific people
+- ✅ **Management**: Clean up duplicates or outdated face samples
+- ✅ **Confidence Tracking**: View confidence scores for each encoding
+- ✅ **Better Accuracy**: Improve recognition by managing face sample quality
+
+### User Questions Answered
+This feature directly addresses user questions:
+1. **"When you label an image, does this add to the face encoding?"** - YES! Now you can see all encodings.
+2. **"Is there any way to view what face encodings are stored?"** - YES! New gallery view shows everything.
+
+### Migration Notes
+- Backward compatible with existing databases
+- Existing face encodings will work but won't have thumbnails (will show placeholder)
+- New face encodings automatically get thumbnails
+- No user action required for upgrade
+
 ## [1.0.98] - 2025-12-03
 
 ### Fixed

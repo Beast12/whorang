@@ -33,6 +33,8 @@ class FaceEncoding:
     encoding: Optional[np.ndarray] = None
     confidence: float = 0.0
     created_at: Optional[datetime] = None
+    source_image_path: Optional[str] = None
+    thumbnail_path: Optional[str] = None
 
 
 @dataclass
@@ -182,6 +184,23 @@ class DatabaseManager:
             except sqlite3.OperationalError:
                 pass
 
+            # Add source_image_path and thumbnail_path columns to face_encodings (migration)
+            try:
+                conn.execute(
+                    "ALTER TABLE face_encodings ADD COLUMN source_image_path TEXT"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute(
+                    "ALTER TABLE face_encodings ADD COLUMN thumbnail_path TEXT"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
             conn.execute(
                 """
                 CREATE INDEX IF NOT EXISTS idx_events_timestamp
@@ -261,7 +280,12 @@ class DatabaseManager:
             conn.commit()
 
     def add_face_encoding(
-        self, person_id: int, encoding: np.ndarray, confidence: float = 0.0
+        self,
+        person_id: int,
+        encoding: np.ndarray,
+        confidence: float = 0.0,
+        source_image_path: Optional[str] = None,
+        thumbnail_path: Optional[str] = None,
     ) -> FaceEncoding:
         """Add a face encoding for a person."""
         encoding_json = json.dumps(encoding.tolist())
@@ -269,8 +293,16 @@ class DatabaseManager:
 
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO face_encodings (person_id, encoding, confidence) VALUES (?, ?, ?)",
-                (person_id, encrypted_encoding, confidence),
+                """INSERT INTO face_encodings 
+                   (person_id, encoding, confidence, source_image_path, thumbnail_path) 
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    person_id,
+                    encrypted_encoding,
+                    confidence,
+                    source_image_path,
+                    thumbnail_path,
+                ),
             )
             encoding_id = cursor.lastrowid
             conn.commit()
@@ -281,6 +313,8 @@ class DatabaseManager:
                 encoding=encoding,
                 confidence=confidence,
                 created_at=datetime.now(),
+                source_image_path=source_image_path,
+                thumbnail_path=thumbnail_path,
             )
 
     def get_face_encodings(self, person_id: Optional[int] = None) -> List[FaceEncoding]:
@@ -310,6 +344,8 @@ class DatabaseManager:
                             encoding=encoding_array,
                             confidence=row["confidence"],
                             created_at=datetime.fromisoformat(row["created_at"]),
+                            source_image_path=row.get("source_image_path"),
+                            thumbnail_path=row.get("thumbnail_path"),
                         )
                     )
                 except Exception as e:
@@ -317,6 +353,12 @@ class DatabaseManager:
                     continue
 
             return encodings
+
+    def delete_face_encoding(self, encoding_id: int) -> None:
+        """Delete a specific face encoding."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM face_encodings WHERE id = ?", (encoding_id,))
+            conn.commit()
 
     def add_doorbell_event(
         self,

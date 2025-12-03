@@ -228,9 +228,28 @@ class FaceRecognitionManager:
                 print(f"Could not extract face encoding from {image_path}")
                 return False
 
-            # Add face encoding to database
+            # Get face location for thumbnail
+            if not face_location:
+                face_location = face_locations[0]
+
+            # Create thumbnail
+            thumbnail_dir = os.path.join(self.db.storage_path, "face_thumbnails")
+            os.makedirs(thumbnail_dir, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            thumbnail_filename = f"face_{person.id}_{timestamp}.jpg"
+            thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
+
+            self.create_face_thumbnail(image_path, face_location, thumbnail_path)
+
+            # Add face encoding to database with paths
             face_encoding = face_encodings[0]
-            self.db.add_face_encoding(person.id, face_encoding)
+            self.db.add_face_encoding(
+                person.id,
+                face_encoding,
+                source_image_path=image_path,
+                thumbnail_path=thumbnail_path,
+            )
 
             # Reload known faces
             self.load_known_faces()
