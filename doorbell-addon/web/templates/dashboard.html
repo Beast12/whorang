@@ -139,14 +139,14 @@
                                     </td>
                                     <td>
                                         {% if event.ai_message %}
-                                            <small class="text-light" style="font-style: italic; color: #e9ecef;">{{ event.ai_message }}</small>
+                                            <small class="text-muted" style="font-style: italic;">{{ event.ai_message }}</small>
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if event.weather_condition or event.weather_temperature %}
-                                            <small class="text-light">
+                                            <small class="text-secondary">
                                                 {% if event.weather_condition %}
                                                     <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
                                                 {% endif %}

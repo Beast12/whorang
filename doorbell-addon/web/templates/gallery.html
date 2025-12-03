@@ -93,14 +93,14 @@
                         </h6>
                         
                         {% if event.ai_message %}
-                        <p class="text-light mb-2" style="font-style: italic; color: #e9ecef; font-size: 0.9em;">
+                        <p class="text-muted mb-2" style="font-style: italic; font-size: 0.9em;">
                             "{{ event.ai_message }}"
                         </p>
                         {% endif %}
                         
                         {% if event.weather_condition or event.weather_temperature %}
                         <div class="mb-2">
-                            <small class="text-light" style="color: #adb5bd;">
+                            <small class="text-secondary">
                                 {% if event.weather_condition %}
                                     <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
                                 {% endif %}
