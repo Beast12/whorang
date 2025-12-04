@@ -488,7 +488,9 @@ async function submitLabel() {
         });
         
         if (response.ok) {
+            const result = await response.json();
             bootstrap.Modal.getInstance(document.getElementById('labelEventModal')).hide();
+            alert(result.message);
             location.reload();
         } else {
             const error = await response.json();

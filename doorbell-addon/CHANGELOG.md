@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.103] - 2025-12-04
+
+### Improved
+- **Face Encoding Feedback When Labeling Events** - Added clear feedback when labeling events about whether face encoding was added
+- **Better Logging for Face Encoding** - Enhanced logging to track face encoding addition from labeled events
+- **User Transparency** - Users now know if face encoding failed due to unclear face in image
+
+### Technical Details
+- **Enhancement**: Added return value checking for `add_face_for_person()` when labeling events
+- **Logging**: Added info and warning logs to track face encoding success/failure
+- **API Response**: Label endpoint now returns `face_encoding_added` boolean flag
+- **User Feedback**: Alert message shows whether face encoding was added or not
+- **Location**: `app.py` label_event endpoint, `gallery.html` label functionality
+
+### User Issue Addressed
+User reported: "When I label an image, that is not added to the Face Encoding in terms of number or images"
+
+**Root Cause:**
+- Face encoding WAS being attempted when labeling
+- But if face detection failed (unclear face, poor angle, etc.), it failed silently
+- No feedback to user about success or failure
+- User didn't know if encoding was added or not
+
+### What Changed
+**Before (v1.0.102):**
+- Labeled event → tried to add face encoding
+- No feedback if it failed
+- User confused why count didn't increase
+
+**After (v1.0.103):**
+- Labeled event → tries to add face encoding
+- Shows message: "Event labeled as [Name] and face encoding added" ✅
+- OR shows: "Event labeled as [Name] but face encoding could not be extracted (face may not be clearly visible)" ⚠️
+- User knows exactly what happened
+
+### Messages
+- **Success**: "Event labeled as [Name] and face encoding added"
+- **Partial Success**: "Event labeled as [Name] but face encoding could not be extracted (face may not be clearly visible)"
+
+### User Impact
+- ✅ Clear feedback about face encoding status
+- ✅ Users understand why count may not increase
+- ✅ Better transparency about face detection quality
+- ✅ Helps users understand which images are good for training
+
+### Note
+Face encoding from labeled events requires:
+- Clear, well-lit face in the image
+- Face must be detectable by face_recognition library
+- If face detection fails, event is still labeled but no encoding added
+- Manual face upload allows you to select specific face region
+
 ## [1.0.102] - 2025-12-03
 
 ### Fixed

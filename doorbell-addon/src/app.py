@@ -624,9 +624,29 @@ async def label_event(event_id: int, person_id: int = Form(...)):
             raise HTTPException(status_code=404, detail="Person not found")
 
         # Process the event image to get face encoding
+        face_added = False
         if validate_image_file(event.image_path):
             # Add face encoding from this event
-            face_manager.add_face_for_person(event.image_path, person.name)
+            logger.info(
+                "Adding face encoding from labeled event",
+                event_id=event_id,
+                person_name=person.name,
+                image_path=event.image_path,
+            )
+            face_added = face_manager.add_face_for_person(event.image_path, person.name)
+
+            if face_added:
+                logger.info(
+                    "Face encoding added successfully from labeled event",
+                    event_id=event_id,
+                    person_name=person.name,
+                )
+            else:
+                logger.warning(
+                    "Failed to add face encoding from labeled event - face may not be detected",
+                    event_id=event_id,
+                    person_name=person.name,
+                )
 
             # Update event
             db.update_event_person(
@@ -638,7 +658,13 @@ async def label_event(event_id: int, person_id: int = Form(...)):
                 person.name, 0.8, event.image_path, is_known=True
             )
 
-        return {"message": f"Event labeled as {person.name}"}
+        message = f"Event labeled as {person.name}"
+        if face_added:
+            message += " and face encoding added"
+        else:
+            message += " but face encoding could not be extracted (face may not be clearly visible)"
+
+        return {"message": message, "face_encoding_added": face_added}
 
     except HTTPException:
         raise
