@@ -190,6 +190,12 @@ async def dashboard(request: Request):
     # Get persons
     persons = db.get_all_persons()
 
+    # Calculate unique known people detected in recent events
+    unique_known_people = set()
+    for event in recent_events:
+        if event.is_known and event.person_id:
+            unique_known_people.add(event.person_id)
+
     # Get storage usage
     storage_info = get_storage_usage()
 
@@ -199,6 +205,7 @@ async def dashboard(request: Request):
             "request": request,
             "recent_events": recent_events,
             "persons": persons,
+            "unique_known_people_count": len(unique_known_people),
             "storage_info": storage_info,
             "settings": settings,
         },

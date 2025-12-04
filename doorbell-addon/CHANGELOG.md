@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.105] - 2025-12-04
+
+### Improved
+- **Dashboard Statistics Clarity** - Improved dashboard cards to show more meaningful statistics
+- **Unique People Count** - Added count of unique known people detected in recent events
+- **Better Labels** - Renamed "Known Faces" to "Known Events" and "Unknown Faces" to "Unknown Events" for clarity
+
+### Technical Details
+- **Issue**: Dashboard showed "Known Faces: 7" but user only had 6 registered people, causing confusion
+- **Root Cause**: "Known Faces" counted total events with recognized people, not unique people
+- **Impact**: Users confused about what the numbers represented
+- **Fix**: Added calculation for unique known people and improved card labels with subtitles
+
+### User Issue Addressed
+User reported: "7 different people? But I only have 6 registered people. So where would the 7th come from?"
+
+**Root Cause:**
+- "Known Faces" was counting **events** (7 doorbell rings)
+- Not counting **unique people** (6 different people)
+- Same person detected multiple times = multiple events
+- Misleading label caused confusion
+
+### What Changed
+
+**Before (v1.0.104):**
+```
+Known Faces: 7          (confusing - what does this mean?)
+Unknown Faces: 3
+Registered People: 6    (doesn't match "Known Faces"!)
+```
+
+**After (v1.0.105):**
+```
+Known Events: 7         (clear - 7 doorbell events)
+  3 unique people       (shows unique count!)
+Unknown Events: 3       (clear - 3 unrecognized events)
+  Unrecognized visitors
+Registered People: 6    (clear - 6 people in database)
+  In database
+```
+
+### Dashboard Cards Now Show
+
+1. **Total Events**: Total doorbell events (unchanged)
+2. **Known Events**: Number of events with recognized people
+   - Subtitle: "X unique people" (NEW!)
+3. **Unknown Events**: Number of events with unrecognized people
+   - Subtitle: "Unrecognized visitors"
+4. **Registered People**: Total people in database
+   - Subtitle: "In database"
+
+### Code Changes
+- `app.py`: Added calculation for unique known people in recent events
+- `dashboard.html`: Updated card labels and added subtitles for clarity
+
+### User Impact
+- ✅ Clear distinction between events and unique people
+- ✅ No more confusion about mismatched numbers
+- ✅ Better understanding of what each statistic represents
+- ✅ Subtitles provide additional context
+
+### Example Scenario
+If you have 3 registered people (Alice, Bob, Charlie) and:
+- Alice rang doorbell 5 times
+- Bob rang doorbell 2 times
+- Unknown person rang 3 times
+
+**Dashboard shows:**
+- **Total Events**: 10
+- **Known Events**: 7 (with "2 unique people" subtitle)
+- **Unknown Events**: 3
+- **Registered People**: 3
+
+Now it's clear that 7 events came from 2 different known people!
+
 ## [1.0.104] - 2025-12-04
 
 ### Fixed
