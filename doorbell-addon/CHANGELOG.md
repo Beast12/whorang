@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.104] - 2025-12-04
+
+### Fixed
+- **Dark Mode Text Visibility** - Fixed AI message and weather text being unreadable in dark mode
+- **UI Accessibility** - Improved text contrast for better readability
+
+### Technical Details
+- **Issue**: AI message text (`text-muted`) and weather text (`text-secondary`) were too dark in dark mode
+- **Impact**: Text was nearly invisible on dark background (dark blue/gray on dark gray)
+- **Fix**: Added dark mode CSS overrides for `.text-muted` and `.text-secondary` classes
+- **Location**: `web/static/css/style.css` dark mode section
+
+### User Issue Addressed
+User reported: "In dark mode now the ai message isn't readable! And the weather barely. In light mode it is perfect"
+
+**Root Cause:**
+- Bootstrap's default `text-muted` and `text-secondary` classes use dark colors
+- These colors work well in light mode but are too dark for dark mode
+- No dark mode overrides were defined for these text classes
+
+### What Changed
+**Before (v1.0.103):**
+- AI message: Dark blue text on dark background ❌
+- Weather: Dark gray text on dark background ❌
+- Nearly unreadable in dark mode
+
+**After (v1.0.104):**
+- AI message: Light gray text (`#ced4da`) on dark background ✅
+- Weather: Light gray text (`#ced4da`) on dark background ✅
+- Excellent readability in dark mode
+- Light mode unchanged and still perfect ✅
+
+### CSS Changes
+```css
+@media (prefers-color-scheme: dark) {
+    /* Fix text visibility in dark mode */
+    .text-muted {
+        color: #adb5bd !important;
+    }
+    
+    .text-secondary {
+        color: #adb5bd !important;
+    }
+    
+    /* Ensure AI message and weather are readable */
+    td .text-muted,
+    td .text-secondary {
+        color: #ced4da !important;
+    }
+}
+```
+
+### User Impact
+- ✅ AI messages now clearly readable in dark mode
+- ✅ Weather information easily visible in dark mode
+- ✅ Better accessibility and user experience
+- ✅ Light mode remains unchanged and perfect
+
 ## [1.0.103] - 2025-12-04
 
 ### Improved
