@@ -295,4 +295,4 @@ The addon supports sending notifications to external webhook services like Gotif
 ---
 
 **Made with ❤️ for the Home Assistant community**
-![Version](https://img.shields.io/badge/version-1.0.102-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.103-blue.svg)
