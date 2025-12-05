@@ -245,6 +245,50 @@ body {
     }
 }
 
+/* Light mode - ensure text is readable */
+@media (prefers-color-scheme: light) {
+    /* Ensure card titles and text are dark in light mode */
+    .card-title {
+        color: #212529 !important;
+    }
+    
+    .card-body {
+        color: #212529;
+    }
+    
+    /* Ensure all text on colored backgrounds is readable */
+    .card.bg-primary .card-title,
+    .card.bg-primary .card-body,
+    .card.bg-success .card-title,
+    .card.bg-success .card-body,
+    .card.bg-warning .card-title,
+    .card.bg-warning .card-body,
+    .card.bg-info .card-title,
+    .card.bg-info .card-body,
+    .card.bg-danger .card-title,
+    .card.bg-danger .card-body {
+        color: #fff !important;
+    }
+    
+    /* Ensure bordered cards have dark text */
+    .card.border-success .card-title,
+    .card.border-info .card-title,
+    .card.border-warning .card-title,
+    .card.border-danger .card-title,
+    .card.border-primary .card-title {
+        color: #212529 !important;
+    }
+    
+    /* Ensure text-muted is visible but muted */
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    .text-secondary {
+        color: #6c757d !important;
+    }
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     :root {
@@ -265,6 +309,24 @@ body {
     .card-header {
         background-color: rgba(255, 255, 255, 0.03);
         border-bottom-color: rgba(255, 255, 255, 0.125);
+    }
+    
+    /* Ensure card titles are white in dark mode */
+    .card-title {
+        color: #fff !important;
+    }
+    
+    .card-body {
+        color: #fff;
+    }
+    
+    /* Ensure bordered cards have white text in dark mode */
+    .card.border-success .card-title,
+    .card.border-info .card-title,
+    .card.border-warning .card-title,
+    .card.border-danger .card-title,
+    .card.border-primary .card-title {
+        color: #fff !important;
     }
     
     .table {

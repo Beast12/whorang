@@ -5,6 +5,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.115] - 2025-12-05
+
+### Fixed
+- **Light Mode Text Visibility** - Fixed white text on light backgrounds making content unreadable
+- **Face Recognition Card Titles** - Removed `text-light` class that caused white text in light mode
+- **Comprehensive Light/Dark Mode Support** - Added proper CSS rules for both color schemes
+
+### Technical Details
+- **Issue**: Card titles using `text-light` class were white on light backgrounds
+- **Root Cause**: Hard-coded white text color without considering light mode
+- **Impact**: Users in light mode couldn't read "Known Faces Detected" and "Total Face Encodings" text
+- **Fix**: Removed `text-light` classes and added comprehensive CSS media queries
+
+### What Changed
+
+**settings.html:**
+```html
+<!-- Before (v1.0.114 - unreadable in light mode): -->
+<h6 class="card-title text-light">Known Faces Detected</h6>
+
+<!-- After (v1.0.115 - readable in both modes): -->
+<h6 class="card-title">Known Faces Detected</h6>
+```
+
+**style.css - Added Light Mode Rules:**
+```css
+@media (prefers-color-scheme: light) {
+    /* Card titles dark in light mode */
+    .card-title { color: #212529 !important; }
+    
+    /* Colored backgrounds keep white text */
+    .card.bg-primary .card-title { color: #fff !important; }
+    
+    /* Bordered cards have dark text */
+    .card.border-success .card-title { color: #212529 !important; }
+}
+```
+
+**style.css - Enhanced Dark Mode Rules:**
+```css
+@media (prefers-color-scheme: dark) {
+    /* Card titles white in dark mode */
+    .card-title { color: #fff !important; }
+    
+    /* All cards have white text */
+    .card { background-color: #343a40; color: #fff; }
+}
+```
+
+### Why This Works
+
+**Light Mode:**
+- Default card titles are dark (#212529)
+- Colored background cards (bg-primary, bg-success) keep white text
+- Bordered cards (border-success, border-info) use dark text
+- Text is readable on all backgrounds
+
+**Dark Mode:**
+- All card titles are white
+- Cards have dark backgrounds (#343a40)
+- Text is readable on all backgrounds
+- Proper contrast maintained
+
+### Impact
+
+**Before (v1.0.114):**
+- ❌ White text on light backgrounds (unreadable)
+- ❌ Users had to highlight text to read it
+- ❌ Poor UX in light mode
+- ✅ Dark mode worked fine
+
+**After (v1.0.115):**
+- ✅ Dark text on light backgrounds (readable)
+- ✅ White text on dark backgrounds (readable)
+- ✅ Proper contrast in both modes
+- ✅ Professional appearance
+
+### User Impact
+- ✅ Text readable in light mode
+- ✅ Text readable in dark mode
+- ✅ Proper color contrast everywhere
+- ✅ No more highlighting text to read it
+- ✅ Professional, polished UI
+
 ## [1.0.114] - 2025-12-05
 
 ### Fixed
