@@ -79,9 +79,10 @@ RUN apk add --no-cache py3-opencv py3-opencv-pyc && \
     echo "OpenCV installation failed - will run without face recognition"
 
 # Install dlib with CPU compatibility flags for Proxmox/QEMU
-# Disable AVX instructions to ensure compatibility with virtualized environments
-ENV CFLAGS="-mno-avx -mno-avx2"
-ENV CXXFLAGS="-mno-avx -mno-avx2"
+# Disable all advanced SIMD instructions to ensure compatibility with virtualized environments
+# This includes AVX, AVX2, SSE4, and other CPU-specific optimizations
+ENV CFLAGS="-mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
+ENV CXXFLAGS="-mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
 RUN pip3 install --no-cache-dir --no-build-isolation dlib || \
     echo "dlib installation failed - will run without face recognition"
 # Clear flags after dlib installation
