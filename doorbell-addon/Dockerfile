@@ -1,8 +1,8 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base/amd64:18.1.0
 FROM $BUILD_FROM
 
-# Set shell
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# Set shell - use /bin/sh for cross-compilation compatibility
+SHELL ["/bin/sh", "-o", "pipefail", "-c"]
 
 # Build arguments
 ARG DOORBELL_VERSION

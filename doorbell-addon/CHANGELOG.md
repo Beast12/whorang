@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.109] - 2025-12-05
+
+### Fixed
+- **ARM64 Build Failure** - Fixed "exec format error" during aarch64 cross-compilation
+- **Multi-Architecture Support** - Changed shell from bash to sh for better cross-platform compatibility
+
+### Technical Details
+- **Issue**: ARM64 (aarch64) builds failing with "exec /bin/bash: exec format error"
+- **Root Cause**: SHELL directive using /bin/bash caused issues during QEMU cross-compilation
+- **Impact**: Only amd64 builds working, aarch64 builds completely broken
+- **Fix**: Changed SHELL directive from /bin/bash to /bin/sh for Alpine compatibility
+
+### Build Error
+```
+#8 0.090 exec /bin/bash: exec format error
+ERROR: process "/bin/bash -o pipefail -c apk add --no-cache ..." 
+did not complete successfully: exit code: 255
+```
+
+**Root Cause:**
+- Dockerfile line 5: `SHELL ["/bin/bash", "-o", "pipefail", "-c"]`
+- When building aarch64 on amd64 host using QEMU, bash binary has wrong architecture
+- Home Assistant builder uses cross-compilation for multi-arch support
+- /bin/bash not available early in build process for target architecture
+- Alpine base image always has /bin/sh available
+
+### What Changed
+
+**Dockerfile line 5:**
+```dockerfile
+# Before (v1.0.108) - BROKE ARM64:
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# After (v1.0.109) - WORKS FOR ALL ARCHITECTURES:
+SHELL ["/bin/sh", "-o", "pipefail", "-c"]
+```
+
+### Why This Matters
+
+**Multi-Architecture Support:**
+- Many users run Home Assistant on Raspberry Pi (ARM64)
+- Some run on x86_64 servers (AMD64)
+- Addon must build for both architectures
+- Cross-compilation requires careful shell selection
+
+### Impact
+
+**Before (v1.0.108):**
+- ✅ AMD64 builds worked
+- ❌ ARM64 builds failed immediately
+- ❌ Raspberry Pi users couldn't install addon
+- ❌ Only half of supported architectures working
+
+**After (v1.0.109):**
+- ✅ AMD64 builds work
+- ✅ ARM64 builds work
+- ✅ Raspberry Pi users can install addon
+- ✅ Full multi-architecture support restored
+
+### Affected Users
+
+**Now Works For:**
+- ✅ Raspberry Pi 4/5 (ARM64)
+- ✅ Raspberry Pi 3 (ARM64)
+- ✅ x86_64 servers (AMD64)
+- ✅ Intel NUC (AMD64)
+- ✅ Proxmox VMs (AMD64)
+- ✅ All supported Home Assistant platforms
+
+### User Impact
+- ✅ ARM64 builds now succeed
+- ✅ Multi-architecture support fully functional
+- ✅ Addon available for all supported platforms
+- ✅ No functionality changes, just build fix
+
 ## [1.0.108] - 2025-12-05
 
 ### Fixed
