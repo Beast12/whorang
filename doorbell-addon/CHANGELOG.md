@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.116] - 2025-12-05
+
+### Fixed
+- **Gallery Link 404 Error** - Fixed "View All" button on dashboard returning 404 when accessed through Home Assistant ingress
+- **Absolute Path Issue** - Changed absolute path `/gallery` to relative path `gallery` for ingress compatibility
+
+### Technical Details
+- **Issue**: Clicking "View All" button resulted in `GET http://homeassistant.local:8123/gallery 404 (Not Found)`
+- **Root Cause**: Link used absolute path `/gallery` instead of relative path `gallery`
+- **Impact**: Users couldn't navigate to gallery from dashboard when using Home Assistant ingress
+- **Fix**: Changed href from `/gallery` to `gallery` to match other navigation links
+
+### What Changed
+
+**dashboard.html (line 84):**
+```html
+<!-- Before (v1.0.115 - 404 error): -->
+<a href="/gallery" class="btn btn-sm btn-outline-primary">View All</a>
+
+<!-- After (v1.0.116 - works correctly): -->
+<a href="gallery" class="btn btn-sm btn-outline-primary">View All</a>
+```
+
+### Why This Works
+
+**Absolute Path Problem:**
+- `/gallery` = absolute path from domain root
+- When accessed via Home Assistant ingress at `homeassistant.local:8123/api/hassio_ingress/...`
+- Absolute path `/gallery` tries to go to `homeassistant.local:8123/gallery`
+- This bypasses the ingress proxy and returns 404
+
+**Relative Path Solution:**
+- `gallery` = relative path from current location
+- Stays within the ingress proxy path
+- Works correctly: `homeassistant.local:8123/api/hassio_ingress/.../gallery`
+- Matches all other navigation links in the app
+
+**Consistency:**
+- All other links already use relative paths:
+  - Navigation menu: `href="gallery"`, `href="people"`, `href="settings"`
+  - Dashboard cards: `onclick="window.location.href='gallery'"`
+- Only "View All" button was using absolute path
+
+### Impact
+
+**Before (v1.0.115):**
+- ❌ "View All" button returns 404 error
+- ❌ Cannot navigate to gallery from dashboard
+- ❌ Broken user experience in Home Assistant
+- ✅ Direct access works (not through ingress)
+
+**After (v1.0.116):**
+- ✅ "View All" button works correctly
+- ✅ Navigates to gallery successfully
+- ✅ Works through Home Assistant ingress
+- ✅ Consistent with all other navigation
+
+### User Impact
+- ✅ Gallery navigation works from dashboard
+- ✅ No more 404 errors
+- ✅ Seamless navigation experience
+- ✅ Proper ingress compatibility
+
 ## [1.0.115] - 2025-12-05
 
 ### Fixed
