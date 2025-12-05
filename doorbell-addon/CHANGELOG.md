@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.111] - 2025-12-05
+
+### Fixed
+- **Pip Metadata Conflicts** - Removed Alpine py3-opencv and py3-pillow packages to avoid pip version parsing errors
+- **Build Failures** - Fixed "Invalid version: 'python-4.11.0'" errors during dlib and face-recognition installation
+- **Package Installation** - Now installs Pillow and OpenCV via pip instead of Alpine packages
+
+### Technical Details
+- **Issue**: pip failing with "InvalidVersion: Invalid version: 'python-4.11.0'" during dlib/face-recognition install
+- **Root Cause**: Alpine's py3-opencv package has malformed metadata that pip can't parse
+- **Impact**: dlib and face-recognition installations failing despite successful compilation
+- **Fix**: Removed py3-opencv and py3-pillow from apk packages, install via pip instead
+
+### Build Error (v1.0.110)
+```
+#17 296.9 WARNING: Error parsing dependencies of opencv: Invalid version: 'python-4.11.0'
+#17 297.0 pip._vendor.packaging.version.InvalidVersion: Invalid version: 'python-4.11.0'
+#17 297.1 WARNING: dlib installation failed - face recognition unavailable
+```
+
+**Root Cause:**
+- Alpine's py3-opencv package version string: "python-4.11.0" (invalid format)
+- pip tries to parse all installed package versions
+- Malformed version string causes pip to crash during installation
+- Happens even though dlib compiled successfully
+
+### What Changed
+
+**Dockerfile apk packages (line 25-51):**
+```dockerfile
+# v1.0.110 (CAUSED PIP ERRORS):
+apk add --no-cache \
+    py3-pillow \  # REMOVED
+    py3-opencv \  # REMOVED - caused metadata errors
+
+# v1.0.111 (CLEAN INSTALL):
+apk add --no-cache \
+    # Only system dependencies, no Python packages with bad metadata
+```
+
+**Dockerfile pip install (new lines 66-67):**
+```dockerfile
+# Install Pillow and OpenCV via pip (avoid Alpine py3-opencv metadata conflicts)
+RUN pip3 install --no-cache-dir Pillow opencv-python-headless==4.9.0.80
+```
+
+### Why This Works
+
+**Package Source Strategy:**
+- System packages (apk): Only C libraries and build tools
+- Python packages (pip): All Python libraries including OpenCV and Pillow
+- No mixing: Avoids Alpine package metadata conflicts
+- Clean environment: pip doesn't see malformed version strings
+
+### Impact
+
+**Before (v1.0.110):**
+- ✅ dlib compiled successfully
+- ✅ dlib verification passed
+- ❌ pip crashed during installation due to opencv metadata
+- ❌ face-recognition installation failed
+- ❌ Build continued but packages not properly installed
+
+**After (v1.0.111):**
+- ✅ No Alpine Python packages with bad metadata
+- ✅ dlib compiles from source successfully
+- ✅ pip installations complete without errors
+- ✅ face-recognition installs cleanly
+- ✅ All packages properly installed
+
+### User Impact
+- ✅ Removed Alpine py3-opencv and py3-pillow packages
+- ✅ Install Pillow and OpenCV via pip instead
+- ✅ No more pip metadata parsing errors
+- ✅ Clean package installations
+- ✅ Proxmox dlib fix still included (from v1.0.108)
+- ✅ ARM64 cross-compilation fix still included (from v1.0.110)
+
 ## [1.0.110] - 2025-12-05
 
 ### Fixed
