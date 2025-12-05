@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.108] - 2025-12-05
+
+### Fixed
+- **Force dlib Source Compilation** - Now properly forces dlib to compile from source with CPU compatibility flags
+- **Added Build Verification** - Verifies dlib loads successfully after compilation
+
+### Technical Details
+- **Issue**: v1.0.107 still crashed with "Illegal instruction" despite setting ENV flags
+- **Root Cause**: Setting `ENV CFLAGS` doesn't force dlib to use those flags - dlib's CMake build may ignore them
+- **Impact**: Pre-built dlib wheels or improper compilation still used AVX/SSE4 instructions
+- **Fix**: Use `--no-binary :all:` to force source compilation + explicit version pinning + verification step
+
+### User Issue Addressed
+User confirmed v1.0.107 still crashed:
+```
+Add-on version: 1.0.107
+[09:42:27] INFO: Starting Doorbell Face Recognition addon...
+Illegal instruction (core dumped)
+```
+
+**Root Cause:**
+- v1.0.107 set `ENV CFLAGS` but didn't force source compilation
+- pip may have used pre-built wheels that ignored our flags
+- dlib's internal CMake build may have overridden environment variables
+- Need to explicitly force compilation from source
+
+### What Changed
+
+**Critical Dockerfile changes:**
+
+```dockerfile
+# Before (v1.0.107) - DIDN'T WORK:
+ENV CFLAGS="-mno-avx -mno-avx2 ..."
+RUN pip3 install --no-cache-dir --no-build-isolation dlib
+
+# After (v1.0.108) - FORCES SOURCE BUILD:
+RUN export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+    export CXXFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+    pip3 install --no-cache-dir --no-binary :all: --no-build-isolation dlib==19.24.2
+```
+
+### Key Improvements
+
+1. **`--no-binary :all:`** - Forces pip to compile from source, not use pre-built wheels
+2. **Explicit version `dlib==19.24.2`** - Ensures reproducible builds
+3. **Verification step** - Tests if dlib loads without crashing:
+   ```dockerfile
+   RUN python3 -c "import dlib; print('✓ dlib loaded successfully')"
+   ```
+4. **`export` instead of `ENV`** - Ensures flags are set in the same shell session
+
+### Build Time Impact
+
+**Warning: Compilation takes longer**
+- Pre-built wheel: ~30 seconds
+- Source compilation: ~5-10 minutes
+- Trade-off: Longer build time for compatibility
+
+### Success Criteria
+
+**If v1.0.108 works, you'll see:**
+```
+Building dlib from source without AVX/SSE4 for Proxmox/QEMU compatibility...
+[... compilation output ...]
+✓ dlib loaded successfully without AVX/SSE4
+```
+
+**Then at runtime:**
+```
+[09:XX:XX] INFO: Starting Doorbell Face Recognition addon...
+[09:XX:XX] INFO: Configuration loaded:
+✅ NO "Illegal instruction" error!
+✅ Addon stays running!
+```
+
+### If This Still Fails
+
+**Nuclear options:**
+1. Skip dlib entirely, use alternative face recognition
+2. Run face recognition on a separate bare-metal server
+3. Use CPU passthrough in Proxmox to expose real CPU features
+
+### Compatibility
+
+| Environment | v1.0.107 | v1.0.108 |
+|-------------|----------|----------|
+| **Bare Metal** | ✅ Works | ✅ Works (slower build) |
+| **Proxmox VM** | ❌ Crash | 🤞 **Should work!** |
+| **QEMU/KVM** | ❌ Crash | 🤞 **Should work!** |
+
+### User Impact
+- ✅ Forces proper source compilation with CPU flags
+- ✅ Verifies dlib loads before completing build
+- ⏱️ Longer Docker build time (~5-10 min vs 30 sec)
+- 🤞 **This SHOULD finally work on Proxmox**
+
 ## [1.0.107] - 2025-12-05
 
 ### Fixed

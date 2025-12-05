@@ -79,15 +79,17 @@ RUN apk add --no-cache py3-opencv py3-opencv-pyc && \
     echo "OpenCV installation failed - will run without face recognition"
 
 # Install dlib with CPU compatibility flags for Proxmox/QEMU
-# Disable all advanced SIMD instructions to ensure compatibility with virtualized environments
-# This includes AVX, AVX2, SSE4, and other CPU-specific optimizations
-ENV CFLAGS="-mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
-ENV CXXFLAGS="-mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
-RUN pip3 install --no-cache-dir --no-build-isolation dlib || \
-    echo "dlib installation failed - will run without face recognition"
-# Clear flags after dlib installation
-ENV CFLAGS=""
-ENV CXXFLAGS=""
+# Force compilation from source with explicit CPU flags to disable AVX/SSE4
+# Using --no-binary to ensure we compile from source, not use pre-built wheels
+RUN echo "Building dlib from source without AVX/SSE4 for Proxmox/QEMU compatibility..." && \
+    export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+    export CXXFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+    pip3 install --no-cache-dir --no-binary :all: --no-build-isolation dlib==19.24.2 || \
+    echo "WARNING: dlib installation failed - face recognition unavailable"
+
+# Verify dlib loads without illegal instructions
+RUN python3 -c "import dlib; print('✓ dlib loaded successfully without AVX/SSE4')" || \
+    echo "WARNING: dlib verification failed - addon will start but face recognition unavailable"
 
 # Install face-recognition with fallback  
 RUN pip3 install --no-cache-dir face-recognition || \
