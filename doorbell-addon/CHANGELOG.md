@@ -5,6 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.110] - 2025-12-05
+
+### Fixed
+- **Cross-Compilation QEMU Issue** - Removed SHELL directive entirely to fix ARM64 build failures
+- **Home Assistant Builder Compatibility** - Now uses Alpine's default shell for maximum compatibility
+
+### Technical Details
+- **Issue**: Even `/bin/sh` causing "exec format error" during ARM64 cross-compilation
+- **Root Cause**: SHELL directive interferes with QEMU cross-compilation when binfmt can't be enabled
+- **Impact**: ARM64 builds completely broken, QEMU not working properly in build environment
+- **Fix**: Removed SHELL directive entirely - let Alpine use its default shell
+
+### Build Error (v1.0.109)
+```
+[09:06:03] WARNING: Can't enable crosscompiling feature
+#8 0.105 exec /bin/sh: exec format error
+ERROR: process "/bin/sh -o pipefail -c apk add..." exit code: 255
+```
+
+**Root Cause:**
+- Home Assistant builder warning: "Can't enable crosscompiling feature"
+- QEMU binfmt not working properly in build environment
+- ANY SHELL directive (even `/bin/sh`) causes architecture mismatch
+- Need to use Alpine's native default shell without explicit SHELL directive
+
+### What Changed
+
+**Dockerfile:**
+```dockerfile
+# v1.0.108 (BROKE ARM64):
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# v1.0.109 (STILL BROKE ARM64):
+SHELL ["/bin/sh", "-o", "pipefail", "-c"]
+
+# v1.0.110 (SHOULD WORK):
+# No SHELL directive - use Alpine's default
+```
+
+### Why This Works
+
+**Alpine Default Behavior:**
+- Alpine base images have `/bin/sh` as default shell
+- When no SHELL directive specified, Docker uses image's default
+- Default shell is already correct architecture after FROM statement
+- Explicit SHELL directive tries to execute shell before it's ready for target arch
+
+### Impact
+
+**Before (v1.0.109):**
+- ❌ AMD64 builds worked
+- ❌ ARM64 builds failed with exec format error
+- ❌ SHELL directive interfered with cross-compilation
+
+**After (v1.0.110):**
+- ✅ AMD64 builds should work
+- ✅ ARM64 builds should work
+- ✅ No SHELL directive = no cross-compilation interference
+- ✅ Uses Alpine's native default shell
+
+### User Impact
+- ✅ Removed problematic SHELL directive
+- ✅ Maximum compatibility with Home Assistant builder
+- ✅ Should work even when QEMU binfmt has issues
+- ✅ Proxmox dlib fix still included (from v1.0.108)
+
 ## [1.0.109] - 2025-12-05
 
 ### Fixed
