@@ -5,6 +5,89 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.113] - 2025-12-05
+
+### Fixed
+- **ARM64 Build Failure** - Fixed x86-64 CPU flags being used on ARM64 architecture
+- **Architecture-Specific Compilation** - Use appropriate CFLAGS for each architecture
+- **Multi-Architecture Support** - Both AMD64 and ARM64 now build successfully
+
+### Technical Details
+- **Issue**: ARM64 dlib build failing with "unrecognized command-line option '-mno-avx'"
+- **Root Cause**: Using x86-64 specific CPU flags (-mno-avx, -march=x86-64) on ARM64 architecture
+- **Impact**: ARM64 builds completely broken - AVX/SSE4 instructions don't exist on ARM
+- **Fix**: Use architecture detection to apply correct CFLAGS for each platform
+
+### Build Error (v1.0.112)
+```
+Building wheel for dlib (pyproject.toml): finished with status 'error'
+/tmp/.../build/temp.linux-aarch64-cpython-312
+cc: error: unrecognized command-line option '-mno-avx'
+cc: error: unrecognized command-line option '-mno-avx2'
+cc: error: unrecognized command-line option '-mno-sse4.1'
+cc: error: unrecognized command-line option '-march=x86-64'
+```
+
+**Root Cause:**
+- v1.0.108 added x86-64 CPU flags to fix Proxmox "Illegal instruction" error
+- These flags disable AVX/SSE4 instructions on Intel/AMD processors
+- ARM processors (aarch64) don't have AVX/SSE4 instructions at all
+- ARM compiler doesn't recognize x86-64 specific flags
+- Build fails on ARM64 architecture
+
+### What Changed
+
+**Dockerfile (lines 69-78):**
+```dockerfile
+# v1.0.112 (BROKE ARM64):
+export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
+
+# v1.0.113 (WORKS FOR BOTH):
+if [ "$(uname -m)" = "x86_64" ]; then
+    # AMD64: Disable AVX/SSE4 for Proxmox/QEMU
+    export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"
+else
+    # ARM64: Use generic optimization flags
+    export CFLAGS="-O2"
+fi
+```
+
+### Why This Works
+
+**Architecture Detection:**
+- `uname -m` returns "x86_64" for AMD64/Intel processors
+- `uname -m` returns "aarch64" for ARM64 processors
+- Apply x86-64 specific flags ONLY on x86_64 architecture
+- Use generic `-O2` optimization on ARM64
+
+**CPU Instruction Sets:**
+- **x86_64 (Intel/AMD)**: Has AVX, AVX2, SSE4.1, SSE4.2, FMA instructions
+  - Proxmox/QEMU may not support all instructions
+  - Need to explicitly disable them with -mno-* flags
+- **aarch64 (ARM)**: Has completely different instruction set (NEON, SVE)
+  - No AVX/SSE4 instructions
+  - Generic optimization flags work fine
+
+### Impact
+
+**Before (v1.0.112):**
+- ✅ AMD64 builds worked (x86-64 flags appropriate)
+- ❌ ARM64 builds failed (x86-64 flags invalid)
+- ❌ Raspberry Pi users couldn't install
+
+**After (v1.0.113):**
+- ✅ AMD64 builds work with Proxmox-compatible flags
+- ✅ ARM64 builds work with generic flags
+- ✅ Both architectures fully supported
+- ✅ Raspberry Pi users can install
+
+### User Impact
+- ✅ Architecture-specific CFLAGS for dlib compilation
+- ✅ AMD64: Proxmox/QEMU compatible (no AVX/SSE4)
+- ✅ ARM64: Generic optimization flags
+- ✅ Both architectures build successfully
+- ✅ Full multi-architecture support restored
+
 ## [1.0.112] - 2025-12-05
 
 ### Fixed

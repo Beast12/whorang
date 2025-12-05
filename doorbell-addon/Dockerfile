@@ -63,16 +63,22 @@ RUN pip3 install --no-cache-dir sqlalchemy httpx aiofiles python-dateutil
 RUN pip3 install --no-cache-dir paho-mqtt requests pydantic pydantic-settings structlog
 RUN pip3 install --no-cache-dir "cryptography>=42.0.0" "passlib[bcrypt]"
 
-# Install dlib with CPU compatibility flags for Proxmox/QEMU
-# Force compilation from source with explicit CPU flags to disable AVX/SSE4
-# Using --no-binary to ensure we compile from source, not use pre-built wheels
-RUN echo "Building dlib from source without AVX/SSE4 for Proxmox/QEMU compatibility..." && \
-    export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
-    export CXXFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+# Install dlib with architecture-specific CPU compatibility flags
+# AMD64: Disable AVX/SSE4 for Proxmox/QEMU compatibility
+# ARM64: Use generic ARM flags
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        echo "Building dlib for AMD64 without AVX/SSE4 for Proxmox/QEMU compatibility..." && \
+        export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
+        export CXXFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"; \
+    else \
+        echo "Building dlib for ARM64 with generic flags..." && \
+        export CFLAGS="-O2" && \
+        export CXXFLAGS="-O2"; \
+    fi && \
     pip3 install --no-cache-dir --no-binary :all: --no-build-isolation dlib==19.24.2
 
-# Verify dlib loads without illegal instructions
-RUN python3 -c "import dlib; print('✓ dlib loaded successfully without AVX/SSE4')"
+# Verify dlib loads successfully
+RUN python3 -c "import dlib; print('✓ dlib loaded successfully')"
 
 # Install face-recognition (will use system opencv via py3-opencv)
 RUN pip3 install --no-cache-dir face-recognition
