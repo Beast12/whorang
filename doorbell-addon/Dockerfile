@@ -63,9 +63,6 @@ RUN pip3 install --no-cache-dir sqlalchemy httpx aiofiles python-dateutil
 RUN pip3 install --no-cache-dir paho-mqtt requests pydantic pydantic-settings structlog
 RUN pip3 install --no-cache-dir "cryptography>=42.0.0" "passlib[bcrypt]"
 
-# Install Pillow and OpenCV via pip (avoid Alpine py3-opencv metadata conflicts)
-RUN pip3 install --no-cache-dir Pillow opencv-python-headless==4.9.0.80
-
 # Install dlib with CPU compatibility flags for Proxmox/QEMU
 # Force compilation from source with explicit CPU flags to disable AVX/SSE4
 # Using --no-binary to ensure we compile from source, not use pre-built wheels
@@ -77,8 +74,12 @@ RUN echo "Building dlib from source without AVX/SSE4 for Proxmox/QEMU compatibil
 # Verify dlib loads without illegal instructions
 RUN python3 -c "import dlib; print('✓ dlib loaded successfully without AVX/SSE4')"
 
-# Install face-recognition
+# Install face-recognition (will use system opencv via py3-opencv)
 RUN pip3 install --no-cache-dir face-recognition
+
+# Install system OpenCV and Pillow AFTER pip packages to avoid metadata conflicts during pip install
+# The malformed opencv metadata won't affect already-installed pip packages
+RUN apk add --no-cache py3-opencv py3-pillow
 
 # Copy application code
 COPY src/ ./src/

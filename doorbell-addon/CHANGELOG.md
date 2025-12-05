@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.112] - 2025-12-05
+
+### Fixed
+- **OpenCV Build Failure** - Reverted to system py3-opencv packages to avoid Python 3.12 compatibility issues
+- **Numpy Build Error** - Fixed "AttributeError: module 'pkgutil' has no attribute 'ImpImporter'" error
+- **Installation Order** - Install system OpenCV/Pillow AFTER pip packages to avoid metadata conflicts
+
+### Technical Details
+- **Issue**: opencv-python-headless==4.9.0.80 trying to build from source with old numpy (1.22.2)
+- **Root Cause**: Old numpy incompatible with Python 3.12 - setuptools/pkgutil.ImpImporter removed in Python 3.12
+- **Impact**: AMD64 builds failing during OpenCV installation
+- **Fix**: Use system py3-opencv and py3-pillow, install AFTER pip packages
+
+### Build Error (v1.0.111)
+```
+#16 11.78 AttributeError: module 'pkgutil' has no attribute 'ImpImporter'. Did you mean: 'zipimporter'?
+#16 11.78 ERROR: Failed to build 'numpy' when getting requirements to build wheel
+#16 11.78 ERROR: Failed to build 'opencv-python-headless' when installing build dependencies
+```
+
+**Root Cause:**
+- opencv-python-headless==4.9.0.80 requires building from source on Alpine
+- Build requires numpy==1.22.2 (old version)
+- numpy 1.22.2 uses setuptools with pkgutil.ImpImporter
+- pkgutil.ImpImporter removed in Python 3.12
+- Python 3.12 compatibility issue with old build dependencies
+
+### What Changed
+
+**Dockerfile (lines 66-82):**
+```dockerfile
+# v1.0.111 (FAILED - Python 3.12 incompatible):
+RUN pip3 install --no-cache-dir Pillow opencv-python-headless==4.9.0.80
+
+# v1.0.112 (WORKS - System packages):
+# Install dlib first (pip)
+# Install face-recognition (pip)
+# Install system OpenCV/Pillow AFTER pip packages
+RUN apk add --no-cache py3-opencv py3-pillow
+```
+
+### Why This Works
+
+**Installation Order Strategy:**
+1. Install all pip packages FIRST (dlib, face-recognition, etc.)
+2. Install system py3-opencv and py3-pillow LAST
+3. Malformed opencv metadata only affects NEW pip installs
+4. Already-installed pip packages are unaffected
+
+**Key Insight:**
+- System py3-opencv has malformed metadata: "python-4.11.0"
+- If installed BEFORE pip packages: pip crashes during installation
+- If installed AFTER pip packages: metadata doesn't affect already-installed packages
+- face-recognition can use system opencv without issues
+
+### Impact
+
+**Before (v1.0.111):**
+- ❌ Trying to build opencv-python-headless from source
+- ❌ Old numpy (1.22.2) incompatible with Python 3.12
+- ❌ pkgutil.ImpImporter error
+- ❌ AMD64 builds failing
+
+**After (v1.0.112):**
+- ✅ Use system py3-opencv (pre-built, no compilation)
+- ✅ No old numpy dependency
+- ✅ No Python 3.12 compatibility issues
+- ✅ Install AFTER pip packages to avoid metadata conflicts
+- ✅ AMD64 builds succeed
+
+### User Impact
+- ✅ Use system OpenCV and Pillow packages
+- ✅ Install system packages AFTER pip packages
+- ✅ No Python 3.12 compatibility issues
+- ✅ No opencv build from source required
+- ✅ Proxmox dlib fix still included (from v1.0.108)
+- ✅ ARM64 cross-compilation fix still included (from v1.0.110)
+
 ## [1.0.111] - 2025-12-05
 
 ### Fixed
