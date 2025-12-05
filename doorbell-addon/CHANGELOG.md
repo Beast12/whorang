@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.114] - 2025-12-05
+
+### Fixed
+- Prevent illegal instruction crashes on virtualized x86_64 (e.g., Proxmox) by forcing dlib builds to disable AVX/SSE4 and use generic CPU flags
+
+### Technical Details
+- Build dlib from source with `--no USE_AVX_INSTRUCTIONS` and `--no USE_SSE4_INSTRUCTIONS` to stop CMake from auto-enabling host-only instructions
+- Apply conservative `-march=x86-64 -mtune=generic -mno-avx -mno-avx2 -mno-sse4.*` flags during the source build to stay compatible with virtual CPUs
+- Keep ARM builds on the generic path while x86_64 uses the safe source build
+
 ## [1.0.113] - 2025-12-05
 
 ### Fixed

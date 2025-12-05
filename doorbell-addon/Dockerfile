@@ -26,6 +26,7 @@ RUN \
         python3 \
         python3-dev \
         py3-pip \
+        curl \
         py3-numpy \
         gcc \
         g++ \
@@ -63,22 +64,32 @@ RUN pip3 install --no-cache-dir sqlalchemy httpx aiofiles python-dateutil
 RUN pip3 install --no-cache-dir paho-mqtt requests pydantic pydantic-settings structlog
 RUN pip3 install --no-cache-dir "cryptography>=42.0.0" "passlib[bcrypt]"
 
-# Install dlib with architecture-specific CPU compatibility flags
-# AMD64: Disable AVX/SSE4 for Proxmox/QEMU compatibility
-# ARM64: Use generic ARM flags
-RUN if [ "$(uname -m)" = "x86_64" ]; then \
-        echo "Building dlib for AMD64 without AVX/SSE4 for Proxmox/QEMU compatibility..." && \
-        export CFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic" && \
-        export CXXFLAGS="-O2 -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"; \
+# Install dlib with conservative CPU flags to avoid AVX/SSE4 crashes on virtualized CPUs
+RUN set -eux; \
+    DLIB_VERSION=19.24.2; \
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        echo "Building dlib for AMD64 without AVX/SSE4 for virtualization compatibility..."; \
+        DLIB_CPU_FLAGS="-O2 -pipe -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"; \
+        curl -L "https://files.pythonhosted.org/packages/source/d/dlib/dlib-${DLIB_VERSION}.tar.gz" -o /tmp/dlib.tar.gz; \
+        tar -xzf /tmp/dlib.tar.gz -C /tmp; \
+        cd "/tmp/dlib-${DLIB_VERSION}"; \
+        python3 setup.py install \
+            --no USE_AVX_INSTRUCTIONS \
+            --no USE_SSE4_INSTRUCTIONS \
+            --set USE_SSE2_INSTRUCTIONS=ON \
+            --set DLIB_USE_BLAS=ON \
+            --set DLIB_USE_LAPACK=ON \
+            --set CMAKE_C_FLAGS="${DLIB_CPU_FLAGS}" \
+            --set CMAKE_CXX_FLAGS="${DLIB_CPU_FLAGS}"; \
+        cd /; \
+        rm -rf "/tmp/dlib-${DLIB_VERSION}" /tmp/dlib.tar.gz; \
     else \
-        echo "Building dlib for ARM64 with generic flags..." && \
-        export CFLAGS="-O2" && \
-        export CXXFLAGS="-O2"; \
-    fi && \
-    pip3 install --no-cache-dir --no-binary :all: --no-build-isolation dlib==19.24.2
+        echo "Building dlib for $(uname -m) with default flags..."; \
+        pip3 install --no-cache-dir --no-binary :all: --no-build-isolation "dlib==${DLIB_VERSION}"; \
+    fi
 
-# Verify dlib loads successfully
-RUN python3 -c "import dlib; print('✓ dlib loaded successfully')"
+# Verify dlib loads successfully and report AVX status
+RUN python3 -c "import dlib; print('✓ dlib loaded successfully; AVX enabled:', getattr(dlib, 'USE_AVX_INSTRUCTIONS', None))"
 
 # Install face-recognition (will use system opencv via py3-opencv)
 RUN pip3 install --no-cache-dir face-recognition

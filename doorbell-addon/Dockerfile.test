@@ -4,6 +4,7 @@ FROM python:3.11-alpine
 RUN apk add --no-cache \
     build-base \
     cmake \
+    curl \
     gfortran \
     openblas-dev \
     lapack-dev \
@@ -21,9 +22,29 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir fastapi uvicorn jinja2 python-multipart aiofiles structlog paho-mqtt pydantic pydantic-settings cryptography httpx requests
 
-# Install face recognition dependencies
-RUN pip3 install --no-cache-dir --no-build-isolation dlib || \
-    echo "dlib installation failed - will run without face recognition"
+# Install face recognition dependencies (disable AVX/SSE4 on x86_64 to avoid illegal instructions)
+RUN set -eux; \
+    DLIB_VERSION=19.24.2; \
+    if [ "$(uname -m)" = "x86_64" ]; then \
+        echo "Building test dlib without AVX/SSE4 for virtualization compatibility..."; \
+        DLIB_CPU_FLAGS="-O2 -pipe -mno-avx -mno-avx2 -mno-sse4.1 -mno-sse4.2 -mno-fma -march=x86-64 -mtune=generic"; \
+        curl -L "https://files.pythonhosted.org/packages/source/d/dlib/dlib-${DLIB_VERSION}.tar.gz" -o /tmp/dlib.tar.gz; \
+        tar -xzf /tmp/dlib.tar.gz -C /tmp; \
+        cd "/tmp/dlib-${DLIB_VERSION}"; \
+        python3 setup.py install \
+            --no USE_AVX_INSTRUCTIONS \
+            --no USE_SSE4_INSTRUCTIONS \
+            --set USE_SSE2_INSTRUCTIONS=ON \
+            --set DLIB_USE_BLAS=ON \
+            --set DLIB_USE_LAPACK=ON \
+            --set CMAKE_C_FLAGS="${DLIB_CPU_FLAGS}" \
+            --set CMAKE_CXX_FLAGS="${DLIB_CPU_FLAGS}"; \
+        cd /; \
+        rm -rf "/tmp/dlib-${DLIB_VERSION}" /tmp/dlib.tar.gz; \
+    else \
+        pip3 install --no-cache-dir --no-build-isolation --no-binary :all: "dlib==${DLIB_VERSION}" || \
+            echo "dlib installation failed - will run without face recognition"; \
+    fi
 RUN pip3 install --no-cache-dir face-recognition || \
     echo "face-recognition installation failed - will run without face recognition"
 
