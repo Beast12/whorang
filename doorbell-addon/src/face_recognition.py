@@ -30,9 +30,89 @@ class FaceRecognitionManager:
         self.face_encodings = []
         self.face_names = []
         self.process_this_frame = True
+        self.haar_cascade = None
 
         # Load known faces from database
         self.load_known_faces()
+
+        # Attempt to load Haar cascade for fallback detection
+        try:
+            cascade_root = getattr(cv2.data, "haarcascades", "")
+            cascade_path = os.path.join(
+                cascade_root, "haarcascade_frontalface_default.xml"
+            )
+            if cascade_root and os.path.exists(cascade_path):
+                self.haar_cascade = cv2.CascadeClassifier(cascade_path)
+        except Exception as cascade_error:
+            print(
+                f"Unable to load Haar cascade for fallback detection: {cascade_error}"
+            )
+
+    def _detect_faces_with_haar(
+        self, image: np.ndarray
+    ) -> List[Tuple[int, int, int, int]]:
+        """Detect faces using OpenCV Haar cascade as a fallback."""
+        if self.haar_cascade is None:
+            return []
+
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        detections = self.haar_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(60, 60),
+        )
+
+        face_locations = []
+        for x, y, w, h in detections:
+            top = y
+            right = x + w
+            bottom = y + h
+            left = x
+            face_locations.append((top, right, bottom, left))
+
+        return face_locations
+
+    def _find_face_locations(
+        self,
+        image: np.ndarray,
+        image_path: Optional[str] = None,
+        initial_location: Optional[Tuple[int, int, int, int]] = None,
+    ) -> List[Tuple[int, int, int, int]]:
+        """Locate faces using multiple strategies for robustness."""
+        if initial_location:
+            return [initial_location]
+
+        strategies = [
+            ("hog_default", lambda: face_recognition.face_locations(image)),  # type: ignore
+            (
+                "hog_upsample",
+                lambda: face_recognition.face_locations(  # type: ignore
+                    image, number_of_times_to_upsample=2
+                ),
+            ),
+        ]
+
+        if self.haar_cascade is not None:
+            strategies.append(
+                ("haar_cascade", lambda: self._detect_faces_with_haar(image))
+            )
+
+        for strategy_name, strategy in strategies:
+            try:
+                locations = strategy()
+                if locations:
+                    if strategy_name != "hog_default" and image_path:
+                        print(
+                            f"Face detection fallback '{strategy_name}' succeeded for {os.path.basename(image_path)}"
+                        )
+                    return locations
+            except Exception as detection_error:
+                print(
+                    f"Face detection strategy '{strategy_name}' failed: {detection_error}"
+                )
+
+        return []
 
     def load_known_faces(self):
         """Load known face encodings from the database."""
@@ -66,7 +146,10 @@ class FaceRecognitionManager:
             image = face_recognition.load_image_file(image_path)  # type: ignore
 
             # Get face locations and encodings
-            face_locations = face_recognition.face_locations(image)  # type: ignore
+            face_locations = self._find_face_locations(image, image_path)
+            if not face_locations:
+                print(f"No faces found in {image_path}")
+                return []
             face_encodings = face_recognition.face_encodings(image, face_locations)  # type: ignore
 
             results = []
@@ -211,20 +294,19 @@ class FaceRecognitionManager:
             # Load image and extract face encoding
             image = face_recognition.load_image_file(image_path)  # type: ignore
 
-            if face_location:
-                # Use specific face location
-                face_encodings = face_recognition.face_encodings(  # type: ignore
-                    image, [face_location]
-                )
-            else:
-                # Find all faces and use the first one
-                face_locations = face_recognition.face_locations(image)  # type: ignore
-                if not face_locations:
-                    print(f"No faces found in {image_path}")
-                    return False
-                face_encodings = face_recognition.face_encodings(image, face_locations)  # type: ignore
-                # Set face_location for thumbnail creation
-                face_location = face_locations[0]
+            # Find face locations using robust strategy
+            face_locations = self._find_face_locations(
+                image, image_path=image_path, initial_location=face_location
+            )
+            if not face_locations:
+                print(f"No faces found in {image_path} (all strategies)")
+                return False
+
+            # Generate encodings using the first detected face
+            face_encodings = face_recognition.face_encodings(  # type: ignore
+                image, [face_locations[0]]
+            )
+            face_location = face_locations[0]
 
             if not face_encodings:
                 print(f"Could not extract face encoding from {image_path}")

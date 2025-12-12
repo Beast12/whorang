@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.117] - 2025-12-12
+
+### Fixed
+- **Face Encoding Failures** - Improved face extraction reliability by adding multiple detection strategies (HOG default, HOG upsample, Haar cascade) and reusing detected face locations during manual labeling
+- **Manual Labeling Accuracy** - Labeling now passes the detected face bounds to the encoding pipeline, ensuring the same face that triggered the notification is the one encoded
+- **Thumbnail Consistency** - Thumbnails now use the exact face bounds used for encoding to guarantee consistent crops
+
+### Technical Details
+- Added `_find_face_locations` helper that orchestrates multiple detection strategies and logs fallback usage
+- Introduced Haar cascade fallback (loaded from `cv2.data.haarcascades`) for frontal-face detection when HOG fails
+- `label_event` now stores the face location from the detection phase and sends it to `add_face_for_person`
+- `add_face_for_person` was updated to accept the provided location, only falling back to detection if needed, and reuse that exact bounding box for thumbnails
+
+### Impact
+- ✅ Users no longer see "face encoding could not be extracted" when the face is clearly visible
+- ✅ Manual labeling reliably creates new encodings for that person
+- ✅ Fallback detectors provide resilience for difficult lighting/angles
+
 ## [1.0.116] - 2025-12-05
 
 ### Fixed

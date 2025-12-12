@@ -616,7 +616,14 @@ async def delete_events(event_ids: str = Form(...)):
 
 
 @app.post("/api/events/{event_id}/label")
-async def label_event(event_id: int, person_id: int = Form(...)):
+async def label_event(
+    event_id: int,
+    person_id: int = Form(...),
+    face_top: Optional[int] = Form(None),
+    face_right: Optional[int] = Form(None),
+    face_bottom: Optional[int] = Form(None),
+    face_left: Optional[int] = Form(None),
+):
     """Label an event with a person."""
     try:
         # Get event by ID
@@ -633,6 +640,16 @@ async def label_event(event_id: int, person_id: int = Form(...)):
         # Process the event image to get face encoding
         face_added = False
         if validate_image_file(event.image_path):
+            face_location = None
+            if all(
+                v is not None for v in [face_top, face_right, face_bottom, face_left]
+            ):
+                face_location = (
+                    face_top or 0,
+                    face_right or 0,
+                    face_bottom or 0,
+                    face_left or 0,
+                )
             # Add face encoding from this event
             logger.info(
                 "Adding face encoding from labeled event",
@@ -640,7 +657,9 @@ async def label_event(event_id: int, person_id: int = Form(...)):
                 person_name=person.name,
                 image_path=event.image_path,
             )
-            face_added = face_manager.add_face_for_person(event.image_path, person.name)
+            face_added = face_manager.add_face_for_person(
+                event.image_path, person.name, face_location
+            )
 
             if face_added:
                 logger.info(
