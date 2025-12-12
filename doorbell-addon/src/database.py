@@ -52,6 +52,10 @@ class DoorbellEvent:
     weather_condition: Optional[str] = None
     weather_temperature: Optional[float] = None
     weather_humidity: Optional[float] = None
+    face_top: Optional[int] = None
+    face_right: Optional[int] = None
+    face_bottom: Optional[int] = None
+    face_left: Optional[int] = None
 
 
 class DatabaseManager:
@@ -197,6 +201,35 @@ class DatabaseManager:
                 conn.execute(
                     "ALTER TABLE face_encodings ADD COLUMN thumbnail_path TEXT"
                 )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            # Add face location columns to doorbell_events (migration)
+            try:
+                conn.execute("ALTER TABLE doorbell_events ADD COLUMN face_top INTEGER")
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute(
+                    "ALTER TABLE doorbell_events ADD COLUMN face_right INTEGER"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute(
+                    "ALTER TABLE doorbell_events ADD COLUMN face_bottom INTEGER"
+                )
+                conn.commit()
+            except sqlite3.OperationalError:
+                pass
+
+            try:
+                conn.execute("ALTER TABLE doorbell_events ADD COLUMN face_left INTEGER")
                 conn.commit()
             except sqlite3.OperationalError:
                 pass
@@ -381,6 +414,10 @@ class DatabaseManager:
         weather_condition: Optional[str] = None,
         weather_temperature: Optional[float] = None,
         weather_humidity: Optional[float] = None,
+        face_top: Optional[int] = None,
+        face_right: Optional[int] = None,
+        face_bottom: Optional[int] = None,
+        face_left: Optional[int] = None,
     ) -> DoorbellEvent:
         """Add a new doorbell event."""
         is_known = person_id is not None
@@ -389,8 +426,9 @@ class DatabaseManager:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
                    (image_path, person_id, confidence, is_known, processed, ai_message,
-                    weather_condition, weather_temperature, weather_humidity)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    weather_condition, weather_temperature, weather_humidity,
+                    face_top, face_right, face_bottom, face_left)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     image_path,
                     person_id,
@@ -401,6 +439,10 @@ class DatabaseManager:
                     weather_condition,
                     weather_temperature,
                     weather_humidity,
+                    face_top,
+                    face_right,
+                    face_bottom,
+                    face_left,
                 ),
             )
             event_id = cursor.lastrowid
@@ -418,6 +460,10 @@ class DatabaseManager:
                 weather_condition=weather_condition,
                 weather_temperature=weather_temperature,
                 weather_humidity=weather_humidity,
+                face_top=face_top,
+                face_right=face_right,
+                face_bottom=face_bottom,
+                face_left=face_left,
             )
 
     def get_doorbell_events(
@@ -470,6 +516,14 @@ class DatabaseManager:
                         if "weather_humidity" in row.keys()
                         else None
                     ),
+                    face_top=row["face_top"] if "face_top" in row.keys() else None,
+                    face_right=(
+                        row["face_right"] if "face_right" in row.keys() else None
+                    ),
+                    face_bottom=(
+                        row["face_bottom"] if "face_bottom" in row.keys() else None
+                    ),
+                    face_left=row["face_left"] if "face_left" in row.keys() else None,
                 )
                 for row in rows
             ]
@@ -511,6 +565,14 @@ class DatabaseManager:
                         if "weather_humidity" in row.keys()
                         else None
                     ),
+                    face_top=row["face_top"] if "face_top" in row.keys() else None,
+                    face_right=(
+                        row["face_right"] if "face_right" in row.keys() else None
+                    ),
+                    face_bottom=(
+                        row["face_bottom"] if "face_bottom" in row.keys() else None
+                    ),
+                    face_left=row["face_left"] if "face_left" in row.keys() else None,
                 )
             return None
 

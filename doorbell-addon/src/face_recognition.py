@@ -229,6 +229,14 @@ class FaceRecognitionManager:
                 weather_temperature = weather_data.get("temperature")
                 weather_humidity = weather_data.get("humidity")
 
+        # Extract primary face location for storage
+        face_top = None
+        face_right = None
+        face_bottom = None
+        face_left = None
+        if detected_faces and detected_faces[0]["location"]:
+            face_top, face_right, face_bottom, face_left = detected_faces[0]["location"]
+
         # Save event to database
         event = self.db.add_doorbell_event(
             image_path=image_path,
@@ -238,6 +246,10 @@ class FaceRecognitionManager:
             weather_condition=weather_condition,
             weather_temperature=weather_temperature,
             weather_humidity=weather_humidity,
+            face_top=face_top,
+            face_right=face_right,
+            face_bottom=face_bottom,
+            face_left=face_left,
         )
 
         result = {

@@ -264,6 +264,10 @@ async def get_events(limit: int = 50, offset: int = 0, person_id: Optional[int] 
                     "confidence": event.confidence,
                     "is_known": event.is_known,
                     "processed": event.processed,
+                    "face_top": event.face_top,
+                    "face_right": event.face_right,
+                    "face_bottom": event.face_bottom,
+                    "face_left": event.face_left,
                 }
             )
 
@@ -640,6 +644,7 @@ async def label_event(
         # Process the event image to get face encoding
         face_added = False
         if validate_image_file(event.image_path):
+            # Use face location from form if provided, otherwise use stored location from event
             face_location = None
             if all(
                 v is not None for v in [face_top, face_right, face_bottom, face_left]
@@ -649,6 +654,27 @@ async def label_event(
                     face_right or 0,
                     face_bottom or 0,
                     face_left or 0,
+                )
+            elif all(
+                v is not None
+                for v in [
+                    event.face_top,
+                    event.face_right,
+                    event.face_bottom,
+                    event.face_left,
+                ]
+            ):
+                # Use stored face location from when event was first detected
+                face_location = (
+                    event.face_top,
+                    event.face_right,
+                    event.face_bottom,
+                    event.face_left,
+                )
+                logger.info(
+                    "Using stored face location from event",
+                    event_id=event_id,
+                    face_location=face_location,
                 )
             # Add face encoding from this event
             logger.info(
