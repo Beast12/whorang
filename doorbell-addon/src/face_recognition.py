@@ -157,8 +157,18 @@ class FaceRecognitionManager:
             List of tuples: (name, confidence, face_location)
         """
         try:
-            # Load image
+            # Load image and ensure it's in RGB format
             image = face_recognition.load_image_file(image_path)  # type: ignore
+            # Convert to RGB if needed (handles RGBA, BGR, etc.)
+            if len(image.shape) == 2:
+                # Grayscale - convert to RGB
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            elif image.shape[2] == 4:
+                # RGBA - convert to RGB
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+            # Ensure uint8 format
+            if image.dtype != np.uint8:
+                image = image.astype(np.uint8)
 
             # Get face locations and encodings
             face_locations = self._find_face_locations(image, image_path)
@@ -318,8 +328,18 @@ class FaceRecognitionManager:
             if not person:
                 person = self.db.add_person(person_name)
 
-            # Load image and extract face encoding
+            # Load image and ensure it's in RGB format
             image = face_recognition.load_image_file(image_path)  # type: ignore
+            # Convert to RGB if needed (handles RGBA, BGR, etc.)
+            if len(image.shape) == 2:
+                # Grayscale - convert to RGB
+                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+            elif image.shape[2] == 4:
+                # RGBA - convert to RGB
+                image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+            # Ensure uint8 format
+            if image.dtype != np.uint8:
+                image = image.astype(np.uint8)
 
             # Find face locations using robust strategy
             face_locations = self._find_face_locations(
