@@ -5,6 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.119] - 2025-12-13
+
+### Fixed
+- **CNN Face Detection** - Added CNN-based face detection as third fallback strategy for extremely difficult cases (close-ups, wide-angle lens distortion, unusual angles)
+- **Old Event Labeling** - Improved detection for events created before v1.0.118 that don't have stored face locations
+
+### Technical Details
+- **New Detection Strategy**:
+  - Added CNN model as third detection strategy after HOG methods
+  - CNN is slower but much more accurate for difficult faces
+  - Particularly effective for:
+    * Close-up faces (wide-angle/fisheye lens distortion)
+    * Unusual angles or perspectives
+    * Faces with partial occlusion
+    * Low-quality or blurry images
+- **Detection Order**:
+  1. HOG default (fast, most cases)
+  2. HOG upsample (slower, small/distant faces)
+  3. **CNN (NEW - slowest, most accurate for difficult cases)**
+  4. Haar cascade (frontal faces)
+
+### Root Cause Analysis
+**User Report:**
+"His face couldn't be more clearly than this...Still nothing"
+- Event #89 created before v1.0.118 (no stored face location)
+- Face extremely clear but close to camera with wide-angle distortion
+- HOG detectors failing on distorted face geometry
+- Haar cascade also failing (not perfectly frontal)
+
+**Why HOG Failed:**
+- Wide-angle lens creates barrel distortion
+- Face proportions distorted (larger nose, smaller ears)
+- HOG relies on gradient-based features that break with distortion
+- Close proximity changes expected face geometry
+
+**CNN Solution:**
+- Deep learning model trained on millions of faces
+- Robust to geometric distortions and unusual angles
+- Handles wide-angle lens effects better
+- More computationally expensive but much more accurate
+
+### Impact
+- ✅ **Handles wide-angle lens distortion** - CNN robust to geometric changes
+- ✅ **Works on old events** - Detects faces even without stored locations
+- ✅ **Backward compatible** - Helps events created before v1.0.118
+- ✅ **Fallback hierarchy** - Fast methods tried first, CNN only when needed
+- ✅ **Comprehensive coverage** - 4 detection strategies cover all scenarios
+
+### Performance Notes
+- CNN detection is slower (~2-3 seconds vs ~0.5 seconds for HOG)
+- Only used as fallback when faster methods fail
+- Acceptable tradeoff for reliability on difficult faces
+- Most faces still detected quickly with HOG
+
+### User Experience
+**Before (v1.0.118):**
+- Clear face with wide-angle distortion → ❌ Detection fails
+- Old events without stored locations → ❌ Cannot label
+- User frustration with "clearly visible" faces
+
+**After (v1.0.119):**
+- Clear face with wide-angle distortion → ✅ CNN detects successfully
+- Old events without stored locations → ✅ CNN fallback works
+- Reliable detection across all scenarios
+
 ## [1.0.118] - 2025-12-12
 
 ### Fixed

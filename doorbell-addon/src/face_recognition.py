@@ -91,6 +91,10 @@ class FaceRecognitionManager:
                     image, number_of_times_to_upsample=2
                 ),
             ),
+            (
+                "cnn",
+                lambda: face_recognition.face_locations(image, model="cnn"),  # type: ignore
+            ),
         ]
 
         if self.haar_cascade is not None:
