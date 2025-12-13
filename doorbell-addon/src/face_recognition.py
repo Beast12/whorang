@@ -81,7 +81,11 @@ class FaceRecognitionManager:
     ) -> List[Tuple[int, int, int, int]]:
         """Locate faces using multiple strategies for robustness."""
         if initial_location:
+            print(f"Using provided face location: {initial_location}")
             return [initial_location]
+
+        image_name = os.path.basename(image_path) if image_path else "unknown"
+        print(f"Starting face detection for {image_name}, image shape: {image.shape}")
 
         strategies = [
             ("hog_default", lambda: face_recognition.face_locations(image)),  # type: ignore
@@ -104,18 +108,25 @@ class FaceRecognitionManager:
 
         for strategy_name, strategy in strategies:
             try:
+                print(f"Trying detection strategy: {strategy_name}")
                 locations = strategy()
+                print(f"Strategy '{strategy_name}' found {len(locations)} faces")
                 if locations:
-                    if strategy_name != "hog_default" and image_path:
+                    if strategy_name != "hog_default":
                         print(
-                            f"Face detection fallback '{strategy_name}' succeeded for {os.path.basename(image_path)}"
+                            f"Face detection fallback '{strategy_name}' succeeded for {image_name}"
                         )
+                    print(f"Face locations: {locations}")
                     return locations
             except Exception as detection_error:
                 print(
-                    f"Face detection strategy '{strategy_name}' failed: {detection_error}"
+                    f"Face detection strategy '{strategy_name}' failed with error: {detection_error}"
                 )
+                import traceback
 
+                traceback.print_exc()
+
+        print(f"All detection strategies failed for {image_name}")
         return []
 
     def load_known_faces(self):

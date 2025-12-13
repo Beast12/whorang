@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.120] - 2025-12-13
+
+### Added
+- **Comprehensive Detection Logging** - Added detailed logging to face detection pipeline to diagnose why detection is failing on clearly visible faces
+- **Strategy-by-Strategy Logging** - Each detection strategy now logs attempts, results, and errors with full stack traces
+- **Image Metadata Logging** - Logs image shape and filename for debugging
+
+### Technical Details
+- Added logging at each stage of `_find_face_locations`:
+  * Initial location usage
+  * Image shape and filename
+  * Each strategy attempt with name
+  * Number of faces found per strategy
+  * Face location coordinates when found
+  * Full exception details with stack traces
+  * Final failure message if all strategies fail
+- Helps diagnose systematic face detection failures
+- No functional changes, only diagnostic improvements
+
+### Purpose
+User reports face detection failing on ALL images despite clearly visible faces. This diagnostic release will help identify the root cause by providing detailed logs of what's happening during detection.
+
 ## [1.0.119] - 2025-12-13
 
 ### Fixed
