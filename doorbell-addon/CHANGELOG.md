@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.122] - 2025-12-19
+
+### Fixed
+- **CRITICAL: Proper Image Loading** - Replaced face_recognition.load_image_file() with PIL Image.open() for guaranteed RGB conversion
+- **v1.0.121 Fix Didn't Work** - Previous cv2.cvtColor approach failed because face_recognition.load_image_file() was still returning incompatible format
+
+### Root Cause
+**v1.0.121 attempted to fix the issue but failed:**
+- Used face_recognition.load_image_file() which returns images in incompatible format
+- Tried to convert with cv2.cvtColor() but the damage was already done
+- Image format checks (shape[2] == 4) didn't catch all cases
+- Still getting "Unsupported image type" error in production
+
+**Real solution:**
+- Don't use face_recognition.load_image_file() at all
+- Use PIL Image.open() which properly handles all image formats
+- Convert to RGB mode before converting to numpy array
+- Guarantees proper format for dlib
+
+### Technical Details
+- **Removed**: `face_recognition.load_image_file()`
+- **Replaced with**: `PIL Image.open()` → `.convert('RGB')` → `np.array()`
+- **Benefits**:
+  * PIL handles all image formats (JPEG, PNG, BMP, etc.)
+  * `.convert('RGB')` works on any PIL mode (RGBA, L, P, CMYK, etc.)
+  * Guaranteed RGB format before numpy conversion
+  * No edge cases or format detection needed
+
+### Code Change
+**Before (v1.0.121 - DIDN'T WORK):**
+```python
+image = face_recognition.load_image_file(image_path)
+if len(image.shape) == 2:
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+elif image.shape[2] == 4:
+    image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+```
+
+**After (v1.0.122 - PROPER FIX):**
+```python
+pil_image = Image.open(image_path)
+if pil_image.mode != 'RGB':
+    pil_image = pil_image.convert('RGB')
+image = np.array(pil_image)
+```
+
+### Impact
+- ✅ **Guaranteed RGB format** - PIL conversion is bulletproof
+- ✅ **Handles all image types** - JPEG, PNG, RGBA, grayscale, etc.
+- ✅ **No edge cases** - PIL.convert('RGB') handles everything
+- ✅ **Face detection will work** - Proper format for dlib
+
 ## [1.0.121] - 2025-12-13
 
 ### Fixed

@@ -157,18 +157,15 @@ class FaceRecognitionManager:
             List of tuples: (name, confidence, face_location)
         """
         try:
-            # Load image and ensure it's in RGB format
-            image = face_recognition.load_image_file(image_path)  # type: ignore
-            # Convert to RGB if needed (handles RGBA, BGR, etc.)
-            if len(image.shape) == 2:
-                # Grayscale - convert to RGB
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            elif image.shape[2] == 4:
-                # RGBA - convert to RGB
-                image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-            # Ensure uint8 format
-            if image.dtype != np.uint8:
-                image = image.astype(np.uint8)
+            # Load image using PIL to ensure proper format
+            pil_image = Image.open(image_path)
+            # Convert to RGB (handles all formats: RGBA, L, P, etc.)
+            if pil_image.mode != "RGB":
+                print(f"Converting image from {pil_image.mode} to RGB")
+                pil_image = pil_image.convert("RGB")
+            # Convert PIL image to numpy array in RGB format
+            image = np.array(pil_image)
+            print(f"Image loaded: shape={image.shape}, dtype={image.dtype}")
 
             # Get face locations and encodings
             face_locations = self._find_face_locations(image, image_path)
@@ -328,18 +325,15 @@ class FaceRecognitionManager:
             if not person:
                 person = self.db.add_person(person_name)
 
-            # Load image and ensure it's in RGB format
-            image = face_recognition.load_image_file(image_path)  # type: ignore
-            # Convert to RGB if needed (handles RGBA, BGR, etc.)
-            if len(image.shape) == 2:
-                # Grayscale - convert to RGB
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-            elif image.shape[2] == 4:
-                # RGBA - convert to RGB
-                image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
-            # Ensure uint8 format
-            if image.dtype != np.uint8:
-                image = image.astype(np.uint8)
+            # Load image using PIL to ensure proper format
+            pil_image = Image.open(image_path)
+            # Convert to RGB (handles all formats: RGBA, L, P, etc.)
+            if pil_image.mode != "RGB":
+                print(f"Converting image from {pil_image.mode} to RGB")
+                pil_image = pil_image.convert("RGB")
+            # Convert PIL image to numpy array in RGB format
+            image = np.array(pil_image)
+            print(f"Image loaded: shape={image.shape}, dtype={image.dtype}")
 
             # Find face locations using robust strategy
             face_locations = self._find_face_locations(
