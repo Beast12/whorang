@@ -164,8 +164,13 @@ class FaceRecognitionManager:
                 print(f"Converting image from {pil_image.mode} to RGB")
                 pil_image = pil_image.convert("RGB")
             # Convert PIL image to numpy array in RGB format
-            image = np.array(pil_image)
-            print(f"Image loaded: shape={image.shape}, dtype={image.dtype}")
+            image = np.array(pil_image, dtype=np.uint8)
+            # Ensure C-contiguous memory layout for dlib
+            if not image.flags["C_CONTIGUOUS"]:
+                image = np.ascontiguousarray(image)
+            print(
+                f"Image loaded: shape={image.shape}, dtype={image.dtype}, contiguous={image.flags['C_CONTIGUOUS']}"
+            )
 
             # Get face locations and encodings
             face_locations = self._find_face_locations(image, image_path)
@@ -332,8 +337,13 @@ class FaceRecognitionManager:
                 print(f"Converting image from {pil_image.mode} to RGB")
                 pil_image = pil_image.convert("RGB")
             # Convert PIL image to numpy array in RGB format
-            image = np.array(pil_image)
-            print(f"Image loaded: shape={image.shape}, dtype={image.dtype}")
+            image = np.array(pil_image, dtype=np.uint8)
+            # Ensure C-contiguous memory layout for dlib
+            if not image.flags["C_CONTIGUOUS"]:
+                image = np.ascontiguousarray(image)
+            print(
+                f"Image loaded: shape={image.shape}, dtype={image.dtype}, contiguous={image.flags['C_CONTIGUOUS']}"
+            )
 
             # Find face locations using robust strategy
             face_locations = self._find_face_locations(

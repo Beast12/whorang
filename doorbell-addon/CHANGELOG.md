@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.123] - 2025-12-20
+
+### Fixed
+- **CRITICAL: C-Contiguous Memory Layout** - Added explicit C-contiguous array conversion for dlib compatibility
+- **v1.0.122 Still Failed** - Image was RGB uint8 but memory layout was incompatible with dlib
+
+### Root Cause
+**Logs from v1.0.122:**
+```
+Image loaded: shape=(480, 640, 3), dtype=uint8
+RuntimeError: Unsupported image type, must be 8bit gray or RGB image.
+```
+
+The image WAS RGB uint8, but dlib still rejected it. The issue is **memory layout**:
+- dlib requires C-contiguous memory layout
+- PIL/numpy arrays may not be C-contiguous by default
+- Even with correct shape and dtype, non-contiguous arrays fail dlib validation
+
+### Technical Details
+**What dlib requires:**
+1. RGB color space ✅ (fixed in v1.0.122)
+2. uint8 data type ✅ (fixed in v1.0.122)
+3. **C-contiguous memory layout ❌ (missing until now)**
+
+**C-contiguous arrays:**
+- Memory is laid out in row-major order
+- Required by C/C++ libraries like dlib
+- numpy flag: `array.flags['C_CONTIGUOUS']`
+- Fix: `np.ascontiguousarray(image)`
+
+### Code Changes
+```python
+# Convert PIL to numpy
+image = np.array(pil_image, dtype=np.uint8)
+
+# NEW: Ensure C-contiguous layout
+if not image.flags['C_CONTIGUOUS']:
+    image = np.ascontiguousarray(image)
+```
+
+### Why This Wasn't Caught
+- PIL usually creates C-contiguous arrays
+- But not guaranteed in all cases
+- Depends on PIL version, image format, transformations
+- dlib's error message doesn't mention memory layout
+- Says "must be 8bit gray or RGB" but actually means "must be C-contiguous RGB uint8"
+
+### Impact
+- ✅ **Guarantees C-contiguous layout** - Required by dlib
+- ✅ **Handles all edge cases** - Works regardless of PIL behavior
+- ✅ **Proper dlib compatibility** - All requirements met
+- ✅ **Face detection will work** - No more format rejections
+
 ## [1.0.122] - 2025-12-19
 
 ### Fixed
