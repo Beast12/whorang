@@ -7,9 +7,10 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import cv2
-import face_recognition  # type: ignore
 import numpy as np
 from PIL import Image
+
+import face_recognition  # type: ignore
 
 from .config import settings
 from .database import DatabaseManager
@@ -167,7 +168,7 @@ class FaceRecognitionManager:
                 print(
                     f"Face detection strategy '{strategy_name}' failed with error: {detection_error}"
                 )
-        
+
         print(f"All detection strategies failed for {image_name}")
         return []
 
