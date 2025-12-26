@@ -7,7 +7,7 @@ labels:
   org.opencontainers.image.title: "doorbell-face-recognition:1.0.123"
   org.opencontainers.image.description: "Face recognition doorbell add-on with ML-based detection"
   org.opencontainers.image.source: "https://github.com/Beast12/whorang"
-  org.opencontainers.image.version: "1.0.123"
+  org.opencontainers.image.version: "1.0.124"
   org.opencontainers.image.created: "2024-01-01T00:00:00Z"
   org.opencontainers.image.authors: "Beast12"
   org.opencontainers.image.licenses: "MIT"
