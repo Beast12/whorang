@@ -121,7 +121,10 @@ class FaceRecognitionManager:
             except Exception as detection_error:
                 # Check for "Unsupported image type" error which often indicates dlib stride issues
                 if "Unsupported image type" in str(detection_error):
-                    print(f"Caught 'Unsupported image type' error for {strategy_name}, attempting to sanitize image...")
+                    print(
+                        f"Caught 'Unsupported image type' error for {strategy_name}, "
+                        "attempting to sanitize image..."
+                    )
                     try:
                         # Force a deep copy and ensure strictly contiguous uint8
                         # We do this inside the loop to only fix it if needed (performance)
@@ -130,27 +133,38 @@ class FaceRecognitionManager:
                         # Instead, we should define strategies using the current 'image' variable.
                         # Since we can't update 'image' effectively for already-defined lambdas,
                         # we will manually retry the face_recognition call here.
-                        
-                        sanitized_image = np.array(image, copy=True, order='C').astype(np.uint8)
-                        
+
+                        sanitized_image = np.array(image, copy=True, order="C").astype(
+                            np.uint8
+                        )
+
                         # Retry based on strategy name
                         if strategy_name == "hog_default":
-                            locations = face_recognition.face_locations(sanitized_image)  # type: ignore
+                            locations = face_recognition.face_locations(
+                                sanitized_image
+                            )  # type: ignore
                         elif strategy_name == "hog_upsample":
-                            locations = face_recognition.face_locations(sanitized_image, number_of_times_to_upsample=2)  # type: ignore
+                            locations = face_recognition.face_locations(
+                                sanitized_image, number_of_times_to_upsample=2
+                            )  # type: ignore
                         elif strategy_name == "cnn":
-                            locations = face_recognition.face_locations(sanitized_image, model="cnn")  # type: ignore
+                            locations = face_recognition.face_locations(
+                                sanitized_image, model="cnn"
+                            )  # type: ignore
                         else:
                             # Skip custom strategies like haar if they fail this way (unlikely for haar)
                             print(f"Skipping retry for custom strategy {strategy_name}")
                             continue
-                            
-                        print(f"Retry with sanitized image succeeded for {strategy_name}, found {len(locations)} faces")
+
+                        print(
+                            f"Retry with sanitized image succeeded for {strategy_name}, "
+                            f"found {len(locations)} faces"
+                        )
                         if locations:
                             return locations
 
                     except Exception as retry_error:
-                         print(f"Retry failed for {strategy_name}: {retry_error}")
+                        print(f"Retry failed for {strategy_name}: {retry_error}")
 
                 print(
                     f"Face detection strategy '{strategy_name}' failed with error: {detection_error}"
