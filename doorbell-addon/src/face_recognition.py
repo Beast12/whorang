@@ -126,6 +126,7 @@ class FaceRecognitionManager:
                         "attempting to sanitize image..."
                     )
                     try:
+
                         # Force a deep copy and ensure strictly contiguous uint8
                         # We do this inside the loop to only fix it if needed (performance)
                         # Note: We update the image in strategies via closure, but lambda binds early.
@@ -134,8 +135,12 @@ class FaceRecognitionManager:
                         # Since we can't update 'image' effectively for already-defined lambdas,
                         # we will manually retry the face_recognition call here.
 
-                        sanitized_image = np.array(image, copy=True, order="C")
-                        sanitized_image = sanitized_image.astype(np.uint8)
+                        # Use PIL to sanitize the image (strip alpha, fix stride/padding)
+                        # This reconstructs the memory layout from scratch
+                        pil_image = Image.fromarray(image)
+                        # Force convert to RGB (drops alpha channel if present)
+                        pil_image = pil_image.convert("RGB")
+                        sanitized_image = np.array(pil_image, dtype=np.uint8)
 
                         # Retry based on strategy name
                         if strategy_name == "hog_default":
