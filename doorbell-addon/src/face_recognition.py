@@ -134,9 +134,8 @@ class FaceRecognitionManager:
                         # Since we can't update 'image' effectively for already-defined lambdas,
                         # we will manually retry the face_recognition call here.
 
-                        sanitized_image = np.array(image, copy=True, order="C").astype(
-                            np.uint8
-                        )
+                        sanitized_image = np.array(image, copy=True, order="C")
+                        sanitized_image = sanitized_image.astype(np.uint8)
 
                         # Retry based on strategy name
                         if strategy_name == "hog_default":
@@ -152,7 +151,7 @@ class FaceRecognitionManager:
                                 sanitized_image, model="cnn"
                             )  # type: ignore
                         else:
-                            # Skip custom strategies like haar if they fail this way (unlikely for haar)
+                            # Skip custom strategies like haar if they fail
                             print(f"Skipping retry for custom strategy {strategy_name}")
                             continue
 
