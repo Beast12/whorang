@@ -169,7 +169,7 @@ class FaceRecognitionManager:
                 print(
                     f"Face detection strategy '{strategy_name}' failed with error: {detection_error}"
                 )
-        
+
         print(f"All detection strategies failed for {image_name}")
         return []
 

@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.126] - 2025-12-27
+
+### Changed
+- **Release Rebuild** - Rebuild of v1.0.125 to ensure proper Home Assistant addon update propagation
+- No functional changes from v1.0.125
+
+### Notes
+This release addresses an issue where v1.0.125 was not appearing as an available update in Home Assistant despite being tagged and built. This rebuild ensures the addon update is properly detected by Home Assistant's addon store.
+
+## [1.0.125] - 2025-12-26
+
+### Fixed
+- **Enhanced Error Recovery** - Added automatic retry mechanism for "Unsupported image type" errors with sanitized image
+- **Improved Robustness** - Detection strategies now attempt recovery with strictly contiguous C-ordered arrays when initial attempt fails
+
+### Technical Details
+- Added error-specific handling for "Unsupported image type" RuntimeError
+- When detected, creates sanitized copy: `np.array(image, copy=True, order="C").astype(np.uint8)`
+- Retries the same detection strategy with sanitized image
+- Falls back to next strategy if retry also fails
+- Removed traceback printing for cleaner logs
+
+### Impact
+- ✅ **Better error recovery** - Handles edge cases where initial C-contiguous check wasn't sufficient
+- ✅ **Cleaner logs** - No more full stack traces for expected errors
+- ✅ **Higher success rate** - Additional safety net for image format issues
+
+## [1.0.124] - 2025-12-26
+
+### Changed
+- **Code Formatting** - Reformatted face_recognition.py to comply with Black/Flake8 standards
+- **CI Compliance** - Updated requirements.txt version format for CI validation
+
 ## [1.0.123] - 2025-12-20
 
 ### Fixed
