@@ -1,17 +1,3 @@
-# https://developers.home-assistant.io/docs/add-ons/repository
-name: "Doorbell Face Recognition Add-on Repository"
+name: "WhoRang Doorbell Add-on Repository"
 url: "https://github.com/Beast12/whorang"
 maintainer: "Beast12"
-
-# Latest release information
-latest_version: "1.0.126"
-release_date: "2025-12-27T13:55:08Z"
-
-# Add-on information
-addons:
-  doorbell_face_recognition:
-    name: "Doorbell Face Recognition"
-    description: "AI-powered doorbell with face recognition capabilities"
-    version: "1.0.126"
-    slug: "doorbell_face_recognition"
-    url: "https://github.com/Beast12/whorang/tree/main/doorbell-addon"
