@@ -1,25 +1,38 @@
 // Settings page JavaScript functionality
 
+const API = {
+    settings: 'api/settings',
+    cameras: 'api/cameras',
+    weatherEntities: 'api/weather-entities',
+    cameraTest: 'api/camera/test',
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
 });
 
 function initializeSettings() {
-    // Setup camera source radio buttons
     setupCameraSourceToggle();
-    
-    // Load current settings first, then load cameras and weather entities
+
     loadCurrentSettings().then(() => {
-        // Load available cameras after settings are loaded
-        loadAvailableCameras();
-        // Load available weather entities
-        loadAvailableWeatherEntities();
-        // Update camera status after settings are loaded
+        loadDropdownOptions(
+            'camera-entity',
+            API.cameras,
+            data => data.cameras || [],
+            c => ({ value: c.entity_id, label: c.friendly_name }),
+            'No cameras found',
+            'Error loading cameras'
+        );
+        loadDropdownOptions(
+            'weather-entity',
+            API.weatherEntities,
+            data => data.entities || [],
+            e => ({ value: e.entity_id, label: e.friendly_name }),
+            'No weather entities found',
+            'Error loading weather entities'
+        );
         updateCameraStatus();
     });
-    
-    // Setup confidence threshold slider
-    setupConfidenceSlider();
 }
 
 function setupCameraSourceToggle() {
@@ -27,7 +40,7 @@ function setupCameraSourceToggle() {
     const entityOption = document.getElementById('camera-entity-option');
     const urlSection = document.getElementById('camera-url-section');
     const entitySection = document.getElementById('camera-entity-section');
-    
+
     if (urlOption && entityOption && urlSection && entitySection) {
         urlOption.addEventListener('change', function() {
             if (this.checked) {
@@ -35,7 +48,7 @@ function setupCameraSourceToggle() {
                 entitySection.style.display = 'none';
             }
         });
-        
+
         entityOption.addEventListener('change', function() {
             if (this.checked) {
                 urlSection.style.display = 'none';
@@ -47,63 +60,43 @@ function setupCameraSourceToggle() {
 
 async function loadCurrentSettings() {
     try {
-        console.log('Loading current settings...');
-        const response = await fetch('api/settings');
+        const response = await fetch(API.settings);
         if (response.ok) {
             const settings = await response.json();
-            console.log('Loaded settings:', settings);
-            
-            // Update form fields with current settings
+
             const cameraUrl = document.getElementById('camera-url');
             const haAccessToken = document.getElementById('ha-access-token');
-            const confidenceSlider = document.getElementById('confidence-threshold');
-            const confidenceValue = document.getElementById('confidence-value');
             const urlOption = document.getElementById('camera-url-option');
             const entityOption = document.getElementById('camera-entity-option');
             const urlSection = document.getElementById('camera-url-section');
             const entitySection = document.getElementById('camera-entity-section');
-            
+
             if (cameraUrl && settings.camera_url) {
                 cameraUrl.value = settings.camera_url;
-                console.log('Set camera URL:', settings.camera_url);
             }
-            
+
             if (haAccessToken && settings.ha_access_token) {
                 haAccessToken.value = settings.ha_access_token;
             }
-            
-            if (confidenceSlider && settings.face_confidence_threshold !== undefined) {
-                confidenceSlider.value = settings.face_confidence_threshold * 100;
-                if (confidenceValue) {
-                    confidenceValue.textContent = Math.round(settings.face_confidence_threshold * 100) + '%';
-                }
-            }
-            
-            // Set camera source based on settings
+
             if (settings.camera_entity) {
-                console.log('Setting camera entity mode:', settings.camera_entity);
                 if (entityOption) entityOption.checked = true;
                 if (urlOption) urlOption.checked = false;
                 if (urlSection) urlSection.style.display = 'none';
                 if (entitySection) entitySection.style.display = 'block';
-                
-                // Store current entity for later restoration
+
                 const cameraSelect = document.getElementById('camera-entity');
                 if (cameraSelect) {
                     cameraSelect.setAttribute('data-current-value', settings.camera_entity);
-                    console.log('Set data-current-value:', settings.camera_entity);
                 }
             } else if (settings.camera_url) {
-                console.log('Setting camera URL mode:', settings.camera_url);
                 if (urlOption) urlOption.checked = true;
                 if (entityOption) entityOption.checked = false;
                 if (urlSection) urlSection.style.display = 'block';
                 if (entitySection) entitySection.style.display = 'none';
             }
-            
+
             return settings;
-        } else {
-            console.error('Failed to load settings:', response.status);
         }
     } catch (error) {
         console.error('Error loading current settings:', error);
@@ -111,117 +104,69 @@ async function loadCurrentSettings() {
     return null;
 }
 
-async function loadAvailableCameras() {
-    const cameraSelect = document.getElementById('camera-entity');
-    if (!cameraSelect) return;
-    
+/**
+ * Generic dropdown loader. Fetches items from apiUrl and populates <select id=selectId>.
+ * getItems(data) extracts the array from the response; toOption(item) maps each item to
+ * { value, label }. Restores data-current-value when present.
+ */
+async function loadDropdownOptions(selectId, apiUrl, getItems, toOption, emptyMsg, errorMsg) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
     try {
-        console.log('Loading available cameras...');
-        const response = await fetch('api/cameras');
+        const response = await fetch(apiUrl);
         if (response.ok) {
-            const data = await response.json();
-            const cameras = data.cameras || [];
-            console.log('Available cameras:', cameras);
-            
-            // Clear existing options
-            cameraSelect.innerHTML = '';
-            
-            if (cameras.length === 0) {
-                cameraSelect.innerHTML = '<option value="">No cameras found</option>';
+            const items = getItems(await response.json());
+
+            if (items.length === 0) {
+                select.innerHTML = `<option value="">${emptyMsg}</option>`;
             } else {
-                cameraSelect.innerHTML = '<option value="">Select a camera...</option>';
-                cameras.forEach(camera => {
+                select.innerHTML = `<option value="">Select…</option>`;
+                items.forEach(item => {
+                    const { value, label } = toOption(item);
                     const option = document.createElement('option');
-                    option.value = camera.entity_id;
-                    option.textContent = camera.friendly_name;
-                    cameraSelect.appendChild(option);
+                    option.value = value;
+                    option.textContent = label;
+                    select.appendChild(option);
                 });
-                
-                // Set the selected value from current settings
-                const currentEntity = cameraSelect.getAttribute('data-current-value');
-                console.log('Restoring camera entity selection:', currentEntity);
-                if (currentEntity) {
-                    cameraSelect.value = currentEntity;
-                    console.log('Camera entity selected:', cameraSelect.value);
+
+                const current = select.getAttribute('data-current-value');
+                if (current) {
+                    select.value = current;
                 }
             }
         } else {
-            cameraSelect.innerHTML = '<option value="">Error loading cameras</option>';
+            select.innerHTML = `<option value="">${errorMsg}</option>`;
         }
-    } catch (error) {
-        console.error('Error loading cameras:', error);
-        cameraSelect.innerHTML = '<option value="">Error loading cameras</option>';
+    } catch {
+        select.innerHTML = `<option value="">${errorMsg}</option>`;
     }
 }
 
-async function loadAvailableWeatherEntities() {
-    const weatherSelect = document.getElementById('weather-entity');
-    if (!weatherSelect) return;
-    
+/** Runs async fn with button disabled and loading HTML, restores originalHtml when done. */
+async function withButtonLoading(button, loadingHtml, originalHtml, fn) {
+    button.disabled = true;
+    button.innerHTML = loadingHtml;
     try {
-        console.log('Loading available weather entities...');
-        const response = await fetch('api/weather-entities');
-        if (response.ok) {
-            const data = await response.json();
-            const entities = data.entities || [];
-            console.log('Available weather entities:', entities);
-            
-            // Clear existing options
-            weatherSelect.innerHTML = '';
-            
-            if (entities.length === 0) {
-                weatherSelect.innerHTML = '<option value="">No weather entities found</option>';
-            } else {
-                weatherSelect.innerHTML = '<option value="">Select a weather entity...</option>';
-                entities.forEach(entity => {
-                    const option = document.createElement('option');
-                    option.value = entity.entity_id;
-                    option.textContent = entity.friendly_name;
-                    weatherSelect.appendChild(option);
-                });
-                
-                // Set the selected value from current settings
-                const currentEntity = weatherSelect.getAttribute('data-current-value');
-                console.log('Restoring weather entity selection:', currentEntity);
-                if (currentEntity) {
-                    weatherSelect.value = currentEntity;
-                    console.log('Weather entity selected:', weatherSelect.value);
-                }
-            }
-        } else {
-            weatherSelect.innerHTML = '<option value="">Error loading weather entities</option>';
-        }
-    } catch (error) {
-        console.error('Error loading weather entities:', error);
-        weatherSelect.innerHTML = '<option value="">Error loading weather entities</option>';
+        await fn();
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalHtml;
     }
 }
 
-function setupConfidenceSlider() {
-    const slider = document.getElementById('confidence-threshold');
-    const valueDisplay = document.getElementById('confidence-value');
-    
-    if (slider && valueDisplay) {
-        slider.addEventListener('input', function() {
-            updateConfidenceValue(this.value);
-        });
-    }
-}
-
-function updateConfidenceValue(value) {
-    const valueDisplay = document.getElementById('confidence-value');
-    if (valueDisplay) {
-        valueDisplay.textContent = value + '%';
-    }
+/** Extracts a displayable error message from a fetch error or JSON error response. */
+function getErrorMessage(error) {
+    if (error && typeof error === 'object' && error.detail) return error.detail;
+    if (error instanceof Error) return error.message;
+    return 'Unknown error';
 }
 
 async function testCamera() {
     const button = event.target;
-    const statusSpan = document.getElementById('camera-status');
     const urlOption = document.getElementById('camera-url-option');
     const entityOption = document.getElementById('camera-entity-option');
-    
-    // Determine which camera source is selected
+
     let cameraSource, cameraValue;
     if (urlOption && urlOption.checked) {
         cameraSource = 'url';
@@ -230,108 +175,87 @@ async function testCamera() {
         cameraSource = 'entity';
         cameraValue = document.getElementById('camera-entity').value;
     }
-    
+
     if (!cameraValue) {
         showStatus('Please enter a camera URL or select an entity', 'error');
         return;
     }
-    
-    // Update button state
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Testing...';
-    
-    try {
-        const response = await fetch('api/camera/test', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                source: cameraSource,
-                value: cameraValue
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            showStatus('Camera connection successful!', 'success');
-        } else {
-            showStatus('Camera connection failed: ' + (result.error || 'Unknown error'), 'error');
+
+    await withButtonLoading(
+        button,
+        '<i class="bi bi-arrow-clockwise"></i> Testing...',
+        '<i class="bi bi-play-circle"></i> Test Camera Connection',
+        async () => {
+            try {
+                const response = await fetch(API.cameraTest, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: cameraSource, value: cameraValue })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showStatus('Camera connection successful!', 'success');
+                } else {
+                    showStatus('Camera connection failed: ' + getErrorMessage(result), 'error');
+                }
+            } catch (error) {
+                showStatus('Network error during test', 'error');
+            }
         }
-        
-    } catch (error) {
-        console.error('Test camera error:', error);
-        showStatus('Network error during test', 'error');
-    } finally {
-        // Restore button state
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-play-circle"></i> Test Camera Connection';
-    }
+    );
 }
 
 async function saveSettings() {
     const button = event.target;
     const urlOption = document.getElementById('camera-url-option');
     const entityOption = document.getElementById('camera-entity-option');
-    const confidenceSlider = document.getElementById('confidence-threshold');
     const haAccessToken = document.getElementById('ha-access-token');
-    
-    // Collect settings data
-    const settings = {
-        confidence_threshold: confidenceSlider ? parseFloat(confidenceSlider.value) / 100 : 0.6
-    };
-    
-    // Add Home Assistant access token
+
+    const settingsData = {};
+
     if (haAccessToken && haAccessToken.value) {
-        settings.ha_access_token = haAccessToken.value;
+        settingsData.ha_access_token = haAccessToken.value;
     }
-    
-    // Add camera configuration
+
     if (urlOption && urlOption.checked) {
-        settings.camera_url = document.getElementById('camera-url').value;
-        settings.camera_entity = null;
+        settingsData.camera_url = document.getElementById('camera-url').value;
+        settingsData.camera_entity = null;
     } else if (entityOption && entityOption.checked) {
-        settings.camera_entity = document.getElementById('camera-entity').value;
-        settings.camera_url = null;
+        settingsData.camera_entity = document.getElementById('camera-entity').value;
+        settingsData.camera_url = null;
     }
-    
-    // Add weather entity configuration
+
     const weatherEntity = document.getElementById('weather-entity');
     if (weatherEntity && weatherEntity.value) {
-        settings.weather_entity = weatherEntity.value;
+        settingsData.weather_entity = weatherEntity.value;
     }
-    
-    // Update button state
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Saving...';
-    
-    try {
-        const response = await fetch('api/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(settings)
-        });
-        
-        if (response.ok) {
-            showNotification('Settings saved successfully!', 'success');
-            // Update camera status after saving settings
-            updateCameraStatus();
-        } else {
-            const error = await response.json();
-            showNotification('Error saving settings: ' + error.detail, 'error');
+
+    await withButtonLoading(
+        button,
+        '<i class="bi bi-arrow-clockwise"></i> Saving...',
+        '<i class="bi bi-check-circle"></i> Save Settings',
+        async () => {
+            try {
+                const response = await fetch(API.settings, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settingsData)
+                });
+
+                if (response.ok) {
+                    showNotification('Settings saved successfully!', 'success');
+                    updateCameraStatus();
+                } else {
+                    const error = await response.json();
+                    showNotification('Error saving settings: ' + getErrorMessage(error), 'error');
+                }
+            } catch (error) {
+                showNotification('Network error while saving', 'error');
+            }
         }
-        
-    } catch (error) {
-        console.error('Save settings error:', error);
-        showNotification('Network error while saving', 'error');
-    } finally {
-        // Restore button state
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-check-circle"></i> Save Settings';
-    }
+    );
 }
 
 function showStatus(message, type) {
@@ -339,8 +263,6 @@ function showStatus(message, type) {
     if (statusSpan) {
         statusSpan.className = `ms-2 ${type === 'success' ? 'text-success' : 'text-danger'}`;
         statusSpan.textContent = message;
-        
-        // Clear after 5 seconds
         setTimeout(() => {
             statusSpan.textContent = '';
             statusSpan.className = 'ms-2';
@@ -350,26 +272,29 @@ function showStatus(message, type) {
 
 async function refreshCameraEntities() {
     const button = event.target;
-    
-    // Update button state
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refreshing...';
-    
-    try {
-        await loadAvailableCameras();
-        showNotification('Camera entities refreshed successfully!', 'success');
-    } catch (error) {
-        console.error('Refresh cameras error:', error);
-        showNotification('Error refreshing camera entities', 'error');
-    } finally {
-        // Restore button state
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Camera Entities';
-    }
+    await withButtonLoading(
+        button,
+        '<i class="bi bi-arrow-clockwise"></i> Refreshing...',
+        '<i class="bi bi-arrow-clockwise"></i> Refresh Camera Entities',
+        async () => {
+            try {
+                await loadDropdownOptions(
+                    'camera-entity',
+                    API.cameras,
+                    data => data.cameras || [],
+                    c => ({ value: c.entity_id, label: c.friendly_name }),
+                    'No cameras found',
+                    'Error loading cameras'
+                );
+                showNotification('Camera entities refreshed successfully!', 'success');
+            } catch (error) {
+                showNotification('Error refreshing camera entities', 'error');
+            }
+        }
+    );
 }
 
 function showNotification(message, type) {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
     notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
@@ -377,10 +302,7 @@ function showNotification(message, type) {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
     document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
     setTimeout(() => {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
@@ -391,12 +313,11 @@ function showNotification(message, type) {
 async function updateCameraStatus() {
     const statusElement = document.getElementById('camera-connection-status');
     if (!statusElement) return;
-    
+
     try {
-        const response = await fetch('api/settings');
+        const response = await fetch(API.settings);
         if (response.ok) {
             const settings = await response.json();
-            
             if (settings.camera_entity) {
                 statusElement.textContent = 'Connected (HA Entity)';
                 statusElement.className = 'badge bg-success';
@@ -412,7 +333,6 @@ async function updateCameraStatus() {
             statusElement.className = 'badge bg-danger';
         }
     } catch (error) {
-        console.error('Error updating camera status:', error);
         statusElement.textContent = 'Unknown';
         statusElement.className = 'badge bg-secondary';
     }
@@ -421,50 +341,40 @@ async function updateCameraStatus() {
 async function saveWeatherSettings() {
     const button = event.target;
     const weatherEntity = document.getElementById('weather-entity');
-    
+
     if (!weatherEntity) {
         showNotification('Weather entity field not found', 'error');
         return;
     }
-    
-    // Update button state
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Saving...';
-    
-    try {
-        const settings = {
-            weather_entity: weatherEntity.value || null
-        };
-        
-        const response = await fetch('api/settings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(settings)
-        });
-        
-        if (response.ok) {
-            showNotification('Weather settings saved successfully!', 'success');
-        } else {
-            const error = await response.json();
-            showNotification('Error saving weather settings: ' + error.detail, 'error');
+
+    await withButtonLoading(
+        button,
+        '<i class="bi bi-arrow-clockwise"></i> Saving...',
+        '<i class="bi bi-save"></i> Save Weather Settings',
+        async () => {
+            try {
+                const response = await fetch(API.settings, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ weather_entity: weatherEntity.value || null })
+                });
+
+                if (response.ok) {
+                    showNotification('Weather settings saved successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showNotification('Error saving weather settings: ' + getErrorMessage(error), 'error');
+                }
+            } catch (error) {
+                showNotification('Network error while saving weather settings', 'error');
+            }
         }
-        
-    } catch (error) {
-        console.error('Save weather settings error:', error);
-        showNotification('Network error while saving weather settings', 'error');
-    } finally {
-        // Restore button state
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-save"></i> Save Weather Settings';
-    }
+    );
 }
 
 // Export functions for global access
 window.testCamera = testCamera;
 window.saveSettings = saveSettings;
-window.updateConfidenceValue = updateConfidenceValue;
 window.refreshCameraEntities = refreshCameraEntities;
 window.updateCameraStatus = updateCameraStatus;
 window.saveWeatherSettings = saveWeatherSettings;

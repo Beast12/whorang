@@ -1,8 +1,8 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
-name: "Doorbell Face Recognition"
-version: "1.0.126"
+name: "WhoRang Doorbell"
+version: "1.0.127"
 slug: "doorbell_face_recognition"
-description: "Face recognition doorbell add-on with ML-based detection"
+description: "Doorbell event history with image capture and weather integration"
 url: "https://github.com/Beast12/whorang"
 arch:
   - amd64
@@ -19,18 +19,14 @@ options:
   camera_url: "rtsp://192.168.1.100:554/stream"
   storage_path: "/share/doorbell"
   retention_days: 30
-  face_confidence_threshold: 0.6
   notification_webhook: ""
-  database_encryption: false
   ha_access_token: ""
 schema:
   camera_entity: "str?"
   camera_url: "str"
   storage_path: "str"
   retention_days: "int(1,365)"
-  face_confidence_threshold: "float(0.1,1.0)"
   notification_webhook: "str?"
-  database_encryption: "bool"
   ha_access_token: "str?"
 ports:
   "8099/tcp": 8099

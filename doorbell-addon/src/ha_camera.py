@@ -1,6 +1,8 @@
 """Home Assistant camera entity integration."""
 
-from typing import Optional
+import os
+import subprocess
+from typing import Dict, Optional
 
 import requests
 import structlog
@@ -9,50 +11,41 @@ from .config import settings
 
 logger = structlog.get_logger()
 
+_HTTP_TIMEOUT = 10
+_FFMPEG_TIMEOUT = 15
+
 
 class HACameraManager:
     """Manages Home Assistant camera entity integration."""
 
     def __init__(self):
-        # For addon API access, prioritize SUPERVISOR_TOKEN over long-lived token
         self.supervisor_token = settings.supervisor_token or settings.hassio_token
         self.ha_access_token = settings.ha_access_token
         self.base_url = "http://supervisor/core/api"
 
+    def _get_token(self) -> Optional[str]:
+        return self.supervisor_token or self.ha_access_token
+
+    def _get_headers(self) -> Optional[Dict[str, str]]:
+        token = self._get_token()
+        if not token:
+            return None
+        return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
     def get_available_cameras(self) -> list:
         """Get list of available camera entities from Home Assistant."""
-        # For addon API access, use SUPERVISOR_TOKEN first, then long-lived token as fallback
-        token = self.supervisor_token or self.ha_access_token
-        if not token:
+        headers = self._get_headers()
+        if not headers:
             logger.warning("No Home Assistant token available for camera discovery")
-            logger.debug(
-                f"supervisor_token: {bool(self.supervisor_token)}, ha_access_token: {bool(self.ha_access_token)}"
-            )
             return []
 
         try:
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-
-            logger.debug(f"Requesting camera entities from: {self.base_url}/states")
-            logger.debug(
-                f"Using token type: {'supervisor' if self.supervisor_token else 'long-lived'}"
-            )
-
             response = requests.get(
-                f"{self.base_url}/states", headers=headers, timeout=10
+                f"{self.base_url}/states", headers=headers, timeout=_HTTP_TIMEOUT
             )
-
-            logger.debug(f"API response status: {response.status_code}")
-            if response.status_code != 200:
-                logger.error(f"API response body: {response.text}")
-
             response.raise_for_status()
 
-            states = response.json()
-            cameras = [
+            return [
                 {
                     "entity_id": state["entity_id"],
                     "friendly_name": state["attributes"].get(
@@ -60,12 +53,9 @@ class HACameraManager:
                     ),
                     "state": state["state"],
                 }
-                for state in states
+                for state in response.json()
                 if state["entity_id"].startswith("camera.")
             ]
-
-            logger.info(f"Found {len(cameras)} camera entities")
-            return cameras
 
         except Exception as e:
             logger.error(f"Failed to get camera entities: {e}")
@@ -73,45 +63,86 @@ class HACameraManager:
 
     def get_camera_stream_url(self, entity_id: str) -> Optional[str]:
         """Get stream URL for a camera entity."""
-        # For addon API access, use SUPERVISOR_TOKEN first, then long-lived token as fallback
-        token = self.supervisor_token or self.ha_access_token
-        if not token:
+        headers = self._get_headers()
+        if not headers:
             logger.warning("No Home Assistant token available")
             return None
 
         try:
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-
-            # Get camera entity state to extract entity_picture
             response = requests.get(
                 f"{self.base_url}/states/{entity_id}",
                 headers=headers,
-                timeout=10,
+                timeout=_HTTP_TIMEOUT,
             )
 
             if response.status_code == 200:
-                entity_data = response.json()
-                entity_picture = entity_data.get("attributes", {}).get("entity_picture")
-
+                entity_picture = response.json().get("attributes", {}).get(
+                    "entity_picture"
+                )
                 if entity_picture:
-                    # Return the camera proxy URL using entity_picture
-                    # Use homeassistant hostname for direct camera proxy access
                     return f"http://homeassistant:8123{entity_picture}"
-                else:
-                    logger.warning(f"No entity_picture found for {entity_id}")
-                    return None
+                logger.warning(f"No entity_picture found for {entity_id}")
 
-            logger.warning(
-                f"Failed to get entity state for {entity_id}: {response.status_code}"
-            )
             return None
 
         except Exception as e:
             logger.error(f"Failed to get stream URL for {entity_id}: {e}")
             return None
+
+    def capture_image(self, destination_path: str) -> bool:
+        """Capture a single frame from the configured camera source."""
+        try:
+            os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+
+            if settings.camera_entity:
+                headers = self._get_headers()
+                if not headers:
+                    logger.error("No token available for camera entity capture")
+                    return False
+
+                response = requests.get(
+                    f"{self.base_url}/camera_proxy/{settings.camera_entity}",
+                    headers=headers,
+                    timeout=_HTTP_TIMEOUT,
+                    stream=True,
+                )
+                if response.status_code == 200:
+                    with open(destination_path, "wb") as f:
+                        f.write(response.content)
+                    logger.info("Image captured from HA camera entity", entity=settings.camera_entity)
+                    return True
+                logger.error("Failed to capture from HA camera entity", status=response.status_code)
+                return False
+
+            camera_url = settings.camera_url
+            if camera_url.startswith(("http://", "https://")):
+                response = requests.get(camera_url, timeout=_HTTP_TIMEOUT, stream=True)
+                if response.status_code == 200:
+                    with open(destination_path, "wb") as f:
+                        f.write(response.content)
+                    logger.info("Image captured from HTTP camera URL")
+                    return True
+                logger.error("Failed to capture from HTTP URL", status=response.status_code)
+                return False
+
+            if camera_url.startswith("rtsp://"):
+                result = subprocess.run(
+                    ["ffmpeg", "-y", "-i", camera_url, "-frames:v", "1", "-q:v", "2", destination_path],
+                    capture_output=True,
+                    timeout=_FFMPEG_TIMEOUT,
+                )
+                if result.returncode == 0 and os.path.exists(destination_path):
+                    logger.info("Image captured from RTSP stream")
+                    return True
+                logger.error("ffmpeg capture failed", stderr=result.stderr.decode(errors="ignore"))
+                return False
+
+            logger.error("No camera source configured")
+            return False
+
+        except Exception as e:
+            logger.error(f"Failed to capture image: {e}")
+            return False
 
     def test_camera_connection(self, entity_id: str) -> dict:
         """Test connection to a camera entity."""
@@ -120,16 +151,10 @@ class HACameraManager:
             if not stream_url:
                 return {"success": False, "error": "Could not get stream URL"}
 
-            # Test if we can access the stream using GET instead of HEAD
-            # Some camera proxies don't support HEAD requests
             response = requests.get(stream_url, timeout=5, stream=True)
             if response.status_code == 200:
                 return {"success": True, "stream_url": stream_url}
-            else:
-                return {
-                    "success": False,
-                    "error": f"Stream not accessible: {response.status_code}",
-                }
+            return {"success": False, "error": f"Stream not accessible: {response.status_code}"}
 
         except Exception as e:
             return {"success": False, "error": str(e)}

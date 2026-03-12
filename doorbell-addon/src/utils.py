@@ -1,6 +1,7 @@
-"""Utility functions for the doorbell face recognition addon."""
+"""Utility functions for the doorbell addon."""
 
 import os
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -9,8 +10,9 @@ import structlog
 
 from .config import settings
 
-# Configure structured logging
 logger = structlog.get_logger()
+
+_UNSAFE_FILENAME_RE = re.compile(r'[<>:"/\\|?*]')
 
 
 class HomeAssistantAPI:
@@ -23,128 +25,75 @@ class HomeAssistantAPI:
             "Content-Type": "application/json",
         }
 
-    async def send_notification(
-        self, title: str, message: str, data: Optional[Dict] = None
-    ):
+    async def _post(self, path: str, json: Optional[Dict] = None) -> Optional[httpx.Response]:
+        """POST to the HA API, returning the response or None on error."""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.base_url}{path}", headers=self.headers, json=json or {}, timeout=10.0
+                )
+                response.raise_for_status()
+                return response
+        except Exception as e:
+            logger.error("HA API POST failed", path=path, error=str(e))
+            return None
+
+    async def _get(self, path: str) -> Optional[httpx.Response]:
+        """GET from the HA API, returning the response or None on error."""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}{path}", headers=self.headers, timeout=10.0
+                )
+                response.raise_for_status()
+                return response
+        except Exception as e:
+            logger.error("HA API GET failed", path=path, error=str(e))
+            return None
+
+    async def send_notification(self, title: str, message: str, data: Optional[Dict] = None):
         """Send a notification to Home Assistant using the notify service."""
-        try:
-            # Use the notify.notify service which works with all notification platforms
-            payload = {
-                "title": title,
-                "message": message,
-                "data": data or {},
-            }
-
-            async with httpx.AsyncClient() as client:
-                # Try notify.notify service first (works with mobile_app, etc.)
-                response = await client.post(
-                    f"{self.base_url}/services/notify/notify",
-                    headers=self.headers,
-                    json=payload,
-                    timeout=10.0,
-                )
-                response.raise_for_status()
-                logger.info("Notification sent to Home Assistant", title=title)
-
-        except Exception as e:
-            logger.error("Failed to send HA notification", error=str(e))
-            # Fallback to persistent notification if notify service fails
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        f"{self.base_url}/services/persistent_notification/create",
-                        headers=self.headers,
-                        json={"title": title, "message": message},
-                        timeout=10.0,
-                    )
-                    logger.info("Fallback persistent notification sent")
-            except Exception as fallback_error:
-                logger.error(
-                    "Fallback notification also failed", error=str(fallback_error)
-                )
-
-    async def update_sensor(
-        self, entity_id: str, state: Any, attributes: Optional[Dict] = None
-    ):
-        """Update a sensor state in Home Assistant."""
-        try:
-            payload = {"state": state, "attributes": attributes or {}}
-
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/states/{entity_id}",
-                    headers=self.headers,
-                    json=payload,
-                )
-                response.raise_for_status()
-                logger.info("Sensor updated", entity_id=entity_id, state=state)
-
-        except Exception as e:
-            logger.error(
-                "Failed to update sensor",
-                entity_id=entity_id,
-                error=str(e),
+        payload = {"title": title, "message": message, "data": data or {}}
+        response = await self._post("/services/notify/notify", payload)
+        if response:
+            logger.info("Notification sent to Home Assistant", title=title)
+        else:
+            # Fallback to persistent notification
+            await self._post(
+                "/services/persistent_notification/create",
+                {"title": title, "message": message},
             )
+
+    async def update_sensor(self, entity_id: str, state: Any, attributes: Optional[Dict] = None):
+        """Update a sensor state in Home Assistant."""
+        response = await self._post(
+            f"/states/{entity_id}", {"state": state, "attributes": attributes or {}}
+        )
+        if response:
+            logger.info("Sensor updated", entity_id=entity_id, state=state)
 
     async def fire_event(self, event_type: str, event_data: Dict):
         """Fire an event in Home Assistant."""
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/events/{event_type}",
-                    headers=self.headers,
-                    json=event_data,
-                )
-                response.raise_for_status()
-                logger.info("Event fired", event_type=event_type)
-
-        except Exception as e:
-            logger.error(
-                "Failed to fire event",
-                event_type=event_type,
-                error=str(e),
-            )
+        response = await self._post(f"/events/{event_type}", event_data)
+        if response:
+            logger.info("Event fired", event_type=event_type)
 
     async def get_weather_data(self, entity_id: str) -> Optional[Dict[str, Any]]:
         """Get weather data from Home Assistant entity."""
         if not entity_id:
             return None
 
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/states/{entity_id}",
-                    headers=self.headers,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                # Extract weather information
-                weather_info = {
-                    "condition": data.get("state"),
-                    "temperature": None,
-                    "humidity": None,
-                }
-
-                # Get temperature and humidity from attributes
-                attributes = data.get("attributes", {})
-                if "temperature" in attributes:
-                    weather_info["temperature"] = float(attributes["temperature"])
-                if "humidity" in attributes:
-                    weather_info["humidity"] = float(attributes["humidity"])
-
-                logger.info(
-                    "Weather data retrieved", entity_id=entity_id, weather=weather_info
-                )
-                return weather_info
-
-        except Exception as e:
-            logger.error(
-                "Failed to get weather data",
-                entity_id=entity_id,
-                error=str(e),
-            )
+        response = await self._get(f"/states/{entity_id}")
+        if not response:
             return None
+
+        data = response.json()
+        attributes = data.get("attributes", {})
+        return {
+            "condition": data.get("state"),
+            "temperature": float(attributes["temperature"]) if "temperature" in attributes else None,
+            "humidity": float(attributes["humidity"]) if "humidity" in attributes else None,
+        }
 
 
 class NotificationManager:
@@ -153,162 +102,79 @@ class NotificationManager:
     def __init__(self):
         self.ha_api = HomeAssistantAPI()
 
-    async def notify_face_detected(
+    async def notify_doorbell_ring(
         self,
-        person_name: str,
-        confidence: float,
+        event_id: int,
         image_path: str,
-        is_known: bool = True,
+        ai_message: Optional[str] = None,
     ):
-        """Send notification when a face is detected."""
-        if is_known:
-            title = f"Known Person Detected: {person_name}"
-            message = f"{person_name} is at the door (confidence: {confidence:.2f})"
-        else:
-            title = "Unknown Person Detected"
-            message = "An unknown person is at the door"
+        """Send notification when the doorbell rings."""
+        import asyncio
 
-        # Send Home Assistant notification
-        await self.ha_api.send_notification(
-            title=title,
-            message=message,
-            data={
-                "image_path": image_path,
-                "person_name": person_name,
-                "confidence": confidence,
-                "is_known": is_known,
-                "timestamp": datetime.now().isoformat(),
-            },
-        )
+        title = "Doorbell Ring"
+        message = ai_message or "Someone is at the door"
+        data = {
+            "image_path": image_path,
+            "event_id": event_id,
+            "timestamp": datetime.now().isoformat(),
+        }
 
-        # Fire custom event
-        await self.ha_api.fire_event(
-            "doorbell_face_detected",
-            {
-                "person_name": person_name,
-                "confidence": confidence,
-                "is_known": is_known,
-                "image_path": image_path,
-                "timestamp": datetime.now().isoformat(),
-            },
-        )
-
-        # Send webhook notification if configured
+        tasks = [self.ha_api.send_notification(title, message, data)]
         if settings.notification_webhook:
-            await self._send_webhook_notification(
-                {
-                    "title": title,
-                    "message": message,
-                    "event": "face_detected",
-                    "person_name": person_name,
-                    "confidence": confidence,
-                    "is_known": is_known,
-                    "image_path": image_path,
-                    "timestamp": datetime.now().isoformat(),
-                }
+            tasks.append(
+                self._send_webhook_notification(
+                    {
+                        "title": title,
+                        "message": message,
+                        "event": "doorbell_ring",
+                        "event_id": event_id,
+                        "image_path": image_path,
+                        "ai_message": ai_message,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
             )
+
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _send_webhook_notification(self, data: Dict):
         """Send notification to external webhook (supports Gotify and generic webhooks)."""
         if not settings.notification_webhook:
             return
 
+        webhook_url = settings.notification_webhook
         try:
-            webhook_url = settings.notification_webhook
-
-            # Check if it's a Gotify webhook (contains /message)
             if "/message" in webhook_url:
-                # Gotify format
-                gotify_payload = {
-                    "title": data.get("title", "Doorbell Event"),
-                    "message": data.get("message", "Face detected at the door"),
+                payload = {
+                    "title": data.get("title", "Doorbell Ring"),
+                    "message": data.get("message", "Someone is at the door"),
                     "priority": data.get("priority", 5),
-                    "extras": {
-                        "client::display": {"contentType": "text/markdown"},
-                        "doorbell": data,
-                    },
+                    "extras": {"client::display": {"contentType": "text/markdown"}, "doorbell": data},
                 }
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(
-                        webhook_url, json=gotify_payload, timeout=10.0
-                    )
-                    response.raise_for_status()
-                    logger.info("Gotify notification sent successfully")
             else:
-                # Generic webhook format
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(webhook_url, json=data, timeout=10.0)
-                    response.raise_for_status()
-                    logger.info("Webhook notification sent successfully")
+                payload = data
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(webhook_url, json=payload, timeout=10.0)
+                response.raise_for_status()
+                logger.info("Webhook notification sent successfully")
 
         except Exception as e:
-            logger.error(
-                "Failed to send webhook notification",
-                error=str(e),
-                webhook_url=webhook_url,
-            )
+            logger.error("Failed to send webhook notification", error=str(e), webhook_url=webhook_url)
 
 
 def ensure_directories():
     """Ensure all required directories exist."""
-    directories = [
-        settings.storage_path,
-        settings.images_path,
-        settings.faces_path,
-        os.path.dirname(settings.database_path),
-    ]
-
-    for directory in directories:
+    for directory in [settings.storage_path, settings.images_path, os.path.dirname(settings.database_path)]:
         os.makedirs(directory, exist_ok=True)
         logger.info("Directory ensured", path=directory)
-
-
-def cleanup_temp_files():
-    """Clean up temporary files."""
-    temp_dirs = ["/tmp", "/var/tmp"]
-
-    for temp_dir in temp_dirs:
-        if os.path.exists(temp_dir):
-            try:
-                for filename in os.listdir(temp_dir):
-                    if filename.startswith("doorbell_") and filename.endswith(".jpg"):
-                        file_path = os.path.join(temp_dir, filename)
-                        if os.path.getmtime(file_path) < (
-                            datetime.now().timestamp() - 3600
-                        ):  # 1 hour old
-                            os.remove(file_path)
-                            logger.info("Cleaned up temp file", path=file_path)
-            except Exception as e:
-                logger.error(
-                    "Error cleaning temp files",
-                    directory=temp_dir,
-                    error=str(e),
-                )
 
 
 def validate_image_file(file_path: str) -> bool:
     """Validate that a file is a valid image."""
     if not os.path.exists(file_path):
         return False
-
-    valid_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
-    file_ext = os.path.splitext(file_path)[1].lower()
-
-    return file_ext in valid_extensions
-
-
-def get_file_size_mb(file_path: str) -> float:
-    """Get file size in megabytes."""
-    if not os.path.exists(file_path):
-        return 0.0
-
-    size_bytes = os.path.getsize(file_path)
-    return size_bytes / (1024 * 1024)
-
-
-def format_confidence(confidence: float) -> str:
-    """Format confidence as a percentage string."""
-    return f"{confidence * 100:.1f}%"
+    return os.path.splitext(file_path)[1].lower() in {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
 
 
 def get_storage_usage() -> Dict[str, Any]:
@@ -317,7 +183,6 @@ def get_storage_usage() -> Dict[str, Any]:
         import shutil
 
         total, used, free = shutil.disk_usage(settings.storage_path)
-
         return {
             "total_gb": total / (1024**3),
             "used_gb": used / (1024**3),
@@ -331,79 +196,49 @@ def get_storage_usage() -> Dict[str, Any]:
 
 def sanitize_filename(filename: str) -> str:
     """Sanitize a filename for safe filesystem usage."""
-    import re
-
-    # Remove or replace invalid characters
-    filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
-
-    # Remove leading/trailing spaces and dots
-    filename = filename.strip(" .")
-
-    # Limit length
+    filename = _UNSAFE_FILENAME_RE.sub("_", filename).strip(" .")
     if len(filename) > 255:
         name, ext = os.path.splitext(filename)
         filename = name[: 255 - len(ext)] + ext
-
     return filename
+
+
+# Placeholder image resources — loaded once
+_PLACEHOLDER_SIZE = 60
+_placeholder_font = None
+
+
+def _get_font():
+    global _placeholder_font
+    if _placeholder_font is None:
+        from PIL import ImageFont
+        try:
+            _placeholder_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10)
+        except (OSError, IOError):
+            _placeholder_font = ImageFont.load_default()
+    return _placeholder_font
 
 
 def create_placeholder_image(image_name: str) -> Optional[str]:
     """Create a placeholder image for missing files."""
     try:
-        import os
-        from typing import Union
+        from PIL import Image, ImageDraw
 
-        from PIL import Image, ImageDraw, ImageFont
-        from PIL.ImageFont import FreeTypeFont
-        from PIL.ImageFont import ImageFont as PILImageFont
-
-        # Create placeholder directory if it doesn't exist
         placeholder_dir = os.path.join(settings.storage_path, "placeholders")
         os.makedirs(placeholder_dir, exist_ok=True)
-
         placeholder_path = os.path.join(placeholder_dir, f"placeholder_{image_name}")
 
-        # Don't recreate if it already exists
         if os.path.exists(placeholder_path):
             return placeholder_path
 
-        # Create a simple placeholder image (60x60 to match thumbnail size)
-        img = Image.new("RGB", (60, 60), color="#6c757d")
+        img = Image.new("RGB", (_PLACEHOLDER_SIZE, _PLACEHOLDER_SIZE), color="#6c757d")
         draw = ImageDraw.Draw(img)
-
-        # Try to use a font, fallback to default if not available
-        font: Union[FreeTypeFont, PILImageFont]
-        try:
-            font = ImageFont.truetype(
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 10
-            )
-        except (OSError, IOError):
-            font = ImageFont.load_default()
-
-        # Draw camera icon using text
-        text = "📷"
-        try:
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-
-            x = (60 - text_width) // 2
-            y = (60 - text_height) // 2
-
-            draw.text((x, y), text, fill="#ffffff", font=font)
-        except Exception:
-            # Fallback to simple text if emoji doesn't work
-            text = "IMG"
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-
-            x = (60 - text_width) // 2
-            y = (60 - text_height) // 2
-
-            draw.text((x, y), text, fill="#ffffff", font=font)
-
-        # Save placeholder
+        font = _get_font()
+        text = "IMG"
+        bbox = draw.textbbox((0, 0), text, font=font)
+        x = (_PLACEHOLDER_SIZE - (bbox[2] - bbox[0])) // 2
+        y = (_PLACEHOLDER_SIZE - (bbox[3] - bbox[1])) // 2
+        draw.text((x, y), text, fill="#ffffff", font=font)
         img.save(placeholder_path, "JPEG")
         return placeholder_path
 
