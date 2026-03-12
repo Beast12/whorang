@@ -19,15 +19,6 @@ flake8 doorbell-addon/src/ --count --select=E9,F63,F7,F82 --show-source --statis
 # Lint (style warnings, non-blocking)
 flake8 doorbell-addon/src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-# Format check
-black --check doorbell-addon/src/
-
-# Auto-format
-black doorbell-addon/src/
-
-# Import sort check
-isort --check-only --profile black doorbell-addon/src/
-
 # Type check
 mypy doorbell-addon/src/ --config-file doorbell-addon/mypy.ini
 ```
