@@ -75,9 +75,12 @@ Key settings: `camera_entity`, `camera_url`, `storage_path`, `retention_days`, `
 ## Versioning
 
 Releases are triggered by git tags (`v*.*.*`). Version must be consistent across three files — the CI will fail otherwise:
-- `doorbell-addon/config.yaml` (the `version:` field)
-- `doorbell-addon/build.yaml` (the `org.opencontainers.image.version:` label)
+- `doorbell-addon/config.yaml` (`version:` field)
+- `doorbell-addon/build.yaml` (`org.opencontainers.image.version:` label and `DOORBELL_VERSION` arg)
 - `doorbell-addon/requirements.txt` (comment `# Version: X.Y.Z`)
+- `doorbell-addon/src/config.py` (`app_version` ClassVar)
+
+The HA builder creates images named `whorang-doorbell-addon-{arch}` at `ghcr.io/beast12/`. The `image` field in `config.yaml` must match: `ghcr.io/beast12/whorang-doorbell-addon-{arch}`. Never put an `image` field in `build.yaml` — that belongs only in `config.yaml`.
 
 ## Key Constraints
 

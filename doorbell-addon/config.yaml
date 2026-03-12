@@ -33,7 +33,7 @@ ports:
 ports_description:
   "8099/tcp": "Web interface"
 panel_icon: "mdi:doorbell-video"
-panel_title: "Doorbell Face Recognition"
+panel_title: "WhoRang Doorbell"
 ingress: true
 ingress_port: 8099
 homeassistant_api: true
