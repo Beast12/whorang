@@ -1,33 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Gallery - WhoRang{% endblock %}
+{% block title %}Gallery — WhoRang{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2><i class="bi bi-images"></i> Event Gallery</h2>
-        <p class="text-muted">Browse and manage doorbell events</p>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="wr-page-title">Gallery</h1>
+        <p class="wr-page-sub">Browse and manage all doorbell events</p>
     </div>
 </div>
 
-<!-- Date filters -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-md-4">
-                <label for="date-from" class="form-label">From Date:</label>
-                <input type="date" class="form-control" id="date-from" onchange="applyFilters()">
-            </div>
-            <div class="col-md-4">
-                <label for="date-to" class="form-label">To Date:</label>
-                <input type="date" class="form-control" id="date-to" onchange="applyFilters()">
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-outline-secondary mt-3" onclick="clearFilters()">
-                    <i class="bi bi-x-circle"></i> Clear Filters
-                </button>
-            </div>
-        </div>
+<!-- Filter Bar -->
+<div class="wr-filter-bar">
+    <div>
+        <label for="date-from" class="form-label">From</label>
+        <input type="date" class="form-control" id="date-from" onchange="applyFilters()">
+    </div>
+    <div>
+        <label for="date-to" class="form-label">To</label>
+        <input type="date" class="form-control" id="date-to" onchange="applyFilters()">
+    </div>
+    <div>
+        <label class="form-label">&nbsp;</label>
+        <button class="btn btn-outline-secondary d-block" onclick="clearFilters()">
+            <i class="bi bi-x-circle"></i> Clear
+        </button>
     </div>
 </div>
 
@@ -42,11 +39,9 @@
                     <div class="position-relative">
                         <img src="api/images/{{ event.image_path.split('/')[-1] }}"
                              class="card-img-top"
-                             style="height: 200px; object-fit: cover; cursor: pointer;"
                              alt="Event image"
                              onclick="viewImageModal('{{ event.image_path.split('/')[-1] }}', {{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')">
                     </div>
-
                     <div class="card-body">
                         <h6 class="card-title">
                             <i class="bi bi-clock"></i>
@@ -54,32 +49,29 @@
                         </h6>
 
                         {% if event.ai_message %}
-                        <p class="text-muted mb-2 fst-italic" style="font-size: 0.9em;">
-                            "{{ event.ai_message }}"
-                        </p>
+                        <p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px">"{{ event.ai_message }}"</p>
                         {% endif %}
 
                         {% if event.weather_condition or event.weather_temperature %}
-                        <div class="mb-2">
-                            <small class="text-secondary">
-                                {% if event.weather_condition %}
-                                    <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
-                                {% endif %}
-                                {% if event.weather_temperature %}
-                                    {% if event.weather_condition %} • {% endif %}
-                                    <i class="bi bi-thermometer-half"></i> {{ "%.1f"|format(event.weather_temperature) }}°C
-                                {% endif %}
-                                {% if event.weather_humidity %}
-                                    • <i class="bi bi-droplet"></i> {{ "%.0f"|format(event.weather_humidity) }}%
-                                {% endif %}
-                            </small>
+                        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">
+                            {% if event.weather_condition %}
+                                <i class="bi bi-cloud"></i> {{ event.weather_condition|title }}
+                            {% endif %}
+                            {% if event.weather_temperature %}
+                                {% if event.weather_condition %} · {% endif %}
+                                {{ "%.1f"|format(event.weather_temperature) }}°C
+                            {% endif %}
+                            {% if event.weather_humidity %}
+                                · {{ "%.0f"|format(event.weather_humidity) }}%
+                            {% endif %}
                         </div>
                         {% endif %}
 
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Event #{{ event.id }}</small>
+                            <span class="font-mono" style="font-size:10px;color:var(--text-3)">#{{ event.id }}</span>
                             <button class="btn btn-sm btn-outline-secondary"
-                                    onclick="editCommentFromGallery({{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')">
+                                    onclick="editCommentFromGallery({{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')"
+                                    title="Edit comment">
                                 <i class="bi bi-pencil"></i>
                             </button>
                         </div>
@@ -89,16 +81,16 @@
             {% endfor %}
         </div>
 
-        <div class="text-center mt-4">
+        <div class="text-center mt-4 mb-2">
             <button class="btn btn-outline-primary" id="load-more-btn" onclick="loadMoreEvents()">
-                <i class="bi bi-arrow-down-circle"></i> Load More Events
+                <i class="bi bi-arrow-down-circle"></i> Load More
             </button>
         </div>
     {% else %}
         <div class="text-center py-5">
-            <i class="bi bi-camera-video-off fs-1 text-muted"></i>
-            <h4 class="mt-3 text-muted">No Events Found</h4>
-            <p class="text-muted">Trigger a doorbell ring to see events here</p>
+            <i class="bi bi-bell-slash" style="font-size:48px;color:var(--text-3)"></i>
+            <h4 class="mt-4" style="color:var(--text-2)">No Events Found</h4>
+            <p style="color:var(--text-3);font-size:13px">Trigger a doorbell ring to see events here</p>
         </div>
     {% endif %}
 </div>
@@ -112,7 +104,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image">
+                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image" style="border-radius:var(--radius);max-height:65vh">
                 <div id="modal-details"></div>
             </div>
             <div class="modal-footer">
@@ -136,8 +128,8 @@
             <div class="modal-body">
                 <input type="hidden" id="comment-event-id">
                 <div class="mb-3">
-                    <label for="comment-text" class="form-label">Comment:</label>
-                    <textarea class="form-control" id="comment-text" rows="3" placeholder="Add a comment..."></textarea>
+                    <label for="comment-text" class="form-label">Comment</label>
+                    <textarea class="form-control" id="comment-text" rows="3" placeholder="Add a note..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -187,7 +179,7 @@ function viewImageModal(imageName, eventId, comment) {
     const details = `
         <div class="row text-start">
             <div class="col-12">
-                ${comment ? `<p class="fst-italic text-muted">"${comment}"</p>` : '<p class="text-muted">No comment</p>'}
+                ${comment ? `<p style="font-style:italic;color:var(--text-2);font-size:13px">"${comment}"</p>` : '<p style="color:var(--text-3);font-size:13px">No comment</p>'}
             </div>
         </div>
     `;
@@ -202,8 +194,8 @@ function editCommentFromGallery(eventId, currentComment) {
 }
 
 function editCommentFromModal() {
-    const commentText = document.getElementById('modal-details').querySelector('p.fst-italic');
-    const current = commentText ? commentText.textContent.replace(/^"|"$/g, '') : '';
+    const commentEl = document.getElementById('modal-details').querySelector('p[style*="italic"]');
+    const current = commentEl ? commentEl.textContent.replace(/^"|"$/g, '') : '';
     bootstrap.Modal.getInstance(document.getElementById('imageViewModal')).hide();
     setTimeout(() => {
         document.getElementById('comment-event-id').value = currentEventId;
@@ -262,7 +254,7 @@ async function loadMoreEvents() {
     } finally {
         isLoading = false;
         loadBtn.disabled = false;
-        loadBtn.innerHTML = '<i class="bi bi-arrow-down-circle"></i> Load More Events';
+        loadBtn.innerHTML = '<i class="bi bi-arrow-down-circle"></i> Load More';
     }
 }
 
@@ -270,7 +262,7 @@ function createEventCard(event) {
     const date = new Date(event.timestamp);
     const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     const comment = event.ai_message || '';
-    const commentHtml = comment ? `<p class="text-muted mb-2 fst-italic" style="font-size:0.9em;">"${comment}"</p>` : '';
+    const commentHtml = comment ? `<p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px">"${comment}"</p>` : '';
     const safeComment = comment.replace(/'/g, "\\'");
 
     return `
@@ -279,7 +271,6 @@ function createEventCard(event) {
                 <div class="position-relative">
                     <img src="api/images/${event.image_path.split('/').pop()}"
                          class="card-img-top"
-                         style="height: 200px; object-fit: cover; cursor: pointer;"
                          alt="Event image"
                          onclick="viewImageModal('${event.image_path.split('/').pop()}', ${event.id}, '${safeComment}')">
                 </div>
@@ -287,9 +278,10 @@ function createEventCard(event) {
                     <h6 class="card-title"><i class="bi bi-clock"></i> ${dateStr}</h6>
                     ${commentHtml}
                     <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Event #${event.id}</small>
+                        <span class="font-mono" style="font-size:10px;color:var(--text-3)">#${event.id}</span>
                         <button class="btn btn-sm btn-outline-secondary"
-                                onclick="editCommentFromGallery(${event.id}, '${safeComment}')">
+                                onclick="editCommentFromGallery(${event.id}, '${safeComment}')"
+                                title="Edit comment">
                             <i class="bi bi-pencil"></i>
                         </button>
                     </div>

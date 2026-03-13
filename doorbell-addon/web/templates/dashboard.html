@@ -1,141 +1,130 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - WhoRang{% endblock %}
+{% block title %}Dashboard — WhoRang{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Statistics Cards -->
-    <div class="col-md-6 mb-4">
-        <div class="card bg-primary text-white clickable-card" onclick="window.location.href='gallery';" style="cursor: pointer;">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Total Events</h6>
-                        <h3>{{ recent_events|length }}</h3>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-camera-video fs-1"></i>
-                    </div>
-                </div>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="wr-page-title">Dashboard</h1>
+        <p class="wr-page-sub">Live overview of your doorbell activity</p>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="wr-stat" onclick="window.location.href='gallery'" title="View all events">
+            <div class="wr-stat-icon">
+                <i class="bi bi-bell-fill"></i>
             </div>
+            <div class="wr-stat-label">Recent Events</div>
+            <div class="wr-stat-value">{{ recent_events|length }}</div>
+            <div class="wr-stat-sub">Click to view gallery</div>
         </div>
     </div>
 
-    <div class="col-md-6 mb-4">
-        <div class="card bg-secondary text-white">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Storage</h6>
-                        <h3>{{ "%.1f"|format(storage_info.usage_percent) }}%</h3>
-                        <small class="opacity-75">{{ "%.1f"|format(storage_info.used_gb) }} / {{ "%.1f"|format(storage_info.total_gb) }} GB</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-hdd fs-1"></i>
-                    </div>
-                </div>
+    <div class="col-md-6">
+        <div class="wr-stat">
+            <div class="wr-stat-icon icon-blue">
+                <i class="bi bi-device-hdd"></i>
             </div>
+            <div class="wr-stat-label">Storage Used</div>
+            <div class="wr-stat-value">{{ "%.0f"|format(storage_info.usage_percent) }}<span style="font-size:16px;color:var(--text-2)">%</span></div>
+            <div class="wr-stat-sub">{{ "%.1f"|format(storage_info.used_gb) }} of {{ "%.1f"|format(storage_info.total_gb) }} GB</div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- Recent Events -->
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-clock-history"></i> Recent Events
-                </h5>
-                <a href="gallery" class="btn btn-sm btn-outline-primary">View All</a>
+<!-- Recent Events -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Events</h5>
+        <a href="gallery" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body">
+        {% if recent_events %}
+            <div class="d-flex justify-content-between align-items-center mb-3" style="gap:8px">
+                <div class="d-flex gap-2">
+                    <button id="selectAllBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
+                        <i class="bi bi-check-square"></i> Select All
+                    </button>
+                    <button id="deleteSelectedBtn" class="btn btn-sm btn-outline-danger" onclick="deleteSelectedEvents()" disabled>
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <span id="selectedCount" class="text-muted" style="font-size:12px"></span>
             </div>
-            <div class="card-body">
-                {% if recent_events %}
-                    <div class="table-responsive">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <button id="selectAllBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
-                                    <i class="bi bi-check-square"></i> Select All
-                                </button>
-                                <button id="deleteSelectedBtn" class="btn btn-sm btn-outline-danger ms-2" onclick="deleteSelectedEvents()" disabled>
-                                    <i class="bi bi-trash"></i> Delete Selected
-                                </button>
-                            </div>
-                            <span id="selectedCount" class="text-muted small"></span>
-                        </div>
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th width="40px">
-                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
-                                    </th>
-                                    <th>Time</th>
-                                    <th>Image</th>
-                                    <th>Comment</th>
-                                    <th>Weather</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for event in recent_events %}
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" class="event-checkbox" value="{{ event.id }}" onchange="updateDeleteButton()">
-                                    </td>
-                                    <td>
-                                        <small>{{ event.timestamp.strftime('%m/%d %H:%M') }}</small>
-                                    </td>
-                                    <td>
-                                        <img src="api/images/{{ event.image_path.split('/')[-1] }}"
-                                             alt="Event image"
-                                             class="img-thumbnail clickable-image"
-                                             style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                                             data-image-src="api/images/{{ event.image_path.split('/')[-1] }}"
-                                             data-timestamp="{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">
-                                    </td>
-                                    <td>
-                                        {% if event.ai_message %}
-                                            <small class="text-muted fst-italic">{{ event.ai_message }}</small>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="36">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" style="accent-color: var(--accent)">
+                            </th>
+                            <th>Time</th>
+                            <th>Image</th>
+                            <th>Comment</th>
+                            <th>Weather</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in recent_events %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="event-checkbox" value="{{ event.id }}" onchange="updateDeleteButton()" style="accent-color: var(--accent)">
+                            </td>
+                            <td>
+                                <span class="font-mono" style="font-size:12px;color:var(--text-2)">{{ event.timestamp.strftime('%m/%d %H:%M') }}</span>
+                            </td>
+                            <td>
+                                <img src="api/images/{{ event.image_path.split('/')[-1] }}"
+                                     alt="Event"
+                                     class="img-thumbnail clickable-image"
+                                     style="width:56px;height:56px;object-fit:cover;cursor:pointer"
+                                     data-image-src="api/images/{{ event.image_path.split('/')[-1] }}"
+                                     data-timestamp="{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">
+                            </td>
+                            <td style="max-width:200px">
+                                {% if event.ai_message %}
+                                    <span style="font-size:12px;color:var(--text-2);font-style:italic">{{ event.ai_message }}</span>
+                                {% else %}
+                                    <span style="color:var(--text-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.weather_condition or event.weather_temperature %}
+                                    <div style="font-size:11px;color:var(--text-2);line-height:1.8">
+                                        {% if event.weather_condition %}
+                                            <i class="bi bi-cloud"></i> {{ event.weather_condition|title }}<br>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if event.weather_condition or event.weather_temperature %}
-                                            <small class="text-secondary">
-                                                {% if event.weather_condition %}
-                                                    <i class="bi bi-cloud-sun"></i> {{ event.weather_condition|title }}
-                                                {% endif %}
-                                                {% if event.weather_temperature %}
-                                                    <br><i class="bi bi-thermometer-half"></i> {{ "%.1f"|format(event.weather_temperature) }}°C
-                                                {% endif %}
-                                                {% if event.weather_humidity %}
-                                                    <br><i class="bi bi-droplet"></i> {{ "%.0f"|format(event.weather_humidity) }}%
-                                                {% endif %}
-                                            </small>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
+                                        {% if event.weather_temperature %}
+                                            <i class="bi bi-thermometer-half"></i> {{ "%.1f"|format(event.weather_temperature) }}°C
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-secondary"
-                                                onclick="editComment({{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="bi bi-camera-video-off fs-1 text-muted"></i>
-                        <p class="mt-2 text-muted">No events recorded yet</p>
-                    </div>
-                {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span style="color:var(--text-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="editComment({{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')"
+                                        title="Edit comment">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-bell-slash" style="font-size:40px;color:var(--text-3)"></i>
+                <p class="mt-3" style="color:var(--text-2)">No events recorded yet</p>
+                <p style="font-size:12px;color:var(--text-3)">Trigger a doorbell ring to get started</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 
@@ -150,8 +139,8 @@
             <div class="modal-body">
                 <input type="hidden" id="comment-event-id">
                 <div class="mb-3">
-                    <label for="comment-text" class="form-label">Comment:</label>
-                    <textarea class="form-control" id="comment-text" rows="3" placeholder="Add a comment..."></textarea>
+                    <label for="comment-text" class="form-label">Comment</label>
+                    <textarea class="form-control" id="comment-text" rows="3" placeholder="Add a note..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -171,9 +160,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modal-image" src="" alt="Event image" class="img-fluid" style="max-height: 70vh;">
+                <img id="modal-image" src="" alt="Event image" class="img-fluid" style="max-height:70vh;border-radius:var(--radius)">
                 <div class="mt-3">
-                    <small class="text-muted">Captured: <span id="modal-timestamp"></span></small>
+                    <span class="font-mono" style="font-size:12px;color:var(--text-2)">Captured: <span id="modal-timestamp"></span></span>
                 </div>
             </div>
         </div>
@@ -183,7 +172,7 @@
 
 {% block extra_scripts %}
 <script>
-// Auto-refresh dashboard every 30 seconds
+// Auto-refresh every 30 seconds
 setInterval(function() { location.reload(); }, 30000);
 
 function editComment(eventId, currentComment) {
@@ -240,7 +229,7 @@ function updateDeleteButton() {
     deleteBtn.disabled = selectedCheckboxes.length === 0;
 
     if (selectedCheckboxes.length > 0) {
-        selectedCount.textContent = `${selectedCheckboxes.length} event(s) selected`;
+        selectedCount.textContent = `${selectedCheckboxes.length} selected`;
     } else {
         selectedCount.textContent = '';
     }
@@ -264,7 +253,7 @@ async function deleteSelectedEvents() {
     if (selectedCheckboxes.length === 0) return;
 
     const eventIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-    if (!confirm(`Are you sure you want to delete ${eventIds.length} event(s)? This cannot be undone.`)) return;
+    if (!confirm(`Delete ${eventIds.length} event(s)? This cannot be undone.`)) return;
 
     try {
         const formData = new FormData();
@@ -274,7 +263,7 @@ async function deleteSelectedEvents() {
 
         if (response.ok) {
             const result = await response.json();
-            alert(`Successfully deleted ${result.deleted_count} event(s)`);
+            alert(`Deleted ${result.deleted_count} event(s)`);
             location.reload();
         } else {
             const error = await response.json();
