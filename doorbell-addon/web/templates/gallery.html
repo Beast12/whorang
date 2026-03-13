@@ -3,11 +3,9 @@
 {% block title %}Gallery — WhoRang{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-start mb-4">
-    <div>
-        <h1 class="wr-page-title">Gallery</h1>
-        <p class="wr-page-sub">Browse and manage all doorbell events</p>
-    </div>
+<div class="mb-4">
+    <h1 class="wr-page-title">Gallery</h1>
+    <p class="wr-page-sub">Browse and manage all doorbell events</p>
 </div>
 
 <!-- Filter Bar -->
@@ -44,26 +42,18 @@
                     </div>
                     <div class="card-body">
                         <h6 class="card-title">
-                            <i class="bi bi-clock"></i>
-                            {{ event.timestamp.strftime('%m/%d/%Y %H:%M') }}
+                            <i class="bi bi-clock" style="color:var(--primary)"></i>
+                            {{ event.timestamp.strftime('%m/%d %H:%M') }}
                         </h6>
 
                         {% if event.ai_message %}
-                        <p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px">"{{ event.ai_message }}"</p>
+                        <p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px;line-height:1.4">"{{ event.ai_message }}"</p>
                         {% endif %}
 
                         {% if event.weather_condition or event.weather_temperature %}
                         <div style="font-size:11px;color:var(--text-3);margin-bottom:8px">
-                            {% if event.weather_condition %}
-                                <i class="bi bi-cloud"></i> {{ event.weather_condition|title }}
-                            {% endif %}
-                            {% if event.weather_temperature %}
-                                {% if event.weather_condition %} · {% endif %}
-                                {{ "%.1f"|format(event.weather_temperature) }}°C
-                            {% endif %}
-                            {% if event.weather_humidity %}
-                                · {{ "%.0f"|format(event.weather_humidity) }}%
-                            {% endif %}
+                            {% if event.weather_condition %}<i class="bi bi-cloud-fill" style="opacity:.5"></i> {{ event.weather_condition|title }}{% endif %}
+                            {% if event.weather_temperature %}{% if event.weather_condition %} · {% endif %}{{ "%.1f"|format(event.weather_temperature) }}°C{% endif %}
                         </div>
                         {% endif %}
 
@@ -81,16 +71,16 @@
             {% endfor %}
         </div>
 
-        <div class="text-center mt-4 mb-2">
+        <div class="text-center mt-2 mb-4">
             <button class="btn btn-outline-primary" id="load-more-btn" onclick="loadMoreEvents()">
                 <i class="bi bi-arrow-down-circle"></i> Load More
             </button>
         </div>
     {% else %}
         <div class="text-center py-5">
-            <i class="bi bi-bell-slash" style="font-size:48px;color:var(--text-3)"></i>
-            <h4 class="mt-4" style="color:var(--text-2)">No Events Found</h4>
-            <p style="color:var(--text-3);font-size:13px">Trigger a doorbell ring to see events here</p>
+            <i class="bi bi-bell-slash-fill" style="font-size:48px;color:var(--text-3)"></i>
+            <h4 class="mt-4" style="font-size:16px;color:var(--text-2)">No Events Found</h4>
+            <p style="font-size:12px;color:var(--text-3)">Trigger a doorbell ring to see events here</p>
         </div>
     {% endif %}
 </div>
@@ -104,7 +94,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image" style="border-radius:var(--radius);max-height:65vh">
+                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image" style="border-radius:var(--r);max-height:65vh">
                 <div id="modal-details"></div>
             </div>
             <div class="modal-footer">
@@ -150,18 +140,15 @@ let isLoading = false;
 function applyFilters() {
     const dateFrom = document.getElementById('date-from').value;
     const dateTo = document.getElementById('date-to').value;
-
     document.querySelectorAll('.event-item').forEach(item => {
         let show = true;
         const itemDate = item.dataset.date;
-
         if (dateFrom && new Date(itemDate) < new Date(dateFrom)) show = false;
         if (dateTo) {
             const toDate = new Date(dateTo);
             toDate.setDate(toDate.getDate() + 1);
             if (new Date(itemDate) >= toDate) show = false;
         }
-
         item.style.display = show ? 'block' : 'none';
     });
 }
@@ -175,14 +162,9 @@ function clearFilters() {
 function viewImageModal(imageName, eventId, comment) {
     currentEventId = eventId;
     document.getElementById('modal-image').src = `api/images/${imageName}`;
-
-    const details = `
-        <div class="row text-start">
-            <div class="col-12">
-                ${comment ? `<p style="font-style:italic;color:var(--text-2);font-size:13px">"${comment}"</p>` : '<p style="color:var(--text-3);font-size:13px">No comment</p>'}
-            </div>
-        </div>
-    `;
+    const details = comment
+        ? `<p style="font-style:italic;color:var(--text-2);font-size:13px">"${comment}"</p>`
+        : `<p style="color:var(--text-3);font-size:13px">No comment</p>`;
     document.getElementById('modal-details').innerHTML = details;
     new bootstrap.Modal(document.getElementById('imageViewModal')).show();
 }
@@ -207,16 +189,10 @@ function editCommentFromModal() {
 async function submitComment() {
     const eventId = document.getElementById('comment-event-id').value;
     const comment = document.getElementById('comment-text').value.trim();
-
     try {
         const formData = new FormData();
         formData.append('comment', comment);
-
-        const response = await fetch(`api/events/${eventId}/comment`, {
-            method: 'POST',
-            body: formData
-        });
-
+        const response = await fetch(`api/events/${eventId}/comment`, { method: 'POST', body: formData });
         if (response.ok) {
             bootstrap.Modal.getInstance(document.getElementById('commentModal')).hide();
             location.reload();
@@ -235,16 +211,12 @@ async function loadMoreEvents() {
     const loadBtn = document.getElementById('load-more-btn');
     loadBtn.disabled = true;
     loadBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Loading...';
-
     try {
         const response = await fetch(`api/events?limit=20&offset=${currentOffset}`);
         const data = await response.json();
-
         if (data.events.length > 0) {
             const grid = document.getElementById('events-grid');
-            data.events.forEach(event => {
-                grid.insertAdjacentHTML('beforeend', createEventCard(event));
-            });
+            data.events.forEach(event => grid.insertAdjacentHTML('beforeend', createEventCard(event)));
             currentOffset += data.events.length;
         } else {
             loadBtn.style.display = 'none';
@@ -260,28 +232,23 @@ async function loadMoreEvents() {
 
 function createEventCard(event) {
     const date = new Date(event.timestamp);
-    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    const dateStr = (date.getMonth()+1).toString().padStart(2,'0') + '/' + date.getDate().toString().padStart(2,'0') + ' ' + date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
     const comment = event.ai_message || '';
     const commentHtml = comment ? `<p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px">"${comment}"</p>` : '';
     const safeComment = comment.replace(/'/g, "\\'");
-
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4 event-item" data-date="${event.timestamp.split('T')[0]}">
             <div class="card h-100">
                 <div class="position-relative">
-                    <img src="api/images/${event.image_path.split('/').pop()}"
-                         class="card-img-top"
-                         alt="Event image"
+                    <img src="api/images/${event.image_path.split('/').pop()}" class="card-img-top" alt="Event image"
                          onclick="viewImageModal('${event.image_path.split('/').pop()}', ${event.id}, '${safeComment}')">
                 </div>
                 <div class="card-body">
-                    <h6 class="card-title"><i class="bi bi-clock"></i> ${dateStr}</h6>
+                    <h6 class="card-title"><i class="bi bi-clock" style="color:var(--primary)"></i> ${dateStr}</h6>
                     ${commentHtml}
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="font-mono" style="font-size:10px;color:var(--text-3)">#${event.id}</span>
-                        <button class="btn btn-sm btn-outline-secondary"
-                                onclick="editCommentFromGallery(${event.id}, '${safeComment}')"
-                                title="Edit comment">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editCommentFromGallery(${event.id}, '${safeComment}')">
                             <i class="bi bi-pencil"></i>
                         </button>
                     </div>
@@ -291,10 +258,9 @@ function createEventCard(event) {
     `;
 }
 
-// Set default date range (last 30 days)
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     document.getElementById('date-to').value = today.toISOString().split('T')[0];
     document.getElementById('date-from').value = thirtyDaysAgo.toISOString().split('T')[0];
     applyFilters();

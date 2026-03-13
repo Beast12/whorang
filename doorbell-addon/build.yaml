@@ -6,8 +6,8 @@ labels:
   org.opencontainers.image.title: "WhoRang Doorbell"
   org.opencontainers.image.description: "Doorbell event history with image capture and weather integration"
   org.opencontainers.image.source: "https://github.com/Beast12/whorang"
-  org.opencontainers.image.version: "1.0.130"
+  org.opencontainers.image.version: "1.0.131"
   org.opencontainers.image.authors: "Beast12"
   org.opencontainers.image.licenses: "MIT"
 args:
-  DOORBELL_VERSION: "1.0.130"
+  DOORBELL_VERSION: "1.0.131"
