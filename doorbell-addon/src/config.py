@@ -24,13 +24,18 @@ class Settings(BaseSettings):
     # Weather integration
     weather_entity: Optional[str] = os.getenv("WEATHER_ENTITY")
 
+    # Face recognition
+    face_recognition_enabled: bool = os.getenv("FACE_RECOGNITION_ENABLED", "false").lower() == "true"
+    face_recognition_model: str = os.getenv("FACE_RECOGNITION_MODEL", "buffalo_sc")
+    face_recognition_threshold: float = float(os.getenv("FACE_RECOGNITION_THRESHOLD", "0.45"))
+
     # Home Assistant integration
     hassio_token: Optional[str] = os.getenv("HASSIO_TOKEN")
     supervisor_token: Optional[str] = os.getenv("SUPERVISOR_TOKEN")
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.131"
+    app_version: ClassVar[str] = "1.0.132"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -48,6 +53,16 @@ class Settings(BaseSettings):
         """Get the configuration file path."""
         return os.path.join(self.storage_path, "config", "settings.json")
 
+    @property
+    def persons_path(self) -> str:
+        """Get the persons thumbnails directory path."""
+        return os.path.join(self.storage_path, "persons")
+
+    @property
+    def insightface_models_path(self) -> str:
+        """Get the insightface models directory path."""
+        return os.path.join(self.storage_path, "insightface_models")
+
     # Fields persisted to / loaded from the settings JSON file
     _PERSISTED_FIELDS: ClassVar[tuple] = (
         "camera_url",
@@ -57,6 +72,9 @@ class Settings(BaseSettings):
         "notification_webhook",
         "retention_days",
         "storage_path",
+        "face_recognition_enabled",
+        "face_recognition_model",
+        "face_recognition_threshold",
     )
 
     def save_to_file(self):

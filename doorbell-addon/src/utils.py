@@ -165,7 +165,12 @@ class NotificationManager:
 
 def ensure_directories():
     """Ensure all required directories exist."""
-    for directory in [settings.storage_path, settings.images_path, os.path.dirname(settings.database_path)]:
+    for directory in [
+        settings.storage_path,
+        settings.images_path,
+        os.path.dirname(settings.database_path),
+        settings.persons_path,
+    ]:
         os.makedirs(directory, exist_ok=True)
         logger.info("Directory ensured", path=directory)
 

@@ -1,6 +1,7 @@
 """Main FastAPI application for the WhoRang doorbell addon."""
 
 import asyncio
+import json
 import os
 from datetime import datetime
 from typing import Optional
@@ -8,7 +9,7 @@ from typing import Optional
 import requests
 import structlog
 import uvicorn
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +18,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
 from .database import db
+from .face_recognition_service import face_recognition_service
 from .ha_camera import ha_camera_manager
 from .ha_integration import ha_integration
 from .utils import (
@@ -98,6 +100,7 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="/app/web/static"), name="static")
 templates = Jinja2Templates(directory="/app/web/templates")
+templates.env.filters["fromjson"] = lambda s: json.loads(s) if s else []
 
 
 @app.on_event("startup")
@@ -106,6 +109,8 @@ async def startup_event():
     logger.info("Starting WhoRang doorbell addon", version=settings.app_version)
     ensure_directories()
     await ha_integration.initialize()
+    if settings.face_recognition_enabled:
+        asyncio.create_task(face_recognition_service.initialize())
     logger.info("WhoRang addon ready - waiting for doorbell ring events")
 
 
@@ -148,6 +153,16 @@ async def gallery(request: Request):
             "events": events,
             "settings": settings,
         },
+    )
+
+
+@app.get("/persons", response_class=HTMLResponse)
+async def persons_page(request: Request):
+    """Known persons page."""
+    persons = db.get_persons()
+    return templates.TemplateResponse(
+        "persons.html",
+        {"request": request, "persons": persons, "settings": settings},
     )
 
 
@@ -307,6 +322,8 @@ async def get_events(limit: int = 50, offset: int = 0):
                 "weather_condition": e.weather_condition,
                 "weather_temperature": e.weather_temperature,
                 "weather_humidity": e.weather_humidity,
+                "faces_detected": e.faces_detected,
+                "face_data": json.loads(e.face_data) if e.face_data else [],
             }
             for e in events
         ]
@@ -337,11 +354,41 @@ async def doorbell_ring(
                 status_code=500, detail="Failed to capture image from camera"
             )
 
-        # Fetch weather in parallel with nothing else yet (cheap; needed before DB write)
-        weather = None
-        if settings.weather_entity:
-            ha_api = HomeAssistantAPI()
-            weather = await ha_api.get_weather_data(settings.weather_entity)
+        # Run face analysis + weather fetch in parallel
+        face_task = (
+            asyncio.to_thread(face_recognition_service.analyze_image, image_path)
+            if settings.face_recognition_enabled and face_recognition_service.is_ready()
+            else None
+        )
+
+        async def _fetch_weather():
+            if settings.weather_entity:
+                ha_api = HomeAssistantAPI()
+                return await ha_api.get_weather_data(settings.weather_entity)
+            return None
+
+        face_raw, weather = await asyncio.gather(
+            face_task if face_task is not None else asyncio.sleep(0, result=None),
+            _fetch_weather(),
+            return_exceptions=True,
+        )
+
+        faces_detected, face_data_json = 0, None
+        if face_raw and not isinstance(face_raw, Exception):
+            identified = face_recognition_service.identify_faces(face_raw)
+            faces_detected = len(identified)
+            face_data_json = json.dumps([
+                {
+                    "name": f.name,
+                    "bbox": list(f.bbox),
+                    "score": round(f.score, 3),
+                    "det_score": round(f.det_score, 3),
+                }
+                for f in identified
+            ])
+
+        if isinstance(weather, Exception):
+            weather = None
 
         # Save event
         event = db.add_doorbell_event(
@@ -350,6 +397,8 @@ async def doorbell_ring(
             weather_condition=weather.get("condition") if weather else None,
             weather_temperature=weather.get("temperature") if weather else None,
             weather_humidity=weather.get("humidity") if weather else None,
+            faces_detected=faces_detected,
+            face_data=face_data_json,
         )
 
         # Fire HA event + send notifications in parallel
@@ -651,6 +700,115 @@ async def get_storage_info_api():
         raise HTTPException(
             status_code=500, detail=f"Failed to get storage info: {str(e)}"
         )
+
+
+# ── Face Recognition ─────────────────────────────────────────────────────────
+
+
+@app.get("/api/face-recognition/status")
+async def get_face_recognition_status():
+    """Get face recognition service status."""
+    persons = db.get_persons()
+    return {
+        "enabled": settings.face_recognition_enabled,
+        "model_loaded": face_recognition_service.is_ready(),
+        "model_name": settings.face_recognition_model,
+        "person_count": len(persons),
+        "threshold": settings.face_recognition_threshold,
+    }
+
+
+@app.get("/api/persons")
+async def get_persons():
+    """Get all known persons."""
+    persons = db.get_persons()
+    return {"persons": persons}
+
+
+@app.post("/api/persons")
+async def add_person(name: str = Form(...), image: UploadFile = File(...)):
+    """Add a known person from an uploaded image."""
+    if not settings.face_recognition_enabled or not face_recognition_service.is_ready():
+        raise HTTPException(status_code=503, detail="Face recognition is not enabled or not ready")
+    try:
+        import tempfile
+        suffix = os.path.splitext(image.filename or ".jpg")[1] or ".jpg"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await image.read())
+            tmp_path = tmp.name
+        try:
+            person = await asyncio.to_thread(face_recognition_service.add_person, name.strip(), tmp_path)
+        finally:
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+        return {"success": True, "person": person}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Error adding person", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/persons/{person_id}")
+async def delete_person(person_id: int):
+    """Delete a known person."""
+    deleted = await asyncio.to_thread(face_recognition_service.delete_person, person_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return {"success": True, "person_id": person_id}
+
+
+@app.get("/api/persons/{person_id}/thumbnail")
+async def get_person_thumbnail(person_id: int):
+    """Serve person thumbnail image."""
+    thumb_path = os.path.join(settings.persons_path, f"{person_id}.jpg")
+    if os.path.isfile(thumb_path):
+        return FileResponse(thumb_path)
+    raise HTTPException(status_code=404, detail="Thumbnail not found")
+
+
+@app.get("/api/events/{event_id}/faces")
+async def get_event_faces(event_id: int):
+    """Get face data for a specific event."""
+    event = db.get_doorbell_event(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    faces = json.loads(event.face_data) if event.face_data else []
+    return {
+        "event_id": event_id,
+        "faces_detected": event.faces_detected or 0,
+        "faces": faces,
+    }
+
+
+@app.post("/api/settings/face-recognition")
+async def update_face_recognition_settings(request: Request):
+    """Update face recognition settings."""
+    try:
+        data = await request.json()
+        was_disabled = not settings.face_recognition_enabled
+
+        if "enabled" in data:
+            settings.face_recognition_enabled = bool(data["enabled"])
+        if "model" in data and data["model"] in ("buffalo_sc", "buffalo_s", "buffalo_l"):
+            settings.face_recognition_model = data["model"]
+        if "threshold" in data:
+            threshold = float(data["threshold"])
+            if 0.1 <= threshold <= 0.99:
+                settings.face_recognition_threshold = threshold
+
+        settings.save_to_file()
+
+        # Kick off model loading if just enabled
+        if settings.face_recognition_enabled and (was_disabled or not face_recognition_service.is_ready()):
+            asyncio.create_task(face_recognition_service.initialize())
+
+        return {"success": True, "message": "Face recognition settings updated"}
+    except Exception as e:
+        logger.error("Error updating face recognition settings", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

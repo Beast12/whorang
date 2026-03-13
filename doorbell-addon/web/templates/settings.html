@@ -174,6 +174,59 @@
             </div>
         </div>
 
+        <!-- Face Recognition -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-person-bounding-box"></i> Face Recognition</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="fr-enabled"
+                                   {% if settings.face_recognition_enabled %}checked{% endif %}
+                                   onchange="updateFrStatus()">
+                            <label class="form-check-label" for="fr-enabled">Enable Face Recognition</label>
+                        </div>
+                        <div class="form-text">Adds 2–5 s startup time. Not recommended for Raspberry Pi unless needed.</div>
+                    </div>
+                    <span id="fr-status-badge" class="badge {% if settings.face_recognition_enabled %}bg-warning{% else %}bg-secondary{% endif %}">
+                        {% if settings.face_recognition_enabled %}Loading…{% else %}Disabled{% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="fr-model" class="form-label">Model</label>
+                    <select class="form-select" id="fr-model">
+                        <option value="buffalo_sc" {% if settings.face_recognition_model == 'buffalo_sc' %}selected{% endif %}>buffalo_sc — Fast / Small (~100 MB)</option>
+                        <option value="buffalo_s" {% if settings.face_recognition_model == 'buffalo_s' %}selected{% endif %}>buffalo_s — Balanced (~200 MB)</option>
+                        <option value="buffalo_l" {% if settings.face_recognition_model == 'buffalo_l' %}selected{% endif %}>buffalo_l — Accurate (~300 MB)</option>
+                    </select>
+                    <div class="form-text">Model is downloaded on first use and cached to storage.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="fr-threshold" class="form-label">
+                        Recognition Threshold: <strong id="fr-threshold-val">{{ settings.face_recognition_threshold }}</strong>
+                    </label>
+                    <input type="range" class="form-range" id="fr-threshold"
+                           min="0.10" max="0.99" step="0.01"
+                           value="{{ settings.face_recognition_threshold }}"
+                           oninput="document.getElementById('fr-threshold-val').textContent = parseFloat(this.value).toFixed(2)">
+                    <div class="form-text">Higher = stricter matching. Default 0.45.</div>
+                </div>
+
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <button class="btn btn-primary" onclick="saveFrSettings()">
+                        <i class="bi bi-floppy"></i> Save
+                    </button>
+                    <a href="persons" class="btn btn-outline-secondary">
+                        <i class="bi bi-people-fill"></i> Manage Persons →
+                    </a>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Right: System Info -->
@@ -375,5 +428,45 @@ function showConfirmModal(message, onConfirm) {
 }
 
 setInterval(loadStatistics, 60000);
+
+async function updateFrStatus() {
+    try {
+        const resp = await fetch('api/face-recognition/status');
+        const data = await resp.json();
+        const badge = document.getElementById('fr-status-badge');
+        if (!data.enabled) {
+            badge.className = 'badge bg-secondary'; badge.textContent = 'Disabled';
+        } else if (data.model_loaded) {
+            badge.className = 'badge bg-success'; badge.textContent = 'Ready';
+        } else {
+            badge.className = 'badge bg-warning'; badge.textContent = 'Loading…';
+        }
+    } catch (e) {}
+}
+
+async function saveFrSettings() {
+    try {
+        const enabled = document.getElementById('fr-enabled').checked;
+        const model = document.getElementById('fr-model').value;
+        const threshold = parseFloat(document.getElementById('fr-threshold').value);
+        const response = await fetch('api/settings/face-recognition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled, model, threshold })
+        });
+        if (response.ok) {
+            alert('Face recognition settings saved!');
+            setTimeout(updateFrStatus, 3000);
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.detail || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error saving face recognition settings: ' + error.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', updateFrStatus);
+setInterval(updateFrStatus, 10000);
 </script>
 {% endblock %}

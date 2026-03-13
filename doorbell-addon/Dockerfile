@@ -36,7 +36,9 @@ RUN \
         libffi-dev \
         pkgconfig \
         ffmpeg \
-        py3-pillow
+        py3-pillow \
+        gcompat \
+        libstdc++
 
 # Set working directory
 WORKDIR /app
@@ -54,8 +56,11 @@ COPY run.sh .
 # Make run script executable
 RUN chmod +x run.sh
 
+# Model persistence path
+ENV INSIGHTFACE_HOME=/data/insightface_models
+
 # Create necessary directories
-RUN mkdir -p /data/doorbell /data/images
+RUN mkdir -p /data/doorbell /data/images /data/insightface_models
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

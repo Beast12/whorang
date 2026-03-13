@@ -30,6 +30,17 @@ if bashio::config.exists 'ha_access_token' && ! bashio::config.is_empty 'ha_acce
     export HA_ACCESS_TOKEN=$(bashio::config 'ha_access_token')
 fi
 
+# Handle optional face recognition settings
+if bashio::config.exists 'face_recognition_enabled'; then
+    export FACE_RECOGNITION_ENABLED=$(bashio::config 'face_recognition_enabled')
+fi
+if bashio::config.exists 'face_recognition_model' && ! bashio::config.is_empty 'face_recognition_model'; then
+    export FACE_RECOGNITION_MODEL=$(bashio::config 'face_recognition_model')
+fi
+export INSIGHTFACE_HOME="${STORAGE_PATH}/insightface_models"
+mkdir -p "${STORAGE_PATH}/persons"
+mkdir -p "${STORAGE_PATH}/insightface_models"
+
 # Create storage directories
 mkdir -p "${STORAGE_PATH}/images"
 mkdir -p "${STORAGE_PATH}/database"

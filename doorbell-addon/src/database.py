@@ -24,12 +24,15 @@ class DoorbellEvent:
     weather_condition: Optional[str] = None
     weather_temperature: Optional[float] = None
     weather_humidity: Optional[float] = None
+    faces_detected: Optional[int] = None
+    face_data: Optional[str] = None  # JSON string
 
 
 # Columns returned by all SELECT queries on doorbell_events
 _EVENT_COLUMNS = (
     "id, timestamp, image_path, ai_message, "
-    "weather_condition, weather_temperature, weather_humidity"
+    "weather_condition, weather_temperature, weather_humidity, "
+    "faces_detected, face_data"
 )
 
 
@@ -54,7 +57,9 @@ class DatabaseManager:
                     ai_message TEXT,
                     weather_condition TEXT,
                     weather_temperature REAL,
-                    weather_humidity REAL
+                    weather_humidity REAL,
+                    faces_detected INT DEFAULT 0,
+                    face_data TEXT
                 )
             """
             )
@@ -64,6 +69,8 @@ class DatabaseManager:
                 ("weather_condition", "TEXT"),
                 ("weather_temperature", "REAL"),
                 ("weather_humidity", "REAL"),
+                ("faces_detected", "INT DEFAULT 0"),
+                ("face_data", "TEXT"),
             ]:
                 try:
                     conn.execute(
@@ -79,6 +86,18 @@ class DatabaseManager:
                 ON doorbell_events (timestamp)
             """
             )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS known_persons (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    embedding BLOB NOT NULL,
+                    thumbnail_path TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """
+            )
             conn.commit()
 
     def add_doorbell_event(
@@ -88,14 +107,18 @@ class DatabaseManager:
         weather_condition: Optional[str] = None,
         weather_temperature: Optional[float] = None,
         weather_humidity: Optional[float] = None,
+        faces_detected: Optional[int] = None,
+        face_data: Optional[str] = None,
     ) -> DoorbellEvent:
         """Add a new doorbell event."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
-                   (image_path, ai_message, weather_condition, weather_temperature, weather_humidity)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (image_path, ai_message, weather_condition, weather_temperature, weather_humidity),
+                   (image_path, ai_message, weather_condition, weather_temperature, weather_humidity,
+                    faces_detected, face_data)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (image_path, ai_message, weather_condition, weather_temperature, weather_humidity,
+                 faces_detected, face_data),
             )
             event_id = cursor.lastrowid
             conn.commit()
@@ -108,7 +131,57 @@ class DatabaseManager:
                 weather_condition=weather_condition,
                 weather_temperature=weather_temperature,
                 weather_humidity=weather_humidity,
+                faces_detected=faces_detected,
+                face_data=face_data,
             )
+
+    def add_person(self, name: str, embedding_bytes: bytes, thumbnail_path: Optional[str] = None) -> int:
+        """Add a known person. Returns new person id."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "INSERT INTO known_persons (name, embedding, thumbnail_path) VALUES (?, ?, ?)",
+                (name, embedding_bytes, thumbnail_path),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_persons(self) -> List[dict]:
+        """Get all known persons."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT id, name, thumbnail_path, created_at FROM known_persons ORDER BY name"
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_person(self, person_id: int) -> Optional[dict]:
+        """Get a single person by ID, including embedding."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT id, name, embedding, thumbnail_path, created_at FROM known_persons WHERE id = ?",
+                (person_id,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def update_person_thumbnail(self, person_id: int, path: str) -> None:
+        """Update thumbnail path for a person."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE known_persons SET thumbnail_path = ? WHERE id = ?",
+                (path, person_id),
+            )
+            conn.commit()
+
+    def delete_person(self, person_id: int) -> bool:
+        """Delete a known person. Returns True if deleted."""
+        with sqlite3.connect(self.db_path) as conn:
+            deleted = conn.execute(
+                "DELETE FROM known_persons WHERE id = ?", (person_id,)
+            ).rowcount
+            conn.commit()
+            return deleted > 0
 
     def get_doorbell_events(
         self, limit: int = 100, offset: int = 0
@@ -216,6 +289,8 @@ def _row_to_event(row: sqlite3.Row) -> DoorbellEvent:
         weather_condition=row["weather_condition"],
         weather_temperature=row["weather_temperature"],
         weather_humidity=row["weather_humidity"],
+        faces_detected=row["faces_detected"],
+        face_data=row["face_data"],
     )
 
 

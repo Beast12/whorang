@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "WhoRang Doorbell"
-version: "1.0.131"
+version: "1.0.132"
 slug: "doorbell_face_recognition"
 description: "Doorbell event history with image capture and weather integration"
 url: "https://github.com/Beast12/whorang"
@@ -21,6 +21,8 @@ options:
   retention_days: 30
   notification_webhook: ""
   ha_access_token: ""
+  face_recognition_enabled: false
+  face_recognition_model: "buffalo_sc"
 schema:
   camera_entity: "str?"
   camera_url: "str"
@@ -28,6 +30,8 @@ schema:
   retention_days: "int(1,365)"
   notification_webhook: "str?"
   ha_access_token: "str?"
+  face_recognition_enabled: bool
+  face_recognition_model: "list(buffalo_sc|buffalo_s|buffalo_l)?"
 ports:
   "8099/tcp": 8099
 ports_description:

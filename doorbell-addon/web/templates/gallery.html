@@ -39,6 +39,11 @@
                              class="card-img-top"
                              alt="Event image"
                              onclick="viewImageModal('{{ event.image_path.split('/')[-1] }}', {{ event.id }}, '{{ (event.ai_message or '')|replace("'", "\\'") }}')">
+                        {% if event.faces_detected %}
+                        <span class="badge bg-primary" style="position:absolute;top:6px;right:6px;font-size:10px">
+                            <i class="bi bi-person-fill"></i> {{ event.faces_detected }}
+                        </span>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         <h6 class="card-title">
@@ -94,7 +99,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image" style="border-radius:var(--r);max-height:65vh">
+                <div id="modal-image-container" style="position:relative;display:inline-block">
+                    <img id="modal-image" src="" class="img-fluid mb-3" alt="Event image" style="border-radius:var(--r);max-height:65vh">
+                </div>
                 <div id="modal-details"></div>
             </div>
             <div class="modal-footer">
@@ -161,12 +168,15 @@ function clearFilters() {
 
 function viewImageModal(imageName, eventId, comment) {
     currentEventId = eventId;
-    document.getElementById('modal-image').src = `api/images/${imageName}`;
+    const imgEl = document.getElementById('modal-image');
+    imgEl.src = `api/images/${imageName}`;
     const details = comment
         ? `<p style="font-style:italic;color:var(--text-2);font-size:13px">"${comment}"</p>`
         : `<p style="color:var(--text-3);font-size:13px">No comment</p>`;
     document.getElementById('modal-details').innerHTML = details;
     new bootstrap.Modal(document.getElementById('imageViewModal')).show();
+    const container = document.getElementById('modal-image-container');
+    FaceOverlay.render(container, `api/images/${imageName}`, eventId);
 }
 
 function editCommentFromGallery(eventId, currentComment) {
@@ -236,12 +246,14 @@ function createEventCard(event) {
     const comment = event.ai_message || '';
     const commentHtml = comment ? `<p style="font-size:11px;color:var(--text-2);font-style:italic;margin-bottom:8px">"${comment}"</p>` : '';
     const safeComment = comment.replace(/'/g, "\\'");
+    const faceBadge = event.faces_detected ? `<span class="badge bg-primary" style="position:absolute;top:6px;right:6px;font-size:10px"><i class="bi bi-person-fill"></i> ${event.faces_detected}</span>` : '';
     return `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4 event-item" data-date="${event.timestamp.split('T')[0]}">
             <div class="card h-100">
                 <div class="position-relative">
                     <img src="api/images/${event.image_path.split('/').pop()}" class="card-img-top" alt="Event image"
                          onclick="viewImageModal('${event.image_path.split('/').pop()}', ${event.id}, '${safeComment}')">
+                    ${faceBadge}
                 </div>
                 <div class="card-body">
                     <h6 class="card-title"><i class="bi bi-clock" style="color:var(--primary)"></i> ${dateStr}</h6>

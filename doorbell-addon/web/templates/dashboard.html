@@ -67,6 +67,7 @@
                             <th>Time</th>
                             <th>Image</th>
                             <th>Comment</th>
+                            <th>Faces</th>
                             <th>Weather</th>
                             <th></th>
                         </tr>
@@ -86,11 +87,21 @@
                                      class="img-thumbnail clickable-image"
                                      style="width:56px;height:56px;object-fit:cover"
                                      data-image-src="api/images/{{ event.image_path.split('/')[-1] }}"
-                                     data-timestamp="{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                     data-timestamp="{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}"
+                                     data-event-id="{{ event.id }}">
                             </td>
                             <td style="max-width:200px">
                                 {% if event.ai_message %}
                                     <span style="font-size:12px;color:var(--text-2);font-style:italic">{{ event.ai_message }}</span>
+                                {% else %}
+                                    <span style="color:var(--text-3)">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.faces_detected %}
+                                    <span class="badge bg-primary" style="font-size:10px">
+                                        <i class="bi bi-person-fill"></i> {{ event.faces_detected }}
+                                    </span>
                                 {% else %}
                                     <span style="color:var(--text-3)">—</span>
                                 {% endif %}
@@ -163,7 +174,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="modal-image" src="" alt="Event image" class="img-fluid" style="max-height:70vh;border-radius:var(--r)">
+                <div id="modal-image-container" style="position:relative;display:inline-block">
+                    <img id="modal-image" src="" alt="Event image" class="img-fluid" style="max-height:70vh;border-radius:var(--r)">
+                </div>
                 <div class="mt-3">
                     <span class="font-mono" style="font-size:12px;color:var(--text-2)"><span id="modal-timestamp"></span></span>
                 </div>
@@ -202,10 +215,14 @@ async function submitComment() {
     }
 }
 
-function showImageModal(imageSrc, timestamp) {
+function showImageModal(imageSrc, timestamp, eventId) {
     document.getElementById('modal-image').src = imageSrc;
     document.getElementById('modal-timestamp').textContent = timestamp;
     new bootstrap.Modal(document.getElementById('imageModal')).show();
+    if (eventId) {
+        const container = document.getElementById('modal-image-container');
+        FaceOverlay.render(container, imageSrc, eventId);
+    }
 }
 
 function toggleSelectAll() {
@@ -254,7 +271,7 @@ async function deleteSelectedEvents() {
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.clickable-image').forEach(img => {
         img.addEventListener('click', function() {
-            showImageModal(this.dataset.imageSrc, this.dataset.timestamp);
+            showImageModal(this.dataset.imageSrc, this.dataset.timestamp, this.dataset.eventId);
         });
     });
 });
