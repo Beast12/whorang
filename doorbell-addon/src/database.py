@@ -143,6 +143,7 @@ class DatabaseManager:
                 (name, embedding_bytes, thumbnail_path),
             )
             conn.commit()
+            assert cursor.lastrowid is not None
             return cursor.lastrowid
 
     def get_persons(self) -> List[dict]:

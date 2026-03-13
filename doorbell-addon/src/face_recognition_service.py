@@ -2,8 +2,8 @@
 
 import io
 import os
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -17,7 +17,7 @@ class FaceResult:
     """Raw face detection result."""
 
     bbox: tuple  # (x, y, w, h)
-    embedding: object  # np.ndarray — typed as object to avoid import at module level
+    embedding: Any  # np.ndarray
     det_score: float
 
 
@@ -37,7 +37,7 @@ class FaceRecognitionService:
     def __init__(self):
         self._model = None
         self._ready = False
-        self._embeddings_cache: Dict[int, object] = {}  # {person_id: np.ndarray}
+        self._embeddings_cache: Dict[int, Any] = {}  # {person_id: np.ndarray}
 
     def is_ready(self) -> bool:
         return self._ready

@@ -355,26 +355,29 @@ async def doorbell_ring(
             )
 
         # Run face analysis + weather fetch in parallel
-        face_task = (
-            asyncio.to_thread(face_recognition_service.analyze_image, image_path)
-            if settings.face_recognition_enabled and face_recognition_service.is_ready()
-            else None
-        )
+        async def _run_face_analysis() -> Optional[list]:
+            if not (settings.face_recognition_enabled and face_recognition_service.is_ready()):
+                return None
+            try:
+                return await asyncio.to_thread(face_recognition_service.analyze_image, image_path)
+            except Exception as exc:
+                logger.error("Face analysis error", error=str(exc))
+                return None
 
-        async def _fetch_weather():
-            if settings.weather_entity:
+        async def _fetch_weather() -> Optional[dict]:
+            if not settings.weather_entity:
+                return None
+            try:
                 ha_api = HomeAssistantAPI()
                 return await ha_api.get_weather_data(settings.weather_entity)
-            return None
+            except Exception as exc:
+                logger.error("Weather fetch error", error=str(exc))
+                return None
 
-        face_raw, weather = await asyncio.gather(
-            face_task if face_task is not None else asyncio.sleep(0, result=None),
-            _fetch_weather(),
-            return_exceptions=True,
-        )
+        face_raw, weather = await asyncio.gather(_run_face_analysis(), _fetch_weather())
 
         faces_detected, face_data_json = 0, None
-        if face_raw and not isinstance(face_raw, Exception):
+        if face_raw:
             identified = face_recognition_service.identify_faces(face_raw)
             faces_detected = len(identified)
             face_data_json = json.dumps([
@@ -386,9 +389,6 @@ async def doorbell_ring(
                 }
                 for f in identified
             ])
-
-        if isinstance(weather, Exception):
-            weather = None
 
         # Save event
         event = db.add_doorbell_event(
