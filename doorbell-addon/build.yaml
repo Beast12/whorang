@@ -1,13 +1,13 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-dockerfile
 build_from:
-  aarch64: "ghcr.io/hassio-addons/base/aarch64:18.1.0"
-  amd64: "ghcr.io/hassio-addons/base/amd64:18.1.0"
+  aarch64: "ghcr.io/home-assistant/aarch64-base-debian:bookworm"
+  amd64: "ghcr.io/home-assistant/amd64-base-debian:bookworm"
 labels:
   org.opencontainers.image.title: "WhoRang Doorbell"
   org.opencontainers.image.description: "Doorbell event history with image capture and weather integration"
   org.opencontainers.image.source: "https://github.com/Beast12/whorang"
-  org.opencontainers.image.version: "1.0.134"
+  org.opencontainers.image.version: "1.0.135"
   org.opencontainers.image.authors: "Beast12"
   org.opencontainers.image.licenses: "MIT"
 args:
-  DOORBELL_VERSION: "1.0.134"
+  DOORBELL_VERSION: "1.0.135"

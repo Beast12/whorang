@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base/amd64:18.1.0
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
 FROM $BUILD_FROM
 
 # Build arguments
@@ -22,34 +22,30 @@ LABEL \
 
 # Install system dependencies
 RUN \
-    apk add --no-cache \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
         python3 \
         python3-dev \
-        py3-pip \
+        python3-pip \
         curl \
         gcc \
         g++ \
         make \
-        musl-dev \
-        jpeg-dev \
-        zlib-dev \
+        libjpeg-dev \
+        zlib1g-dev \
         libffi-dev \
-        pkgconfig \
+        pkg-config \
         ffmpeg \
-        py3-pillow \
-        libstdc++ \
-        py3-onnxruntime
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
-# Install all deps except insightface first (onnxruntime comes from apk, not PyPI)
-RUN grep -v "^insightface" requirements.txt | pip3 install --no-cache-dir -r /dev/stdin
-# Install insightface without auto-pulling onnxruntime from PyPI (it's already present via apk)
-RUN pip3 install --no-cache-dir --no-deps "insightface>=0.7.3"
+RUN pip3 install --break-system-packages --no-cache-dir --upgrade pip setuptools wheel
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
+RUN pip3 install --break-system-packages --no-cache-dir "insightface>=0.7.3"
 
 # Copy application code
 COPY src/ ./src/
