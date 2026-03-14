@@ -37,8 +37,8 @@ RUN \
         pkgconfig \
         ffmpeg \
         py3-pillow \
-        gcompat \
-        libstdc++
+        libstdc++ \
+        py3-onnxruntime
 
 # Set working directory
 WORKDIR /app
@@ -46,7 +46,10 @@ WORKDIR /app
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip3 install --no-cache-dir -r requirements.txt
+# Install all deps except insightface first (onnxruntime comes from apk, not PyPI)
+RUN grep -v "^insightface" requirements.txt | pip3 install --no-cache-dir -r /dev/stdin
+# Install insightface without auto-pulling onnxruntime from PyPI (it's already present via apk)
+RUN pip3 install --no-cache-dir --no-deps "insightface>=0.7.3"
 
 # Copy application code
 COPY src/ ./src/

@@ -24,9 +24,12 @@ structlog==23.2.0
 # Image utilities
 Pillow>=10.0.0
 
-# Face recognition (loaded only when face_recognition_enabled=true)
-insightface>=0.7.3
-onnxruntime>=1.16.0
+# Face recognition deps (loaded only when face_recognition_enabled=true)
+# insightface is installed via Dockerfile (--no-deps) to avoid pulling onnxruntime from PyPI
+# onnxruntime is installed via apk (native musl build) — not available on PyPI for Alpine
 numpy>=1.24.0
+scikit-learn>=1.2
+scipy>=1.9
+tqdm>=4.0
 
 # Version: 1.0.133
