@@ -124,10 +124,10 @@ jobs:
         include:
           - arch: amd64
             platform: linux/amd64
-            build_from: ghcr.io/hassio-addons/base/amd64:18.1.0
+            build_from: ghcr.io/home-assistant/amd64-base-debian:bookworm
           - arch: aarch64
             platform: linux/arm64
-            build_from: ghcr.io/hassio-addons/base/aarch64:18.1.0
+            build_from: ghcr.io/home-assistant/aarch64-base-debian:bookworm
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
