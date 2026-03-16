@@ -63,6 +63,11 @@ class Settings(BaseSettings):
         """Get the insightface models directory path."""
         return os.path.join(self.storage_path, "insightface_models")
 
+    @property
+    def face_crops_path(self) -> str:
+        """Get the face crops directory path."""
+        return os.path.join(self.storage_path, "face_crops")
+
     # Fields persisted to / loaded from the settings JSON file
     _PERSISTED_FIELDS: ClassVar[tuple] = (
         "camera_url",

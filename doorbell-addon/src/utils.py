@@ -170,6 +170,7 @@ def ensure_directories():
         settings.images_path,
         os.path.dirname(settings.database_path),
         settings.persons_path,
+        settings.face_crops_path,
     ]:
         os.makedirs(directory, exist_ok=True)
         logger.info("Directory ensured", path=directory)
