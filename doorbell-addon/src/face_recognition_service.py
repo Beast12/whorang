@@ -70,8 +70,8 @@ class FaceRecognitionService:
             return []
         try:
             import numpy as np
-            from PIL import Image
-            img = Image.open(image_path).convert("RGB")
+            from PIL import Image, ImageOps
+            img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
             img_array = np.array(img)
             faces = self._model.get(img_array)
             results = []
@@ -121,7 +121,7 @@ class FaceRecognitionService:
         """Detect face in image, store embedding + thumbnail. Returns person dict."""
         import io
         import numpy as np
-        from PIL import Image
+        from PIL import Image, ImageOps
         from .database import db
 
         os.makedirs(settings.persons_path, exist_ok=True)
@@ -143,7 +143,7 @@ class FaceRecognitionService:
 
         # Crop and save thumbnail
         try:
-            img = Image.open(image_path).convert("RGB")
+            img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
             x, y, w, h = best_face.bbox
             padding = int(max(w, h) * 0.2)
             x1 = max(0, x - padding)

@@ -105,9 +105,12 @@ window.FaceOverlay = (function () {
         }
 
         if (img.complete && img.naturalWidth) {
-            doDraw();
+            // Defer one frame so the browser finishes layout before we read clientWidth
+            requestAnimationFrame(doDraw);
         } else {
-            img.addEventListener('load', doDraw, { once: true });
+            img.addEventListener('load', function () {
+                requestAnimationFrame(doDraw);
+            }, { once: true });
         }
 
         // Redraw on window resize (debounced)
