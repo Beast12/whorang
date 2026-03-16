@@ -213,21 +213,16 @@ class DatabaseManager:
                 face_data=face_data,
             )
 
-    def add_person(self, name: str, embedding_bytes: bytes, thumbnail_path: Optional[str] = None) -> int:
-        """Add a known person and store the initial embedding. Returns new person id."""
+    def add_person(self, name: str) -> int:
+        """Add a known person. Returns new person id."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO known_persons (name, thumbnail_path) VALUES (?, ?)",
-                (name, thumbnail_path),
-            )
-            person_id = cursor.lastrowid
-            assert person_id is not None
-            conn.execute(
-                "INSERT INTO person_embeddings (person_id, embedding, thumbnail_path) VALUES (?, ?, ?)",
-                (person_id, embedding_bytes, thumbnail_path),
+                "INSERT INTO known_persons (name) VALUES (?)",
+                (name,),
             )
             conn.commit()
-            return person_id
+            assert cursor.lastrowid is not None
+            return cursor.lastrowid
 
     def get_persons(self) -> List[dict]:
         """Get all known persons."""
@@ -249,8 +244,8 @@ class DatabaseManager:
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def update_person_thumbnail(self, person_id: int, path: str) -> None:
-        """Update thumbnail path for a person."""
+    def update_person_thumbnail(self, person_id: int, path: Optional[str]) -> None:
+        """Update thumbnail path for a person (pass None to clear avatar)."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "UPDATE known_persons SET thumbnail_path = ? WHERE id = ?",
@@ -266,6 +261,121 @@ class DatabaseManager:
             ).rowcount
             conn.commit()
             return deleted > 0
+
+    # ── Person embeddings ──────────────────────────────────────────────────────
+
+    def add_person_embedding(
+        self, person_id: int, embedding_bytes: bytes, thumbnail_path: Optional[str]
+    ) -> int:
+        """Insert a face embedding for a person. Returns new embedding id."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "INSERT INTO person_embeddings (person_id, embedding, thumbnail_path) "
+                "VALUES (?, ?, ?)",
+                (person_id, embedding_bytes, thumbnail_path),
+            )
+            conn.commit()
+            assert cursor.lastrowid is not None
+            return cursor.lastrowid
+
+    def update_person_embedding_thumbnail(self, emb_id: int, thumbnail_path: str) -> None:
+        """Set the thumbnail path for a person_embeddings row."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE person_embeddings SET thumbnail_path = ? WHERE id = ?",
+                (thumbnail_path, emb_id),
+            )
+            conn.commit()
+
+    def delete_person_embedding(self, emb_id: int) -> bool:
+        """Delete one embedding. Returns True if deleted."""
+        with sqlite3.connect(self.db_path) as conn:
+            deleted = conn.execute(
+                "DELETE FROM person_embeddings WHERE id = ?", (emb_id,)
+            ).rowcount
+            conn.commit()
+        return deleted > 0
+
+    def get_person_embeddings(self, person_id: int) -> List[dict]:
+        """Get all embeddings for a person, ordered by id ASC."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT id, person_id, thumbnail_path, created_at "
+                "FROM person_embeddings WHERE person_id = ? ORDER BY id ASC",
+                (person_id,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_embeddings(self) -> List[dict]:
+        """Get all embeddings with their person name (for cache rebuild)."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT pe.id, pe.person_id, kp.name, pe.embedding "
+                "FROM person_embeddings pe "
+                "JOIN known_persons kp ON pe.person_id = kp.id"
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    # ── Face crops inbox ───────────────────────────────────────────────────────
+
+    def add_face_crop(self, event_id: int, image_path: str) -> int:
+        """Insert an unrecognised face crop. Returns new crop id."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "INSERT INTO face_crops (event_id, image_path) VALUES (?, ?)",
+                (event_id, image_path),
+            )
+            conn.commit()
+            assert cursor.lastrowid is not None
+            return cursor.lastrowid
+
+    def dismiss_face_crop(self, crop_id: int) -> None:
+        """Mark a face crop as dismissed."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE face_crops SET dismissed = 1 WHERE id = ?", (crop_id,)
+            )
+            conn.commit()
+
+    def get_face_crops(self, dismissed: bool = False) -> List[dict]:
+        """Get face crops with event timestamp (JOIN doorbell_events)."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT fc.id, fc.event_id, fc.image_path, fc.dismissed, "
+                "fc.created_at, de.timestamp as event_timestamp "
+                "FROM face_crops fc "
+                "JOIN doorbell_events de ON fc.event_id = de.id "
+                "WHERE fc.dismissed = ? "
+                "ORDER BY fc.created_at DESC",
+                (1 if dismissed else 0,),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_face_crop(self, crop_id: int) -> Optional[dict]:
+        """Get a single face crop by id."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute(
+                "SELECT fc.id, fc.event_id, fc.image_path, fc.dismissed, "
+                "fc.created_at, de.timestamp as event_timestamp "
+                "FROM face_crops fc "
+                "JOIN doorbell_events de ON fc.event_id = de.id "
+                "WHERE fc.id = ?",
+                (crop_id,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_face_crop_count(self, dismissed: bool = False) -> int:
+        """Return count of face crops matching dismissed flag."""
+        with sqlite3.connect(self.db_path) as conn:
+            return conn.execute(
+                "SELECT COUNT(*) FROM face_crops WHERE dismissed = ?",
+                (1 if dismissed else 0,),
+            ).fetchone()[0]
 
     def get_doorbell_events(
         self, limit: int = 100, offset: int = 0
