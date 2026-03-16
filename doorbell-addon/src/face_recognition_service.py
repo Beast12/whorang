@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import structlog
 
 from .config import settings
+from .database import db
 
 logger = structlog.get_logger()
 
@@ -26,9 +27,10 @@ class IdentifiedFace:
     """Face matched against known persons."""
 
     bbox: tuple
-    name: str   # person name or "Unknown"
-    score: float  # cosine similarity (0.0 for Unknown)
+    name: str        # person name or "Unknown"
+    score: float     # cosine similarity (0.0 for Unknown)
     det_score: float
+    person_id: Optional[int] = None  # None for Unknown
 
 
 class FaceRecognitionService:
@@ -37,7 +39,7 @@ class FaceRecognitionService:
     def __init__(self):
         self._model = None
         self._ready = False
-        self._embeddings_cache: Dict[int, Any] = {}  # {person_id: np.ndarray}
+        self._embeddings_cache: Dict[int, Any] = {}  # {embedding_id: (person_id, name, emb)}
 
     def is_ready(self) -> bool:
         return self._ready
@@ -184,17 +186,18 @@ class FaceRecognitionService:
     def _refresh_embeddings_cache_sync(self) -> None:
         import io
         import numpy as np
-        from .database import db
-        cache = {}
-        for person in db.get_persons():
-            person_full = db.get_person(person["id"])
-            if person_full and person_full.get("embedding"):
-                try:
-                    buf = io.BytesIO(person_full["embedding"])
-                    emb = np.load(buf, allow_pickle=False)
-                    cache[person_full["id"]] = emb
-                except Exception as e:
-                    logger.warning("Failed to load embedding", person_id=person_full["id"], error=str(e))
+        cache: Dict[int, Any] = {}
+        for row in db.get_all_embeddings():
+            try:
+                buf = io.BytesIO(row["embedding"])
+                emb = np.load(buf, allow_pickle=False)
+                cache[row["id"]] = (row["person_id"], row["name"], emb)
+            except Exception as e:
+                logger.warning(
+                    "Failed to load embedding",
+                    embedding_id=row["id"],
+                    error=str(e),
+                )
         self._embeddings_cache = cache
         logger.info("Embeddings cache refreshed", count=len(cache))
 
