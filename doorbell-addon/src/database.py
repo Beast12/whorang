@@ -48,6 +48,7 @@ class DatabaseManager:
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
         with sqlite3.connect(self.db_path) as conn:
+            # ── Core events table ───────────────────────────────────────────
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS doorbell_events (
@@ -61,9 +62,8 @@ class DatabaseManager:
                     faces_detected INT DEFAULT 0,
                     face_data TEXT
                 )
-            """
+                """
             )
-
             for col, col_type in [
                 ("ai_message", "TEXT"),
                 ("weather_condition", "TEXT"),
@@ -79,26 +79,104 @@ class DatabaseManager:
                     conn.commit()
                 except sqlite3.OperationalError:
                     pass
-
             conn.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_events_timestamp
-                ON doorbell_events (timestamp)
-            """
+                "CREATE INDEX IF NOT EXISTS idx_events_timestamp "
+                "ON doorbell_events (timestamp)"
             )
 
+            # ── Known persons (no embedding column) ────────────────────────
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS known_persons (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
+                    thumbnail_path TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+
+            # ── Per-person face embeddings ──────────────────────────────────
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS person_embeddings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    person_id INTEGER NOT NULL
+                        REFERENCES known_persons(id) ON DELETE CASCADE,
                     embedding BLOB NOT NULL,
                     thumbnail_path TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """
+                """
+            )
+
+            # ── Unrecognised face crops inbox ───────────────────────────────
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS face_crops (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_id INTEGER NOT NULL
+                        REFERENCES doorbell_events(id) ON DELETE CASCADE,
+                    image_path TEXT NOT NULL,
+                    dismissed BOOLEAN NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_face_crops_dismissed "
+                "ON face_crops (dismissed)"
             )
             conn.commit()
+
+            # ── Migration: move embedding column out of known_persons ───────
+            # Must run AFTER all three tables above exist (same connection).
+            existing_cols = [
+                r[1] for r in conn.execute(
+                    "PRAGMA table_info(known_persons)"
+                ).fetchall()
+            ]
+            if "embedding" in existing_cols:
+                self._migrate_remove_embedding_column(conn)
+
+    def _migrate_remove_embedding_column(self, conn: sqlite3.Connection) -> None:
+        """Move embeddings from known_persons into person_embeddings, then drop the column.
+
+        All five DDL/DML statements run inside an explicit transaction so the
+        database stays consistent even if the process crashes mid-migration.
+        """
+        logger.info("Migrating: moving embeddings from known_persons to person_embeddings")
+        conn.execute("BEGIN")
+        try:
+            conn.execute(
+                """
+                INSERT INTO person_embeddings (person_id, embedding, thumbnail_path, created_at)
+                SELECT id, embedding, thumbnail_path, created_at
+                FROM known_persons
+                WHERE embedding IS NOT NULL
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE known_persons_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    thumbnail_path TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                "INSERT INTO known_persons_new (id, name, thumbnail_path, created_at) "
+                "SELECT id, name, thumbnail_path, created_at FROM known_persons"
+            )
+            conn.execute("DROP TABLE known_persons")
+            conn.execute("ALTER TABLE known_persons_new RENAME TO known_persons")
+            conn.commit()
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+        logger.info("Migration complete: embedding column removed from known_persons")
 
     def add_doorbell_event(
         self,
@@ -136,15 +214,20 @@ class DatabaseManager:
             )
 
     def add_person(self, name: str, embedding_bytes: bytes, thumbnail_path: Optional[str] = None) -> int:
-        """Add a known person. Returns new person id."""
+        """Add a known person and store the initial embedding. Returns new person id."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO known_persons (name, embedding, thumbnail_path) VALUES (?, ?, ?)",
-                (name, embedding_bytes, thumbnail_path),
+                "INSERT INTO known_persons (name, thumbnail_path) VALUES (?, ?)",
+                (name, thumbnail_path),
+            )
+            person_id = cursor.lastrowid
+            assert person_id is not None
+            conn.execute(
+                "INSERT INTO person_embeddings (person_id, embedding, thumbnail_path) VALUES (?, ?, ?)",
+                (person_id, embedding_bytes, thumbnail_path),
             )
             conn.commit()
-            assert cursor.lastrowid is not None
-            return cursor.lastrowid
+            return person_id
 
     def get_persons(self) -> List[dict]:
         """Get all known persons."""
@@ -156,11 +239,11 @@ class DatabaseManager:
             return [dict(row) for row in cursor.fetchall()]
 
     def get_person(self, person_id: int) -> Optional[dict]:
-        """Get a single person by ID, including embedding."""
+        """Get a single person by ID."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute(
-                "SELECT id, name, embedding, thumbnail_path, created_at FROM known_persons WHERE id = ?",
+                "SELECT id, name, thumbnail_path, created_at FROM known_persons WHERE id = ?",
                 (person_id,),
             )
             row = cursor.fetchone()
