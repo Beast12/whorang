@@ -278,8 +278,8 @@ class DatabaseManager:
             assert cursor.lastrowid is not None
             return cursor.lastrowid
 
-    def update_person_embedding_thumbnail(self, emb_id: int, thumbnail_path: str) -> None:
-        """Set the thumbnail path for a person_embeddings row."""
+    def update_person_embedding_thumbnail(self, emb_id: int, thumbnail_path: Optional[str]) -> None:
+        """Set the thumbnail path for a person_embeddings row (pass None to clear)."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "UPDATE person_embeddings SET thumbnail_path = ? WHERE id = ?",
@@ -331,13 +331,14 @@ class DatabaseManager:
             assert cursor.lastrowid is not None
             return cursor.lastrowid
 
-    def dismiss_face_crop(self, crop_id: int) -> None:
-        """Mark a face crop as dismissed."""
+    def dismiss_face_crop(self, crop_id: int) -> bool:
+        """Mark a face crop as dismissed. Returns True if found and updated."""
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
+            updated = conn.execute(
                 "UPDATE face_crops SET dismissed = 1 WHERE id = ?", (crop_id,)
-            )
+            ).rowcount
             conn.commit()
+        return updated > 0
 
     def get_face_crops(self, dismissed: bool = False) -> List[dict]:
         """Get face crops with event timestamp (JOIN doorbell_events)."""
