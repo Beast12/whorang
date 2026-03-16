@@ -1,6 +1,5 @@
 """Optional face recognition service using InsightFace."""
 
-import io
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -91,33 +90,38 @@ class FaceRecognitionService:
             return []
 
     def identify_faces(self, faces: List[FaceResult]) -> List[IdentifiedFace]:
-        """Match detected faces against known persons using cosine similarity."""
+        """Match detected faces against known persons using cosine similarity.
+        Multiple embeddings per person: pick the best-scoring person.
+        """
         import numpy as np
         identified = []
         for face in faces:
-            best_name = "Unknown"
-            best_score = 0.0
             emb = face.embedding
             norm_emb = emb / (np.linalg.norm(emb) + 1e-10)
-            for person_id, known_emb in self._embeddings_cache.items():
+            # best_per_person: {person_id: (name, best_score)}
+            best_per_person: Dict[int, Any] = {}
+            for _emb_id, (person_id, person_name, known_emb) in self._embeddings_cache.items():
                 norm_known = known_emb / (np.linalg.norm(known_emb) + 1e-10)
                 score = float(np.dot(norm_emb, norm_known))
-                if score > best_score and score >= settings.face_recognition_threshold:
-                    best_score = score
-                    person = self._get_person_name(person_id)
-                    best_name = person if person else "Unknown"
+                if score >= settings.face_recognition_threshold:
+                    prev = best_per_person.get(person_id)
+                    if prev is None or score > prev[1]:
+                        best_per_person[person_id] = (person_name, score)
+            if best_per_person:
+                best_person_id = max(
+                    best_per_person, key=lambda pid: best_per_person[pid][1]
+                )
+                best_name, best_score = best_per_person[best_person_id]
+            else:
+                best_person_id, best_name, best_score = None, "Unknown", 0.0
             identified.append(IdentifiedFace(
                 bbox=face.bbox,
                 name=best_name,
+                person_id=best_person_id,
                 score=round(best_score, 3),
                 det_score=round(face.det_score, 3),
             ))
         return identified
-
-    def _get_person_name(self, person_id: int) -> Optional[str]:
-        from .database import db
-        person = db.get_person(person_id)
-        return person["name"] if person else None
 
     def add_person(self, name: str, image_path: str) -> dict:
         """Detect face in image, store embedding + thumbnail. Returns person dict."""

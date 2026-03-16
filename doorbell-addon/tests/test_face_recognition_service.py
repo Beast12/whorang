@@ -47,3 +47,80 @@ def test_refresh_cache_builds_new_format(tmp_path):
     assert person_id == 1
     assert person_name == "Alice"
     assert isinstance(emb, np.ndarray)
+
+
+def make_service_with_cache(embeddings):
+    """Build a FaceRecognitionService with a pre-populated cache."""
+    import numpy as np
+    from src.face_recognition_service import FaceRecognitionService
+    svc = FaceRecognitionService.__new__(FaceRecognitionService)
+    svc._model = None
+    svc._ready = True
+    svc._embeddings_cache = {}
+    for emb_id, person_id, name, vec in embeddings:
+        svc._embeddings_cache[emb_id] = (person_id, name, np.array(vec, dtype="float32"))
+    return svc
+
+
+def test_identify_faces_matches_known_person():
+    """identify_faces returns person name when cosine similarity exceeds threshold."""
+    import numpy as np
+    from src.face_recognition_service import FaceResult
+    # Alice's embedding is [1, 0, 0]
+    svc = make_service_with_cache([(1, 10, "Alice", [1.0, 0.0, 0.0])])
+    mock_settings = MagicMock()
+    mock_settings.face_recognition_threshold = 0.45
+    face = FaceResult(bbox=(0, 0, 50, 50), embedding=np.array([1.0, 0.0, 0.0]), det_score=0.99)
+    with patch('src.face_recognition_service.settings', mock_settings):
+        results = svc.identify_faces([face])
+    assert results[0].name == "Alice"
+    assert results[0].person_id == 10
+
+
+def test_identify_faces_unknown_below_threshold():
+    import numpy as np
+    from src.face_recognition_service import FaceResult
+    svc = make_service_with_cache([(1, 10, "Alice", [1.0, 0.0, 0.0])])
+    mock_settings = MagicMock()
+    mock_settings.face_recognition_threshold = 0.45
+    # Orthogonal vector — similarity = 0
+    face = FaceResult(bbox=(0, 0, 50, 50), embedding=np.array([0.0, 1.0, 0.0]), det_score=0.99)
+    with patch('src.face_recognition_service.settings', mock_settings):
+        results = svc.identify_faces([face])
+    assert results[0].name == "Unknown"
+    assert results[0].person_id is None
+
+
+def test_identify_faces_picks_best_across_multiple_embeddings():
+    """Multiple embeddings for the same person: pick best score."""
+    import numpy as np
+    from src.face_recognition_service import FaceResult
+    # Alice has two embeddings; Bob has one
+    svc = make_service_with_cache([
+        (1, 10, "Alice", [0.9, 0.1, 0.0]),
+        (2, 10, "Alice", [1.0, 0.0, 0.0]),  # better match for [1,0,0]
+        (3, 20, "Bob",   [0.0, 1.0, 0.0]),
+    ])
+    mock_settings = MagicMock()
+    mock_settings.face_recognition_threshold = 0.45
+    face = FaceResult(bbox=(0, 0, 50, 50), embedding=np.array([1.0, 0.0, 0.0]), det_score=0.99)
+    with patch('src.face_recognition_service.settings', mock_settings):
+        results = svc.identify_faces([face])
+    assert results[0].name == "Alice"
+    assert results[0].person_id == 10
+
+
+def test_identify_faces_picks_best_person_not_best_embedding():
+    """When two persons both exceed threshold, pick the one with higher score."""
+    import numpy as np
+    from src.face_recognition_service import FaceResult
+    svc = make_service_with_cache([
+        (1, 10, "Alice", [0.95, 0.05, 0.0]),
+        (2, 20, "Bob",   [0.80, 0.20, 0.0]),
+    ])
+    mock_settings = MagicMock()
+    mock_settings.face_recognition_threshold = 0.45
+    face = FaceResult(bbox=(0, 0, 50, 50), embedding=np.array([1.0, 0.0, 0.0]), det_score=0.99)
+    with patch('src.face_recognition_service.settings', mock_settings):
+        results = svc.identify_faces([face])
+    assert results[0].name == "Alice"
