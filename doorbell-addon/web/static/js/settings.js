@@ -5,6 +5,8 @@ const API = {
     cameras: 'api/cameras',
     weatherEntities: 'api/weather-entities',
     cameraTest: 'api/camera/test',
+    notifyServices: 'api/settings/notify-services',
+    binarySensors: 'api/settings/binary-sensors',
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -14,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeSettings() {
     setupCameraSourceToggle();
 
-    loadCurrentSettings().then(() => {
+    loadCurrentSettings().then(data => {
         loadDropdownOptions(
             'camera-entity',
             API.cameras,
@@ -32,7 +34,21 @@ function initializeSettings() {
             'Error loading weather entities'
         );
         updateCameraStatus();
+        window._currentNotifyServices = (data && data.ha_notify_services) || [];
+        loadNotifyServices();
+        loadDropdownOptions(
+            'trigger-entity',
+            API.binarySensors,
+            data => data.entities || [],
+            e => ({ value: e.entity_id, label: e.friendly_name }),
+            'No binary sensors found',
+            'Error loading sensors'
+        );
+        checkAiPublicPathWarning();
     });
+
+    const llmToggle = document.getElementById('llmvision-enabled');
+    if (llmToggle) llmToggle.addEventListener('change', checkAiPublicPathWarning);
 }
 
 function setupCameraSourceToggle() {
@@ -370,6 +386,168 @@ async function saveWeatherSettings() {
             }
         }
     );
+}
+
+async function loadNotifyServices() {
+    const container = document.getElementById('notify-services-list');
+    if (!container) return;
+    container.innerHTML = '<span class="text-muted small">Loading\u2026</span>';
+    try {
+        const resp = await fetch(API.notifyServices);
+        const data = await resp.json();
+        const services = data.services || [];
+        if (services.length === 0) {
+            container.innerHTML = '<span class="text-muted small">No notify services found.</span>';
+            return;
+        }
+        const currentSelected = (window._currentNotifyServices || []);
+        container.innerHTML = services.map(s => {
+            const suffix = s.name.replace('notify.', '');
+            const badge = s.classification === 'image'
+                ? '<span class="badge bg-primary ms-1" title="Image capable">\uD83D\uDCF1 Mobile</span>'
+                : s.classification === 'audio'
+                ? '<span class="badge bg-secondary ms-1" title="Audio only">\uD83D\uDD0A Audio</span>'
+                : '<span class="badge bg-info ms-1" title="Full payload">\uD83D\uDCE1 Other</span>';
+            const checked = currentSelected.includes(s.name) ? 'checked' : '';
+            return `<div class="form-check">
+                <input class="form-check-input notify-service-check" type="checkbox"
+                    value="${s.name}" id="ns-${suffix}" ${checked}>
+                <label class="form-check-label" for="ns-${suffix}">
+                    ${suffix} ${badge}
+                </label>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = '<span class="text-danger small">Error loading services.</span>';
+    }
+}
+
+function checkAiPublicPathWarning() {
+    const enabled = document.getElementById('llmvision-enabled');
+    const pathInput = document.getElementById('public-image-path');
+    const warning = document.getElementById('ai-public-path-warning');
+    if (!enabled || !warning) return;
+    const needsWarning = enabled.checked && !(pathInput && pathInput.value.trim());
+    warning.style.display = needsWarning ? '' : 'none';
+}
+
+async function saveAiDescription() {
+    try {
+        const payload = {
+            llmvision_enabled: document.getElementById('llmvision-enabled').checked,
+            llmvision_provider: document.getElementById('llmvision-provider').value.trim() || null,
+            llmvision_model: document.getElementById('llmvision-model').value.trim(),
+            llmvision_prompt: document.getElementById('llmvision-prompt').value,
+            llmvision_max_tokens: parseInt(document.getElementById('llmvision-max-tokens').value),
+            default_message: document.getElementById('default-message').value.trim(),
+        };
+        const resp = await fetch(API.settings, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (resp.ok) {
+            alert('AI description settings saved!');
+            checkAiPublicPathWarning();
+        } else {
+            const err = await resp.json();
+            alert('Error: ' + (err.detail || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error saving AI settings: ' + e.message);
+    }
+}
+
+async function saveNotifications() {
+    try {
+        const checks = document.querySelectorAll('.notify-service-check:checked');
+        const selectedServices = Array.from(checks).map(c => c.value);
+        window._currentNotifyServices = selectedServices;
+        const webhookUrl = document.getElementById('webhook-url').value.trim();
+        const resp = await fetch(API.settings, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ha_notify_services: selectedServices,
+                notification_webhook: webhookUrl || null,
+            }),
+        });
+        if (resp.ok) {
+            alert('Notification settings saved!');
+        } else {
+            const err = await resp.json();
+            alert('Error: ' + (err.detail || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error saving notification settings: ' + e.message);
+    }
+}
+
+async function savePublicImagePath() {
+    try {
+        const path = document.getElementById('public-image-path').value.trim();
+        const resp = await fetch(API.settings, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ public_image_path: path || null }),
+        });
+        if (resp.ok) {
+            alert('Public image path saved!');
+            checkAiPublicPathWarning();
+        } else {
+            const err = await resp.json();
+            alert('Error: ' + (err.detail || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Error saving public image path: ' + e.message);
+    }
+}
+
+async function saveTriggerEntity() {
+    try {
+        const entity = document.getElementById('trigger-entity').value;
+        const resp = await fetch(API.settings, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trigger_entity: entity || null }),
+        });
+        if (resp.ok) { alert('Trigger entity saved!'); }
+        else { const err = await resp.json(); alert('Error: ' + (err.detail || 'Unknown')); }
+    } catch (e) { alert('Error: ' + e.message); }
+}
+
+function loadBinarySensors() {
+    loadDropdownOptions(
+        'trigger-entity',
+        API.binarySensors,
+        data => data.entities || [],
+        e => ({ value: e.entity_id, label: e.friendly_name }),
+        'No binary sensors found',
+        'Error loading sensors'
+    );
+}
+
+function copyAutomationYaml() {
+    const entity = document.getElementById('trigger-entity').value;
+    if (!entity) { alert('Select a binary sensor first.'); return; }
+    const yaml = `# Add to configuration.yaml:
+rest_command:
+  doorbell_ring:
+    url: "http://localhost:8099/api/doorbell/ring"
+    method: POST
+
+# Automation:
+alias: Doorbell ring
+triggers:
+  - trigger: state
+    entity_id: ${entity}
+    from: "off"
+    to: "on"
+actions:
+  - action: rest_command.doorbell_ring`;
+    navigator.clipboard.writeText(yaml)
+        .then(() => alert('Automation YAML copied to clipboard!'))
+        .catch(() => { alert('Copy failed. YAML:\n\n' + yaml); });
 }
 
 // Export functions for global access

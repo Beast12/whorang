@@ -24,6 +24,27 @@ class Settings(BaseSettings):
     # Weather integration
     weather_entity: Optional[str] = os.getenv("WEATHER_ENTITY")
 
+    # AI description (llmvision)
+    llmvision_enabled: bool = os.getenv("LLMVISION_ENABLED", "false").lower() == "true"
+    llmvision_provider: Optional[str] = os.getenv("LLMVISION_PROVIDER")
+    llmvision_model: str = os.getenv("LLMVISION_MODEL", "gpt-4o-mini")
+    llmvision_prompt: str = os.getenv(
+        "LLMVISION_PROMPT",
+        "You are my sarcastic funny security guard. Describe what you see in one funny "
+        "one-liner of max 10 words. Only describe the person, vehicle or animal.",
+    )
+    llmvision_max_tokens: int = int(os.getenv("LLMVISION_MAX_TOKENS", "100"))
+    default_message: str = os.getenv("DEFAULT_MESSAGE", "Someone is at the door")
+
+    # HA push notifications
+    ha_notify_services: list = []   # persisted only — no env var default
+
+    # Public image mirror
+    public_image_path: Optional[str] = os.getenv("PUBLIC_IMAGE_PATH")
+
+    # Trigger helper (display only)
+    trigger_entity: Optional[str] = os.getenv("TRIGGER_ENTITY")
+
     # Face recognition
     face_recognition_enabled: bool = os.getenv("FACE_RECOGNITION_ENABLED", "false").lower() == "true"
     face_recognition_model: str = os.getenv("FACE_RECOGNITION_MODEL", "buffalo_sc")
@@ -35,7 +56,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.141"
+    app_version: ClassVar[str] = "1.0.142"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -80,6 +101,16 @@ class Settings(BaseSettings):
         "face_recognition_enabled",
         "face_recognition_model",
         "face_recognition_threshold",
+        # automation integration
+        "llmvision_enabled",
+        "llmvision_provider",
+        "llmvision_model",
+        "llmvision_prompt",
+        "llmvision_max_tokens",
+        "default_message",
+        "ha_notify_services",
+        "public_image_path",
+        "trigger_entity",
     )
 
     def save_to_file(self):
