@@ -750,7 +750,7 @@ async def get_persons():
     for p in persons:
         embeddings = db.get_person_embeddings(p["id"])
         thumb_url = (
-            f"/api/persons/{p['id']}/thumbnail"
+            f"api/persons/{p['id']}/thumbnail"
             if p.get("thumbnail_path")
             else None
         )
@@ -758,7 +758,7 @@ async def get_persons():
             {
                 "id": e["id"],
                 "thumbnail_path": (
-                    f"/api/persons/{p['id']}/samples/{e['id']}/thumbnail"
+                    f"api/persons/{p['id']}/samples/{e['id']}/thumbnail"
                 ),
                 "created_at": e["created_at"],
             }
@@ -809,7 +809,7 @@ async def add_person(name: str = Form(...), image: UploadFile = File(...)):
         {
             "id": e["id"],
             "thumbnail_path": (
-                f"/api/persons/{person['id']}/samples/{e['id']}/thumbnail"
+                f"api/persons/{person['id']}/samples/{e['id']}/thumbnail"
             ),
             "created_at": e["created_at"],
         }
@@ -819,7 +819,7 @@ async def add_person(name: str = Form(...), image: UploadFile = File(...)):
         "id": person["id"],
         "name": person["name"],
         "thumbnail_path": (
-            f"/api/persons/{person['id']}/thumbnail"
+            f"api/persons/{person['id']}/thumbnail"
             if person.get("thumbnail_path")
             else None
         ),
@@ -946,7 +946,7 @@ async def add_person_sample(
         "id": emb_id,
         "person_id": person_id,
         "thumbnail_path": (
-            f"/api/persons/{person_id}/samples/{emb_id}/thumbnail"
+            f"api/persons/{person_id}/samples/{emb_id}/thumbnail"
         ),
         "created_at": emb_row["created_at"] if emb_row else None,
     }
@@ -991,7 +991,7 @@ async def get_face_crops(dismissed: bool = False, count_only: bool = False):
         result.append({
             "id": c["id"],
             "event_id": c["event_id"],
-            "image_path": f"/api/face-crops/{c['id']}/image",
+            "image_path": f"api/face-crops/{c['id']}/image",
             "dismissed": bool(c["dismissed"]),
             "created_at": c["created_at"],
             "event_timestamp": c["event_timestamp"],

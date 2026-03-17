@@ -91,7 +91,7 @@ def test_get_persons_returns_persons_with_samples(client):
     assert p["name"] == "Alice"
     assert "sample_count" in p
     assert "samples" in p
-    assert p["samples"][0]["thumbnail_path"] == "/api/persons/1/samples/1/thumbnail"
+    assert p["samples"][0]["thumbnail_path"] == "api/persons/1/samples/1/thumbnail"
 
 
 def test_patch_person_renames(client):

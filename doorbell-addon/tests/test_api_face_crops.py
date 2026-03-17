@@ -64,7 +64,7 @@ def test_get_face_crops_returns_list(client):
     assert resp.status_code == 200
     data = resp.json()
     assert "crops" in data
-    assert data["crops"][0]["image_path"] == "/api/face-crops/1/image"
+    assert data["crops"][0]["image_path"] == "api/face-crops/1/image"
 
 
 def test_get_face_crops_count_only(client):
