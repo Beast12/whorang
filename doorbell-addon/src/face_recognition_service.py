@@ -132,7 +132,7 @@ class FaceRecognitionService:
         from PIL import Image, ImageOps
         img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
         x, y, w, h = bbox
-        padding = int(max(w, h) * 0.2)
+        padding = int(max(w, h) * 0.6)
         x1 = max(0, x - padding)
         y1 = max(0, y - padding)
         x2 = min(img.width, x + w + padding)

@@ -196,8 +196,8 @@ document.addEventListener('DOMContentLoaded', function () {
             div.id = 'crop-' + crop.id;
             var ts = (crop.event_timestamp || crop.created_at || '').slice(0, 16).replace('T', ' ');
             div.innerHTML =
-                '<img src="' + crop.image_path + '" style="width:100%;height:80px;object-fit:cover" ' +
-                'onerror="this.style.background=\'#333\';this.style.height=\'80px\'">' +
+                '<img src="' + crop.image_path + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block" ' +
+                'onerror="this.style.background=\'#333\'">' +
                 '<div style="padding:4px 6px;font-size:10px;color:#888">' + ts + '</div>';
             div.addEventListener('click', function () { selectCrop(crop.id); });
             grid.appendChild(div);
