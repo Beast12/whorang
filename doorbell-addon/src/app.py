@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Any, List, Optional
 
 import requests
 import structlog
@@ -377,7 +377,8 @@ async def doorbell_ring(
         face_raw, weather = await asyncio.gather(_run_face_analysis(), _fetch_weather())
 
         faces_detected, face_data_json = 0, None
-        if face_raw:
+        identified: List[Any] = []
+        if face_raw and not isinstance(face_raw, Exception):
             identified = face_recognition_service.identify_faces(face_raw)
             faces_detected = len(identified)
             face_data_json = json.dumps([
@@ -400,6 +401,18 @@ async def doorbell_ring(
             faces_detected=faces_detected,
             face_data=face_data_json,
         )
+
+        # Save unrecognised face crops (needs event_id, so runs after DB insert)
+        for idx, iface in enumerate(identified):
+            if iface.name == "Unknown":
+                try:
+                    crop_path = await asyncio.to_thread(
+                        face_recognition_service.save_face_crop,
+                        image_path, iface.bbox, event.id, idx
+                    )
+                    db.add_face_crop(event.id, crop_path)
+                except Exception as crop_err:
+                    logger.warning("Failed to save face crop", error=str(crop_err))
 
         # Fire HA event + send notifications in parallel
         await asyncio.gather(
