@@ -36,6 +36,7 @@ def test_new_fields_persist_and_reload(tmp_path):
     s.default_message = "Hi there"
     s.ha_notify_services = ["notify.mobile_app_phone"]
     s.public_image_path = "/config/www"
+    s.trigger_entity = "binary_sensor.doorbell"
     s.save_to_file()
 
     s2 = make_settings(tmp_path)
@@ -47,3 +48,4 @@ def test_new_fields_persist_and_reload(tmp_path):
     assert s2.default_message == "Hi there"
     assert s2.ha_notify_services == ["notify.mobile_app_phone"]
     assert s2.public_image_path == "/config/www"
+    assert s2.trigger_entity == "binary_sensor.doorbell"
