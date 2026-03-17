@@ -4,173 +4,193 @@
 
 {% block content %}
 <div class="mb-4">
-    <h1 class="wr-page-title">Known Persons</h1>
+    <h1 class="wr-page-title">Persons</h1>
     <p class="wr-page-sub">Manage faces for doorbell recognition</p>
 </div>
 
-<!-- Status Card -->
-<div class="card mb-4">
-    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div class="d-flex align-items-center gap-3">
-            <span id="fr-model-badge" class="badge bg-secondary">Checking…</span>
-            <span style="font-size:13px;color:var(--text-2)">
-                <strong>{{ persons|length }}</strong> person{% if persons|length != 1 %}s{% endif %} registered
-            </span>
+{% if not settings.face_recognition_enabled %}
+<div class="alert alert-warning mb-3" style="font-size:13px">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    Face recognition is disabled — <a href="settings">enable it in Settings</a>.
+</div>
+{% endif %}
+
+<!-- Tab bar -->
+<div id="persons-tabs" style="display:flex;border-bottom:1px solid #333;margin-bottom:16px">
+    <div data-tab="known"
+         style="padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent">
+        Known
+        <span style="background:#38bdf820;color:#38bdf8;border-radius:10px;
+                     padding:1px 7px;font-size:11px;margin-left:4px">
+            {{ persons | length }}
+        </span>
+    </div>
+    <div data-tab="unrecognised"
+         style="padding:10px 16px;font-size:13px;color:#888;cursor:pointer;border-bottom:2px solid transparent">
+        Unrecognised
+        <span id="unrecognised-tab-badge"
+              style="background:#fb923c20;color:#fb923c;border-radius:10px;
+                     padding:1px 7px;font-size:11px;margin-left:4px">0</span>
+    </div>
+</div>
+
+<!-- Known tab pane -->
+<div data-pane="known">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+        {% for person in persons %}
+        <div id="person-card-{{ person.id }}"
+             style="background:#1c1c1f;border-radius:8px;padding:12px;border:1px solid #333">
+            <!-- Avatar + name row -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <img src="api/persons/{{ person.id }}/thumbnail"
+                     style="width:40px;height:40px;border-radius:50%;object-fit:cover;
+                            border:2px solid #38bdf8;flex-shrink:0"
+                     onerror="this.outerHTML='<div style=\'width:40px;height:40px;border-radius:50%;background:#6c757d;border:2px solid #38bdf8;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold\'>{{ person.name[0]|upper }}</div>'">
+                <div style="flex:1;min-width:0">
+                    <div id="person-name-{{ person.id }}"
+                         style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        {{ person.name }}
+                    </div>
+                    <div style="font-size:10px;color:#555" id="sample-count-{{ person.id }}">
+                        — samples
+                    </div>
+                </div>
+                <button onclick="deletePerson({{ person.id }}, '{{ person.name|replace("'", "\\'") }}')"
+                        style="background:transparent;border:none;color:#555;cursor:pointer;font-size:12px"
+                        title="Delete person">🗑</button>
+                <span class="rename-btn" data-person-id="{{ person.id }}"
+                      style="font-size:10px;color:#555;cursor:pointer" title="Rename">✏</span>
+            </div>
+            <!-- Sample strip (populated by JS) -->
+            <div id="sample-strip-{{ person.id }}" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px"></div>
+            {% if settings.face_recognition_enabled %}
+            <div style="font-size:10px;color:#fb923c" id="accuracy-hint-{{ person.id }}" style="display:none">
+                ⚠ More samples improve accuracy
+            </div>
+            {% endif %}
         </div>
-        {% if not settings.face_recognition_enabled %}
-        <div class="alert alert-warning mb-0 py-2 px-3" style="font-size:12px">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            Face recognition is disabled. <a href="settings">Enable in Settings →</a>
+        {% endfor %}
+
+        <!-- Add new person card -->
+        {% if settings.face_recognition_enabled %}
+        <div style="background:#1c1c1f;border-radius:8px;padding:12px;border:1px dashed #444;
+                    display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:13px;font-weight:600;color:#888">
+                <i class="bi bi-person-plus-fill"></i> Add person
+            </div>
+            <input id="new-person-name" type="text" placeholder="Name"
+                   style="background:#111;border:1px solid #444;border-radius:4px;
+                          padding:4px 8px;font-size:12px;color:#e5e7eb;width:100%">
+            <input id="new-person-photo" type="file" accept="image/*"
+                   style="font-size:11px;color:#888">
+            <div id="add-person-status" style="font-size:11px;min-height:16px"></div>
+            <button onclick="addPerson()"
+                    style="background:#38bdf820;border:1px solid #38bdf860;border-radius:6px;
+                           padding:5px 10px;font-size:12px;color:#38bdf8;cursor:pointer;width:100%">
+                Add
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Known Persons Grid -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-people-fill"></i> Registered Persons</h5>
-            </div>
-            <div class="card-body">
-                {% if persons %}
-                <div class="row g-3" id="persons-grid">
-                    {% for person in persons %}
-                    <div class="col-sm-6 col-md-4" id="person-card-{{ person.id }}">
-                        <div class="card h-100 text-center p-3">
-                            <div class="mb-2">
-                                <img src="api/persons/{{ person.id }}/thumbnail"
-                                     alt="{{ person.name }}"
-                                     style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:2px solid var(--primary)"
-                                     onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'><rect width=\'80\' height=\'80\' fill=\'%236c757d\' rx=\'40\'/><text x=\'50%25\' y=\'55%25\' text-anchor=\'middle\' fill=\'white\' font-size=\'28\' font-family=\'sans-serif\'>{{ person.name[0]|upper }}</text></svg>'">
-                            </div>
-                            <strong style="font-size:13px">{{ person.name }}</strong>
-                            <div style="font-size:10px;color:var(--text-3);margin-top:2px">
-                                Added {{ person.created_at[:10] if person.created_at else '' }}
-                            </div>
-                            <div class="mt-2">
-                                <button class="btn btn-sm btn-outline-danger"
-                                        onclick="deletePerson({{ person.id }}, '{{ person.name|replace("'", "\\'") }}')">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-person-x-fill" style="font-size:40px;color:var(--text-3)"></i>
-                    <p class="mt-3" style="font-size:14px;color:var(--text-2)">No persons registered yet</p>
-                    <p style="font-size:12px;color:var(--text-3)">Upload a photo to add someone</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<!-- Unrecognised tab pane -->
+<div data-pane="unrecognised" style="display:none">
+    <div id="crops-grid"
+         style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <p style="color:#666;font-size:13px">Loading…</p>
     </div>
 
-    <!-- Add Person Form -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-person-plus-fill"></i> Add Person</h5>
-            </div>
-            <div class="card-body">
-                {% if not settings.face_recognition_enabled %}
-                <div class="alert alert-secondary py-2" style="font-size:12px">
-                    Enable face recognition in <a href="settings">Settings</a> to add persons.
-                </div>
-                {% else %}
-                <div class="mb-3">
-                    <label for="person-name" class="form-label">Name</label>
-                    <input type="text" class="form-control" id="person-name" placeholder="e.g. Alice">
-                </div>
-                <div class="mb-3">
-                    <label for="person-photo" class="form-label">Photo</label>
-                    <input type="file" class="form-control" id="person-photo" accept="image/*">
-                    <div class="form-text">Upload a clear front-facing photo. One face per image.</div>
-                </div>
-                <div id="add-person-status" style="font-size:12px;min-height:20px;margin-bottom:8px"></div>
-                <button class="btn btn-primary w-100" onclick="addPerson()" id="add-person-btn">
-                    <i class="bi bi-person-plus-fill"></i> Add Person
+    <!-- Action panel (hidden until a crop is selected) -->
+    <div id="crop-action-panel" style="display:none;background:#242428;border-radius:8px;
+         padding:14px;border:1px solid #38bdf840">
+        <div style="font-size:12px;color:#aaa;margin-bottom:10px">
+            Assign this face to:
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:11px;color:#888">Existing:</span>
+            {% for person in persons %}
+            <button onclick="assignCropToPerson({{ person.id }})"
+                    style="background:#38bdf820;border:1px solid #38bdf860;border-radius:20px;
+                           padding:4px 10px;font-size:11px;color:#38bdf8;cursor:pointer">
+                {{ person.name }}
+            </button>
+            {% endfor %}
+            <div style="width:1px;height:24px;background:#333;margin:0 4px"></div>
+            <input id="new-crop-name" placeholder="New name…"
+                   style="background:#111;border:1px solid #444;border-radius:4px;
+                          padding:4px 8px;font-size:11px;color:#e5e7eb;width:110px">
+            <button onclick="assignCropNewPerson()"
+                    style="background:#38bdf820;border:1px solid #38bdf860;border-radius:4px;
+                           padding:4px 10px;font-size:11px;color:#38bdf8;cursor:pointer">
+                Create
+            </button>
+            <div style="margin-left:auto">
+                <button onclick="dismissCrop()"
+                        style="background:transparent;border:1px solid #444;border-radius:4px;
+                               padding:4px 10px;font-size:11px;color:#666;cursor:pointer">
+                    Dismiss
                 </button>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-async function loadFrStatus() {
-    try {
-        const resp = await fetch('api/face-recognition/status');
-        const data = await resp.json();
-        const badge = document.getElementById('fr-model-badge');
-        if (!data.enabled) {
-            badge.className = 'badge bg-secondary'; badge.textContent = 'Disabled';
-        } else if (data.model_loaded) {
-            badge.className = 'badge bg-success'; badge.textContent = `Model: ${data.model_name} — Ready`;
-        } else {
-            badge.className = 'badge bg-warning text-dark'; badge.textContent = `Model: ${data.model_name} — Loading…`;
-        }
-    } catch (e) {}
-}
+// Populate sample strips for each person card
+document.addEventListener('DOMContentLoaded', function () {
+    {% for person in persons %}
+    (function () {
+        var pid = {{ person.id }};
+        fetch('api/persons/' + pid)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var p = (data.persons || []).find(function (x) { return x.id === pid; });
+                if (!p) return;
+                var strip = document.getElementById('sample-strip-' + pid);
+                var countEl = document.getElementById('sample-count-' + pid);
+                var hint = document.getElementById('accuracy-hint-' + pid);
+                if (countEl) countEl.textContent = p.sample_count + ' sample' + (p.sample_count !== 1 ? 's' : '');
+                if (hint) hint.style.display = p.sample_count === 1 ? '' : 'none';
+                if (!strip) return;
+                strip.innerHTML = '';
+                (p.samples || []).forEach(function (s) {
+                    var wrap = document.createElement('div');
+                    wrap.style.cssText = 'position:relative';
+                    wrap.innerHTML =
+                        '<img src="' + s.thumbnail_path + '" ' +
+                        'style="width:34px;height:34px;border-radius:4px;border:1px solid #38bdf860;object-fit:cover" ' +
+                        'onerror="this.style.background=\'#333\'">' +
+                        '<div onclick="deleteSample(' + pid + ',' + s.id + ')" ' +
+                        'style="position:absolute;top:-4px;right:-4px;background:#333;border-radius:50%;' +
+                        'width:14px;height:14px;font-size:9px;display:flex;align-items:center;' +
+                        'justify-content:center;cursor:pointer;color:#aaa">✕</div>';
+                    strip.appendChild(wrap);
+                });
+                // Add sample button
+                var addBtn = document.createElement('div');
+                addBtn.onclick = function () { addSample(pid); };
+                addBtn.style.cssText = 'width:34px;height:34px;border-radius:4px;border:1px dashed #38bdf860;' +
+                    'display:flex;align-items:center;justify-content:center;color:#38bdf8;font-size:18px;cursor:pointer';
+                addBtn.textContent = '+';
+                strip.appendChild(addBtn);
+            })
+            .catch(function () {});
+    })();
+    {% endfor %}
 
-async function addPerson() {
-    const name = document.getElementById('person-name').value.trim();
-    const photo = document.getElementById('person-photo').files[0];
-    const status = document.getElementById('add-person-status');
-
-    if (!name) { status.innerHTML = '<span style="color:var(--red)">Please enter a name.</span>'; return; }
-    if (!photo) { status.innerHTML = '<span style="color:var(--red)">Please select a photo.</span>'; return; }
-
-    const btn = document.getElementById('add-person-btn');
-    btn.disabled = true;
-    status.innerHTML = '<span style="color:var(--text-2)">Uploading…</span>';
-
-    try {
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('image', photo);
-
-        const resp = await fetch('api/persons', { method: 'POST', body: formData });
-        const data = await resp.json();
-
-        if (resp.ok && data.success) {
-            status.innerHTML = `<span style="color:var(--green)">Added ${name} successfully!</span>`;
-            document.getElementById('person-name').value = '';
-            document.getElementById('person-photo').value = '';
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            status.innerHTML = `<span style="color:var(--red)">Error: ${data.detail || 'Unknown error'}</span>`;
-        }
-    } catch (e) {
-        status.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-async function deletePerson(personId, name) {
-    if (!confirm(`Remove ${name} from known persons?`)) return;
-    try {
-        const resp = await fetch(`api/persons/${personId}`, { method: 'DELETE' });
-        if (resp.ok) {
-            const card = document.getElementById(`person-card-${personId}`);
-            if (card) card.remove();
-        } else {
-            const data = await resp.json();
-            alert('Error: ' + (data.detail || 'Unknown error'));
-        }
-    } catch (e) {
-        alert('Error deleting person: ' + e.message);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', loadFrStatus);
-setInterval(loadFrStatus, 10000);
+    // Update unrecognised tab badge
+    fetch('api/face-crops?count_only=true')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            var el = document.getElementById('unrecognised-tab-badge');
+            if (el) el.textContent = d.count || 0;
+        })
+        .catch(function () {});
+});
 </script>
 {% endblock %}
