@@ -62,6 +62,7 @@ async def test_image_capable_includes_data_image(ha_api):
     assert payload["message"] == "Someone at door"
     assert payload["data"]["image"] == "/local/doorbell_123.jpg"
     assert payload["data"]["priority"] == "high"
+    assert payload["data"]["ttl"] == 0
 
 
 @pytest.mark.asyncio
@@ -92,6 +93,7 @@ async def test_audio_only_sends_message_only(ha_api):
     assert path == "/services/notify/tts_kitchen"
     assert "title" not in payload
     assert payload["message"] == "Someone at door"
+    assert "data" not in payload
 
 
 @pytest.mark.asyncio
