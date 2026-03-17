@@ -262,6 +262,16 @@ class DatabaseManager:
             conn.commit()
             return deleted > 0
 
+    def rename_person(self, person_id: int, name: str) -> bool:
+        """Rename a known person. Returns True if found."""
+        with sqlite3.connect(self.db_path) as conn:
+            updated = conn.execute(
+                "UPDATE known_persons SET name = ? WHERE id = ?",
+                (name, person_id),
+            ).rowcount
+            conn.commit()
+        return updated > 0
+
     # ── Person embeddings ──────────────────────────────────────────────────────
 
     def add_person_embedding(

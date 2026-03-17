@@ -96,7 +96,7 @@ def test_get_persons_returns_persons_with_samples(client):
 
 def test_patch_person_renames(client):
     """PATCH /api/persons/{id} must update name."""
-    client._mock_db.get_person.return_value = {"id": 1, "name": "Alice", "thumbnail_path": None}
+    client._mock_db.rename_person.return_value = True
     resp = client.patch("/api/persons/1", json={"name": "Alicia"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Alicia"
@@ -110,7 +110,7 @@ def test_patch_person_empty_name_returns_422(client):
 
 def test_patch_person_not_found_returns_404(client):
     """PATCH /api/persons/{id} when person missing must return 404."""
-    client._mock_db.get_person.return_value = None
+    client._mock_db.rename_person.return_value = False
     resp = client.patch("/api/persons/99", json={"name": "Alice"})
     assert resp.status_code == 404
 

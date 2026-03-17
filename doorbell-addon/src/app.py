@@ -820,20 +820,12 @@ async def add_person(name: str = Form(...), image: UploadFile = File(...)):
 @app.patch("/api/persons/{person_id}")
 async def rename_person(person_id: int, request: Request):
     """Rename a known person."""
-    import sqlite3 as _sqlite3
     data = await request.json()
     name = data.get("name", "").strip()
     if not name:
         raise HTTPException(status_code=422, detail="Name must not be empty")
-    person = db.get_person(person_id)
-    if not person:
+    if not db.rename_person(person_id, name):
         raise HTTPException(status_code=404, detail="Person not found")
-    with _sqlite3.connect(db.db_path) as conn:
-        conn.execute(
-            "UPDATE known_persons SET name = ? WHERE id = ?",
-            (name, person_id),
-        )
-        conn.commit()
     face_recognition_service.refresh_embeddings_cache()
     return {"id": person_id, "name": name}
 
@@ -937,13 +929,15 @@ async def add_person_sample(
             os.remove(tmp_path)
         except Exception:
             pass
+    emb_rows = db.get_person_embeddings(person_id)
+    emb_row = next((e for e in emb_rows if e["id"] == emb_id), None)
     return {
         "id": emb_id,
         "person_id": person_id,
         "thumbnail_path": (
             f"/api/persons/{person_id}/samples/{emb_id}/thumbnail"
         ),
-        "created_at": None,
+        "created_at": emb_row["created_at"] if emb_row else None,
     }
 
 
