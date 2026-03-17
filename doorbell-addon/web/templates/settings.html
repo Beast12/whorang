@@ -112,6 +112,27 @@
             </div>
         </div>
 
+            <!-- Public Image -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-folder-fill"></i> Public Image</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="public-image-path" class="form-label">Public image directory</label>
+                        <input type="text" class="form-control font-mono" id="public-image-path"
+                            value="{{ settings.public_image_path or '' }}"
+                            placeholder="/config/www">
+                        <div class="form-text">
+                            Images in this directory are served by HA at <code>/local/&lt;filename&gt;</code>.
+                            Path must be under <code>/config/www</code> for HA to serve them.
+                            Required for AI description and image notifications.
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="savePublicImagePath()">Save</button>
+                </div>
+            </div>
+
         <!-- Home Assistant -->
         <div class="card mb-4">
             <div class="card-header">
@@ -130,6 +151,32 @@
                 </button>
             </div>
         </div>
+
+            <!-- Trigger Helper -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning-charge-fill"></i> Trigger Helper</h5>
+                </div>
+                <div class="card-body">
+                    <p class="form-text mb-2">
+                        Select your doorbell binary sensor to generate a ready-to-paste HA automation.
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="trigger-entity" class="form-label mb-0">Binary Sensor</label>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadBinarySensors()" style="font-size:10px;padding:3px 8px">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <select class="form-select mb-3" id="trigger-entity"
+                        data-current-value="{{ settings.trigger_entity or '' }}">
+                        <option value="">— Select a sensor —</option>
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm me-2" onclick="saveTriggerEntity()">Save</button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="copyAutomationYaml()">
+                        <i class="bi bi-clipboard"></i> Copy automation YAML
+                    </button>
+                </div>
+            </div>
 
         <!-- Weather -->
         <div class="card mb-4">
@@ -150,27 +197,83 @@
             </div>
         </div>
 
+        <!-- AI Description -->
+        <div class="card mb-4" id="ai-description-card">
+            <div class="card-header">
+                <h5><i class="bi bi-stars"></i> AI Description</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="llmvision-enabled"
+                        {% if settings.llmvision_enabled %}checked{% endif %}>
+                    <label class="form-check-label" for="llmvision-enabled">Enable AI-generated description</label>
+                </div>
+                <div id="llmvision-fields">
+                    <div class="mb-3">
+                        <label for="llmvision-provider" class="form-label">Provider ID</label>
+                        <input type="text" class="form-control font-mono" id="llmvision-provider"
+                            value="{{ settings.llmvision_provider or '' }}"
+                            placeholder="e.g. openai">
+                        <div class="form-text">The llmvision provider configured in your HA integration</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="llmvision-model" class="form-label">Model</label>
+                        <input type="text" class="form-control font-mono" id="llmvision-model"
+                            value="{{ settings.llmvision_model }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="llmvision-prompt" class="form-label">Prompt</label>
+                        <textarea class="form-control font-mono" id="llmvision-prompt" rows="3">{{ settings.llmvision_prompt }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="llmvision-max-tokens" class="form-label">
+                            Max tokens: <span id="max-tokens-display">{{ settings.llmvision_max_tokens }}</span>
+                        </label>
+                        <input type="range" class="form-range" id="llmvision-max-tokens"
+                            min="50" max="200" step="10"
+                            value="{{ settings.llmvision_max_tokens }}"
+                            oninput="document.getElementById('max-tokens-display').textContent=this.value">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="default-message" class="form-label">Default message</label>
+                    <input type="text" class="form-control" id="default-message"
+                        value="{{ settings.default_message }}">
+                    <div class="form-text">Used when AI is disabled or fails</div>
+                </div>
+                <div id="ai-public-path-warning" class="alert alert-warning py-1 px-2 small mb-3"
+                    style="display:none">
+                    AI description requires <strong>Public Image Path</strong> to be set.
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="saveAiDescription()">Save</button>
+            </div>
+        </div>
+
         <!-- Notifications -->
         <div class="card mb-4">
             <div class="card-header">
                 <h5><i class="bi bi-bell-fill"></i> Notifications</h5>
             </div>
             <div class="card-body">
-                <div class="mb-4">
+                <div class="wr-section-label">HA Push</div>
+                <p class="form-text mb-2">Select which HA notify services receive a push notification on each ring.</p>
+                <div id="notify-services-list" class="mb-2">
+                    <span class="text-muted small">Loading…</span>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm mb-3" onclick="loadNotifyServices()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+
+                <div class="wr-section-label mt-2">Webhook / Gotify</div>
+                <div class="mb-3">
                     <label for="webhook-url" class="form-label">Webhook URL</label>
-                    <input type="url" class="form-control font-mono" id="webhook-url"
-                           value="{{ settings.notification_webhook or '' }}"
-                           placeholder="https://gotify.example.com/message?token=…">
-                    <div class="form-text">Supports Gotify and generic webhooks. Leave empty to disable.</div>
+                    <input type="text" class="form-control font-mono" id="webhook-url"
+                        value="{{ settings.notification_webhook or '' }}"
+                        placeholder="https://your-gotify-server/message?token=...">
+                    <div class="form-text">Optional. Also supports generic POST webhooks.</div>
                 </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary" onclick="saveWebhookUrl()">
-                        <i class="bi bi-floppy"></i> Save
-                    </button>
-                    <button class="btn btn-outline-secondary" onclick="testNotifications()">
-                        <i class="bi bi-send"></i> Test
-                    </button>
-                </div>
+
+                <button class="btn btn-primary btn-sm" onclick="saveNotifications()">Save</button>
             </div>
         </div>
 
