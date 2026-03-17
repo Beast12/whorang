@@ -145,6 +145,33 @@ class HomeAssistantAPI:
         title = svc.get("title") or "Doorbell"
         return text, title
 
+    async def send_ha_notification(
+        self,
+        service_name: str,
+        message: str,
+        title: str,
+        image_filename: Optional[str] = None,
+    ) -> None:
+        """Send a notification to a specific HA notify service.
+
+        Payload is tailored to service type: audio-only services get message only;
+        image-capable and unknown services get title + message + optional data.image.
+        service_name must be the full name e.g. 'notify.mobile_app_phone'.
+        """
+        suffix = service_name.removeprefix("notify.")
+        kind = classify_notify_service(suffix)
+        if kind == "audio":
+            payload: Dict = {"message": message}
+        else:
+            payload = {"title": title, "message": message}
+            if image_filename:
+                payload["data"] = {
+                    "image": f"/local/{image_filename}",
+                    "ttl": 0,
+                    "priority": "high",
+                }
+        await self._post(f"/services/notify/{suffix}", payload)
+
 
 class NotificationManager:
     """Manages notifications for doorbell events."""
