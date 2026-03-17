@@ -338,21 +338,32 @@ async def get_events(limit: int = 50, offset: int = 0):
 @app.post("/api/doorbell/ring")
 async def doorbell_ring(
     ai_message: Optional[str] = Form(None),
+    image_path: Optional[str] = Form(None),
 ):
     """Handle a doorbell ring event — capture image and record the event."""
     logger.info("Doorbell ring event received", ai_message=ai_message)
     try:
-        # Capture image (blocking — runs in thread pool)
+        # If a pre-captured snapshot path is provided (e.g. from the HA automation),
+        # copy it into addon storage so we use the image taken at ring time rather
+        # than capturing a new (potentially delayed) frame from the camera.
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         image_filename = f"doorbell_{timestamp_str}.jpg"
-        image_path = os.path.join(settings.images_path, image_filename)
+        dest_path = os.path.join(settings.images_path, image_filename)
 
-        captured = await asyncio.to_thread(ha_camera_manager.capture_image, image_path)
-        if not captured:
-            logger.error("Failed to capture image from camera")
-            raise HTTPException(
-                status_code=500, detail="Failed to capture image from camera"
-            )
+        if image_path and os.path.isfile(image_path):
+            import shutil
+            os.makedirs(settings.images_path, exist_ok=True)
+            shutil.copy2(image_path, dest_path)
+            logger.info("Using pre-captured snapshot", source=image_path, dest=dest_path)
+        else:
+            captured = await asyncio.to_thread(ha_camera_manager.capture_image, dest_path)
+            if not captured:
+                logger.error("Failed to capture image from camera")
+                raise HTTPException(
+                    status_code=500, detail="Failed to capture image from camera"
+                )
+
+        image_path = dest_path
 
         # Run face analysis + weather fetch in parallel
         async def _run_face_analysis() -> Optional[list]:
