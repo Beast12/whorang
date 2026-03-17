@@ -21,8 +21,10 @@ from .database import db
 from .face_recognition_service import face_recognition_service
 from .ha_camera import ha_camera_manager
 from .ha_integration import ha_integration
+from .ring_pipeline import run_ring_pipeline
 from .utils import (
     HomeAssistantAPI,
+    classify_notify_service,
     create_placeholder_image,
     ensure_directories,
     get_storage_usage,
@@ -340,123 +342,23 @@ async def doorbell_ring(
     ai_message: Optional[str] = Form(None),
     image_path: Optional[str] = Form(None),
 ):
-    """Handle a doorbell ring event — capture image and record the event."""
+    """Handle a doorbell ring event — capture image, run pipeline, return result."""
     logger.info("Doorbell ring event received", ai_message=ai_message)
     try:
-        # If a pre-captured snapshot path is provided (e.g. from the HA automation),
-        # copy it into addon storage so we use the image taken at ring time rather
-        # than capturing a new (potentially delayed) frame from the camera.
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        image_filename = f"doorbell_{timestamp_str}.jpg"
-        dest_path = os.path.join(settings.images_path, image_filename)
-
-        if image_path and os.path.isfile(image_path):
-            import shutil
-            os.makedirs(settings.images_path, exist_ok=True)
-            shutil.copy2(image_path, dest_path)
-            logger.info("Using pre-captured snapshot", source=image_path, dest=dest_path)
-        else:
-            captured = await asyncio.to_thread(ha_camera_manager.capture_image, dest_path)
-            if not captured:
-                logger.error("Failed to capture image from camera")
-                raise HTTPException(
-                    status_code=500, detail="Failed to capture image from camera"
-                )
-
-        image_path = dest_path
-
-        # Run face analysis + weather fetch in parallel
-        async def _run_face_analysis() -> Optional[list]:
-            if not (settings.face_recognition_enabled and face_recognition_service.is_ready()):
-                return None
-            try:
-                return await asyncio.to_thread(face_recognition_service.analyze_image, image_path)
-            except Exception as exc:
-                logger.error("Face analysis error", error=str(exc))
-                return None
-
-        async def _fetch_weather() -> Optional[dict]:
-            if not settings.weather_entity:
-                return None
-            try:
-                ha_api = HomeAssistantAPI()
-                return await ha_api.get_weather_data(settings.weather_entity)
-            except Exception as exc:
-                logger.error("Weather fetch error", error=str(exc))
-                return None
-
-        face_raw, weather = await asyncio.gather(_run_face_analysis(), _fetch_weather())
-
-        faces_detected, face_data_json = 0, None
-        identified: List[Any] = []
-        if face_raw and not isinstance(face_raw, Exception):
-            identified = face_recognition_service.identify_faces(face_raw)
-            faces_detected = len(identified)
-            face_data_json = json.dumps([
-                {
-                    "name": f.name,
-                    "bbox": list(f.bbox),
-                    "score": round(f.score, 3),
-                    "det_score": round(f.det_score, 3),
-                }
-                for f in identified
-            ])
-
-        # Save event
-        event = db.add_doorbell_event(
-            image_path=image_path,
-            ai_message=ai_message,
-            weather_condition=weather.get("condition") if weather else None,
-            weather_temperature=weather.get("temperature") if weather else None,
-            weather_humidity=weather.get("humidity") if weather else None,
-            faces_detected=faces_detected,
-            face_data=face_data_json,
-        )
-
-        # Save unrecognised face crops (needs event_id, so runs after DB insert)
-        for idx, iface in enumerate(identified):
-            if iface.name == "Unknown":
-                try:
-                    crop_path = await asyncio.to_thread(
-                        face_recognition_service.save_face_crop,
-                        image_path, iface.bbox, event.id, idx
-                    )
-                    db.add_face_crop(event.id, crop_path)
-                except Exception as crop_err:
-                    logger.warning("Failed to save face crop", error=str(crop_err))
-
-        # Fire HA event + send notifications in parallel
-        await asyncio.gather(
-            ha_integration.handle_doorbell_ring(
-                {
-                    "event_id": event.id,
-                    "timestamp": event.timestamp.isoformat(),
-                    "image_path": image_path,
-                    "ai_message": ai_message,
-                }
-            ),
-            notification_manager.notify_doorbell_ring(
-                event_id=event.id,
-                image_path=image_path,
-                ai_message=ai_message,
-            ),
-            return_exceptions=True,
-        )
-
+        result = await run_ring_pipeline(image_path=image_path, ai_message=ai_message)
         return {
             "success": True,
-            "message": "Doorbell ring recorded",
-            "event_id": event.id,
-            "timestamp": event.timestamp.isoformat(),
+            "message": "Doorbell ring processed",
+            "timestamp": datetime.now().isoformat(),
+            "event_id": result["event_id"],
+            "ai_message": result["ai_message"],
+            "ai_title": result["ai_title"],
         }
-
     except HTTPException:
         raise
     except Exception as e:
         logger.error("Error processing doorbell ring", error=str(e))
-        raise HTTPException(
-            status_code=500, detail=f"Doorbell processing failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Doorbell processing failed: {str(e)}")
 
 
 @app.post("/api/events/{event_id}/comment")
@@ -541,6 +443,15 @@ async def get_settings():
         "weather_entity": settings.weather_entity,
         "ha_access_token": settings.ha_access_token,
         "app_version": settings.app_version,
+        "llmvision_enabled": settings.llmvision_enabled,
+        "llmvision_provider": settings.llmvision_provider,
+        "llmvision_model": settings.llmvision_model,
+        "llmvision_prompt": settings.llmvision_prompt,
+        "llmvision_max_tokens": settings.llmvision_max_tokens,
+        "default_message": settings.default_message,
+        "ha_notify_services": settings.ha_notify_services,
+        "public_image_path": settings.public_image_path,
+        "trigger_entity": settings.trigger_entity,
     }
 
 
@@ -572,6 +483,24 @@ async def update_settings(request: Request):
                 settings.storage_path = storage_path
             else:
                 raise ValueError("Storage path cannot be empty")
+        if "llmvision_enabled" in data:
+            settings.llmvision_enabled = bool(data["llmvision_enabled"])
+        if "llmvision_provider" in data:
+            settings.llmvision_provider = data["llmvision_provider"] or None
+        if "llmvision_model" in data:
+            settings.llmvision_model = data["llmvision_model"]
+        if "llmvision_prompt" in data:
+            settings.llmvision_prompt = data["llmvision_prompt"]
+        if "llmvision_max_tokens" in data:
+            settings.llmvision_max_tokens = int(data["llmvision_max_tokens"])
+        if "default_message" in data:
+            settings.default_message = data["default_message"]
+        if "ha_notify_services" in data:
+            settings.ha_notify_services = list(data["ha_notify_services"])
+        if "public_image_path" in data:
+            settings.public_image_path = data["public_image_path"] or None
+        if "trigger_entity" in data:
+            settings.trigger_entity = data["trigger_entity"] or None
 
         settings.save_to_file()
 
@@ -656,6 +585,52 @@ async def get_available_weather_entities():
 
     except Exception as e:
         logger.error("Error getting weather entities", error=str(e))
+        return {"entities": []}
+
+
+@app.get("/api/settings/notify-services")
+async def get_notify_services():
+    """Fetch and classify notify.* services from HA. Returns empty list on failure."""
+    try:
+        ha_api = HomeAssistantAPI()
+        response = await ha_api._get("/services")
+        if not response:
+            return {"services": []}
+        domains = {d["domain"]: d["services"] for d in response.json()}
+        notify_svcs = domains.get("notify", {})
+        result = [
+            {
+                "name": f"notify.{name}",
+                "image_capable": classify_notify_service(name) in ("image", "full"),
+                "classification": classify_notify_service(name),
+            }
+            for name in notify_svcs
+        ]
+        return {"services": result}
+    except Exception as e:
+        logger.warning("Failed to fetch notify services", error=str(e))
+        return {"services": []}
+
+
+@app.get("/api/settings/binary-sensors")
+async def get_binary_sensors():
+    """Fetch binary_sensor.* entities from HA. Returns empty list on failure."""
+    try:
+        ha_api = HomeAssistantAPI()
+        response = await ha_api._get("/states")
+        if not response:
+            return {"entities": []}
+        entities = [
+            {
+                "entity_id": s["entity_id"],
+                "friendly_name": s.get("attributes", {}).get("friendly_name", s["entity_id"]),
+            }
+            for s in response.json()
+            if s.get("entity_id", "").startswith("binary_sensor.")
+        ]
+        return {"entities": entities}
+    except Exception as e:
+        logger.warning("Failed to fetch binary sensors", error=str(e))
         return {"entities": []}
 
 
