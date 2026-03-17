@@ -1,10 +1,8 @@
 """Tests for run_ring_pipeline()."""
-import asyncio
-import json
 import os
 import sys
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 
@@ -147,7 +145,7 @@ async def test_llm_no_provider_uses_default_message(tmp_path, pipeline_mod):
     patches = _patch_pipeline(pipeline_mod, *mocks)
     for p in patches: p.start()
     with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api):
-        result = await pipeline_mod.run_ring_pipeline()
+        await pipeline_mod.run_ring_pipeline()
     for p in patches: p.stop()
     mock_ha_api.call_llmvision.assert_not_called()
 
@@ -160,7 +158,7 @@ async def test_llm_no_public_path_uses_default_message(tmp_path, pipeline_mod):
     patches = _patch_pipeline(pipeline_mod, *mocks)
     for p in patches: p.start()
     with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api):
-        result = await pipeline_mod.run_ring_pipeline()
+        await pipeline_mod.run_ring_pipeline()
     for p in patches: p.stop()
     mock_ha_api.call_llmvision.assert_not_called()
 
