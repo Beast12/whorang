@@ -123,12 +123,31 @@ class FaceRecognitionService:
             ))
         return identified
 
+    def save_face_crop(
+        self, image_path: str, bbox: tuple, event_id: int, face_idx: int
+    ) -> str:
+        """Crop an unrecognised face and save to face_crops directory.
+        bbox is (x, y, w, h) — same format returned by analyze_image().
+        """
+        from PIL import Image, ImageOps
+        img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
+        x, y, w, h = bbox
+        padding = int(max(w, h) * 0.2)
+        x1 = max(0, x - padding)
+        y1 = max(0, y - padding)
+        x2 = min(img.width, x + w + padding)
+        y2 = min(img.height, y + h + padding)
+        crop = img.crop((x1, y1, x2, y2)).resize((200, 200))
+        os.makedirs(settings.face_crops_path, exist_ok=True)
+        path = os.path.join(settings.face_crops_path, f"{event_id}_{face_idx}.jpg")
+        crop.save(path, "JPEG")
+        return path
+
     def add_person(self, name: str, image_path: str) -> dict:
         """Detect face in image, store embedding + thumbnail. Returns person dict."""
         import io
         import numpy as np
         from PIL import Image, ImageOps
-        from .database import db
 
         os.makedirs(settings.persons_path, exist_ok=True)
 
@@ -136,7 +155,6 @@ class FaceRecognitionService:
         if not faces:
             raise ValueError("No face detected in the uploaded image")
 
-        # Pick face with highest detection confidence
         best_face = max(faces, key=lambda f: f.det_score)
 
         # Serialize embedding
@@ -144,10 +162,14 @@ class FaceRecognitionService:
         np.save(buf, best_face.embedding)
         embedding_bytes = buf.getvalue()
 
-        # Save to DB first to get ID
-        person_id = db.add_person(name, embedding_bytes, None)
+        # Create person record (no embedding in known_persons)
+        person_id = db.add_person(name)
 
-        # Crop and save thumbnail
+        # Store embedding in DB first — if this fails, let the exception propagate
+        emb_id = db.add_person_embedding(person_id, embedding_bytes, None)
+
+        # Crop and save thumbnail (file I/O failures are non-fatal)
+        thumb_path = None
         try:
             img = ImageOps.exif_transpose(Image.open(image_path)).convert("RGB")
             x, y, w, h = best_face.bbox
@@ -157,30 +179,37 @@ class FaceRecognitionService:
             x2 = min(img.width, x + w + padding)
             y2 = min(img.height, y + h + padding)
             thumb = img.crop((x1, y1, x2, y2)).resize((200, 200))
-            thumb_path = os.path.join(settings.persons_path, f"{person_id}.jpg")
-            thumb.save(thumb_path, "JPEG")
+            tmp_thumb = os.path.join(settings.persons_path, f"{person_id}_tmp.jpg")
+            thumb.save(tmp_thumb, "JPEG")
+            thumb_path = os.path.join(settings.persons_path, f"{person_id}_{emb_id}.jpg")
+            os.rename(tmp_thumb, thumb_path)
+            db.update_person_embedding_thumbnail(emb_id, thumb_path)
             db.update_person_thumbnail(person_id, thumb_path)
         except Exception as e:
             logger.warning("Failed to save person thumbnail", error=str(e))
-            thumb_path = None
 
-        # Update in-memory cache
-        self._embeddings_cache[person_id] = best_face.embedding
+        # Update cache
+        self._refresh_embeddings_cache_sync()
 
         return {"id": person_id, "name": name, "thumbnail_path": thumb_path}
 
     def delete_person(self, person_id: int) -> bool:
-        """Remove person from DB and cache."""
-        from .database import db
+        """Remove person from DB and cache, deleting all thumbnail files."""
+        # Collect all thumbnail paths before deletion
+        embeddings = db.get_person_embeddings(person_id)
+        thumb_paths = [e["thumbnail_path"] for e in embeddings if e["thumbnail_path"]]
         deleted = db.delete_person(person_id)
         if deleted:
-            self._embeddings_cache.pop(person_id, None)
-            thumb = os.path.join(settings.persons_path, f"{person_id}.jpg")
-            try:
-                if os.path.exists(thumb):
-                    os.remove(thumb)
-            except Exception:
-                pass
+            self._embeddings_cache = {
+                k: v for k, v in self._embeddings_cache.items()
+                if v[0] != person_id
+            }
+            for thumb in thumb_paths:
+                try:
+                    if os.path.exists(thumb):
+                        os.remove(thumb)
+                except Exception:
+                    pass
         return deleted
 
     def refresh_embeddings_cache(self) -> None:

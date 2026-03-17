@@ -124,3 +124,41 @@ def test_identify_faces_picks_best_person_not_best_embedding():
     with patch('src.face_recognition_service.settings', mock_settings):
         results = svc.identify_faces([face])
     assert results[0].name == "Alice"
+
+
+def test_save_face_crop_creates_file(tmp_path):
+    """save_face_crop must write a JPEG to face_crops_path."""
+    from PIL import Image
+    from src.face_recognition_service import FaceRecognitionService
+
+    # Create a dummy image
+    img = Image.new("RGB", (200, 200), color=(128, 64, 32))
+    img_path = str(tmp_path / "test_img.jpg")
+    img.save(img_path, "JPEG")
+
+    svc = FaceRecognitionService.__new__(FaceRecognitionService)
+    mock_settings = MagicMock()
+    mock_settings.face_crops_path = str(tmp_path / "crops")
+
+    with patch('src.face_recognition_service.settings', mock_settings):
+        path = svc.save_face_crop(img_path, (10, 10, 80, 80), event_id=42, face_idx=0)
+
+    assert os.path.isfile(path)
+    assert "42_0.jpg" in path
+    saved = Image.open(path)
+    assert saved.size == (200, 200)
+
+
+def test_save_face_crop_uses_event_idx_naming(tmp_path):
+    """File name must be {event_id}_{face_idx}.jpg."""
+    from PIL import Image
+    from src.face_recognition_service import FaceRecognitionService
+    img = Image.new("RGB", (300, 300))
+    img_path = str(tmp_path / "img.jpg")
+    img.save(img_path, "JPEG")
+    svc = FaceRecognitionService.__new__(FaceRecognitionService)
+    mock_settings = MagicMock()
+    mock_settings.face_crops_path = str(tmp_path / "crops")
+    with patch('src.face_recognition_service.settings', mock_settings):
+        path = svc.save_face_crop(img_path, (0, 0, 100, 100), event_id=7, face_idx=2)
+    assert path.endswith("7_2.jpg")
