@@ -733,53 +733,241 @@ async def get_face_recognition_status():
 
 @app.get("/api/persons")
 async def get_persons():
-    """Get all known persons."""
+    """Get all known persons with their sample embeddings."""
     persons = db.get_persons()
-    return {"persons": persons}
+    result = []
+    for p in persons:
+        embeddings = db.get_person_embeddings(p["id"])
+        thumb_url = (
+            f"/api/persons/{p['id']}/thumbnail"
+            if p.get("thumbnail_path")
+            else None
+        )
+        samples = [
+            {
+                "id": e["id"],
+                "thumbnail_path": (
+                    f"/api/persons/{p['id']}/samples/{e['id']}/thumbnail"
+                ),
+                "created_at": e["created_at"],
+            }
+            for e in embeddings
+        ]
+        result.append({
+            "id": p["id"],
+            "name": p["name"],
+            "thumbnail_path": thumb_url,
+            "sample_count": len(samples),
+            "samples": samples,
+        })
+    return {"persons": result}
 
 
-@app.post("/api/persons")
+@app.post("/api/persons", status_code=201)
 async def add_person(name: str = Form(...), image: UploadFile = File(...)):
     """Add a known person from an uploaded image."""
-    if not settings.face_recognition_enabled or not face_recognition_service.is_ready():
-        raise HTTPException(status_code=503, detail="Face recognition is not enabled or not ready")
+    if not settings.face_recognition_enabled:
+        raise HTTPException(
+            status_code=503, detail="Face recognition is not enabled"
+        )
+    name = name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name must not be empty")
+    import tempfile
+    suffix = os.path.splitext(image.filename or ".jpg")[1] or ".jpg"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await image.read())
+        tmp_path = tmp.name
     try:
-        import tempfile
-        suffix = os.path.splitext(image.filename or ".jpg")[1] or ".jpg"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            tmp.write(await image.read())
-            tmp_path = tmp.name
-        try:
-            person = await asyncio.to_thread(face_recognition_service.add_person, name.strip(), tmp_path)
-        finally:
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-        return {"success": True, "person": person}
+        person = await asyncio.to_thread(
+            face_recognition_service.add_person, name, tmp_path
+        )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.error("Error adding person", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+    # Return full person shape
+    embeddings = db.get_person_embeddings(person["id"])
+    samples = [
+        {
+            "id": e["id"],
+            "thumbnail_path": (
+                f"/api/persons/{person['id']}/samples/{e['id']}/thumbnail"
+            ),
+            "created_at": e["created_at"],
+        }
+        for e in embeddings
+    ]
+    return {
+        "id": person["id"],
+        "name": person["name"],
+        "thumbnail_path": (
+            f"/api/persons/{person['id']}/thumbnail"
+            if person.get("thumbnail_path")
+            else None
+        ),
+        "sample_count": len(samples),
+        "samples": samples,
+    }
 
 
-@app.delete("/api/persons/{person_id}")
+@app.patch("/api/persons/{person_id}")
+async def rename_person(person_id: int, request: Request):
+    """Rename a known person."""
+    import sqlite3 as _sqlite3
+    data = await request.json()
+    name = data.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name must not be empty")
+    person = db.get_person(person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+    with _sqlite3.connect(db.db_path) as conn:
+        conn.execute(
+            "UPDATE known_persons SET name = ? WHERE id = ?",
+            (name, person_id),
+        )
+        conn.commit()
+    face_recognition_service.refresh_embeddings_cache()
+    return {"id": person_id, "name": name}
+
+
+@app.delete("/api/persons/{person_id}", status_code=204)
 async def delete_person(person_id: int):
-    """Delete a known person."""
-    deleted = await asyncio.to_thread(face_recognition_service.delete_person, person_id)
+    """Delete a known person and all their sample thumbnails."""
+    deleted = await asyncio.to_thread(
+        face_recognition_service.delete_person, person_id
+    )
     if not deleted:
         raise HTTPException(status_code=404, detail="Person not found")
-    return {"success": True, "person_id": person_id}
 
 
 @app.get("/api/persons/{person_id}/thumbnail")
 async def get_person_thumbnail(person_id: int):
-    """Serve person thumbnail image."""
-    thumb_path = os.path.join(settings.persons_path, f"{person_id}.jpg")
-    if os.path.isfile(thumb_path):
-        return FileResponse(thumb_path)
-    raise HTTPException(status_code=404, detail="Thumbnail not found")
+    """Serve person avatar thumbnail -- reads path from DB."""
+    person = db.get_person(person_id)
+    if not person or not person.get("thumbnail_path"):
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    if not os.path.isfile(person["thumbnail_path"]):
+        raise HTTPException(status_code=404, detail="Thumbnail file missing")
+    return FileResponse(person["thumbnail_path"])
+
+
+@app.get("/api/persons/{person_id}/samples/{emb_id}/thumbnail")
+async def get_sample_thumbnail(person_id: int, emb_id: int):
+    """Serve a specific sample thumbnail."""
+    rows = db.get_person_embeddings(person_id)
+    emb = next((e for e in rows if e["id"] == emb_id), None)
+    if not emb or not emb.get("thumbnail_path"):
+        raise HTTPException(
+            status_code=404, detail="Sample thumbnail not found"
+        )
+    if not os.path.isfile(emb["thumbnail_path"]):
+        raise HTTPException(status_code=404, detail="Thumbnail file missing")
+    return FileResponse(emb["thumbnail_path"])
+
+
+@app.post("/api/persons/{person_id}/samples", status_code=201)
+async def add_person_sample(
+    person_id: int, image: UploadFile = File(...)
+):
+    """Add another face sample to an existing person."""
+    if not settings.face_recognition_enabled:
+        raise HTTPException(
+            status_code=503, detail="Face recognition is not enabled"
+        )
+    person = db.get_person(person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+    import tempfile
+    import io as _io
+    import numpy as np
+    from PIL import Image, ImageOps
+    suffix = os.path.splitext(image.filename or ".jpg")[1] or ".jpg"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await image.read())
+        tmp_path = tmp.name
+    try:
+        faces = await asyncio.to_thread(
+            face_recognition_service.analyze_image, tmp_path
+        )
+        if not faces:
+            raise HTTPException(
+                status_code=422, detail="No face detected in uploaded image"
+            )
+        best_face = max(faces, key=lambda f: f.det_score)
+        buf = _io.BytesIO()
+        np.save(buf, best_face.embedding)
+        emb_bytes = buf.getvalue()
+        # Crop thumbnail
+        os.makedirs(settings.persons_path, exist_ok=True)
+        img_pil = ImageOps.exif_transpose(
+            Image.open(tmp_path)
+        ).convert("RGB")
+        x, y, w, h = best_face.bbox
+        padding = int(max(w, h) * 0.2)
+        crop = img_pil.crop((
+            max(0, x - padding),
+            max(0, y - padding),
+            min(img_pil.width, x + w + padding),
+            min(img_pil.height, y + h + padding),
+        )).resize((200, 200))
+        tmp_thumb = os.path.join(
+            settings.persons_path, f"{person_id}_tmp.jpg"
+        )
+        crop.save(tmp_thumb, "JPEG")
+        emb_id = db.add_person_embedding(person_id, emb_bytes, None)
+        final_thumb = os.path.join(
+            settings.persons_path, f"{person_id}_{emb_id}.jpg"
+        )
+        os.rename(tmp_thumb, final_thumb)
+        db.update_person_embedding_thumbnail(emb_id, final_thumb)
+        # Set avatar if currently NULL
+        if not person.get("thumbnail_path"):
+            db.update_person_thumbnail(person_id, final_thumb)
+        face_recognition_service.refresh_embeddings_cache()
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
+    return {
+        "id": emb_id,
+        "person_id": person_id,
+        "thumbnail_path": (
+            f"/api/persons/{person_id}/samples/{emb_id}/thumbnail"
+        ),
+        "created_at": None,
+    }
+
+
+@app.delete("/api/persons/{person_id}/samples/{emb_id}", status_code=204)
+async def delete_person_sample(person_id: int, emb_id: int):
+    """Remove a face sample from a person."""
+    rows = db.get_person_embeddings(person_id)
+    emb = next((e for e in rows if e["id"] == emb_id), None)
+    if not emb:
+        raise HTTPException(status_code=404, detail="Sample not found")
+    # Delete thumbnail file
+    if emb.get("thumbnail_path"):
+        try:
+            os.remove(emb["thumbnail_path"])
+        except Exception:
+            pass
+    db.delete_person_embedding(emb_id)
+    # Update avatar if this was the avatar
+    person = db.get_person(person_id)
+    if person and person.get("thumbnail_path") == emb.get("thumbnail_path"):
+        remaining = db.get_person_embeddings(person_id)
+        new_thumb = remaining[0]["thumbnail_path"] if remaining else None
+        db.update_person_thumbnail(person_id, new_thumb)
+    face_recognition_service.refresh_embeddings_cache()
 
 
 @app.get("/api/events/{event_id}/faces")
