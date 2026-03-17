@@ -1,5 +1,6 @@
 """Tests for HomeAssistantAPI.call_llmvision()."""
-import os, sys
+import os
+import sys
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -9,12 +10,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 def ha_api():
     from src.utils import HomeAssistantAPI
     return HomeAssistantAPI()
-
-
-async def _make_post_response(json_data):
-    resp = MagicMock()
-    resp.json.return_value = json_data
-    return resp
 
 
 @pytest.mark.asyncio
@@ -105,3 +100,18 @@ async def test_call_llmvision_missing_response_text_falls_back_to_default(ha_api
             )
     assert text == "Someone is at the door"
     assert title == "Visitor"
+
+
+@pytest.mark.parametrize("name,expected", [
+    ("mobile_app_phone", "image"),
+    ("telegram_bot", "image"),
+    ("html5_chrome", "image"),
+    ("tts_google_cloud", "audio"),
+    ("alexa_media_bedroom", "audio"),
+    ("google_home", "audio"),
+    ("pushover", "full"),
+    ("notify", "full"),
+])
+def test_classify_notify_service(name, expected):
+    from src.utils import classify_notify_service
+    assert classify_notify_service(name) == expected
