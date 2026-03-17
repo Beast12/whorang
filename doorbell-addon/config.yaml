@@ -14,7 +14,7 @@ map:
   - "share:rw"
   - "ssl"
   - "media:rw"
-  - "config:ro"
+  - "config:rw"
 options:
   camera_entity: ""
   camera_url: "rtsp://192.168.1.100:554/stream"
