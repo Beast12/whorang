@@ -14,6 +14,24 @@ logger = structlog.get_logger()
 
 _UNSAFE_FILENAME_RE = re.compile(r'[<>:"/\\|?*]')
 
+_AUDIO_ONLY_PREFIXES = ("tts_", "alexa_media_", "google_")
+_IMAGE_CAPABLE_PREFIXES = ("mobile_app_", "telegram_", "html5_")
+
+
+def classify_notify_service(name: str) -> str:
+    """Classify a notify service name (without domain prefix).
+
+    Returns 'image' (rich payload with image URL), 'audio' (message only),
+    or 'full' (full payload, HA may ignore unsupported data fields).
+    """
+    for prefix in _IMAGE_CAPABLE_PREFIXES:
+        if name.startswith(prefix):
+            return "image"
+    for prefix in _AUDIO_ONLY_PREFIXES:
+        if name.startswith(prefix):
+            return "audio"
+    return "full"
+
 
 class HomeAssistantAPI:
     """Home Assistant API client for integration."""
@@ -94,6 +112,38 @@ class HomeAssistantAPI:
             "temperature": float(attributes["temperature"]) if "temperature" in attributes else None,
             "humidity": float(attributes["humidity"]) if "humidity" in attributes else None,
         }
+
+    async def call_llmvision(
+        self,
+        image_file: str,
+        provider: str,
+        model: str,
+        prompt: str,
+        max_tokens: int,
+    ) -> tuple:
+        """Call llmvision.image_analyzer via the supervisor API.
+
+        Returns (response_text, title). Falls back to (default_message, "Doorbell")
+        when the call fails or the response is malformed. Timeout is 10 s (set in _post).
+        """
+        response = await self._post(
+            "/services/llmvision/image_analyzer",
+            {
+                "return_response": True,
+                "provider": provider,
+                "model": model,
+                "message": prompt,
+                "image_file": image_file,
+                "max_tokens": max_tokens,
+                "temperature": 0.2,
+            },
+        )
+        if not response:
+            return settings.default_message, "Doorbell"
+        svc = response.json().get("service_response", {})
+        text = svc.get("response_text") or settings.default_message
+        title = svc.get("title") or "Doorbell"
+        return text, title
 
 
 class NotificationManager:
