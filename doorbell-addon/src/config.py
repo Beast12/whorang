@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.137"
+    app_version: ClassVar[str] = "1.0.138"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property

@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration
 name: "WhoRang Doorbell"
-version: "1.0.137"
+version: "1.0.138"
 slug: "doorbell_face_recognition"
 description: "Doorbell event history with image capture and weather integration"
 url: "https://github.com/Beast12/whorang"
