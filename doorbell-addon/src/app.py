@@ -964,6 +964,128 @@ async def delete_person_sample(person_id: int, emb_id: int):
     face_recognition_service.refresh_embeddings_cache()
 
 
+# ── Face Crops Inbox ──────────────────────────────────────────────────────────
+
+
+@app.get("/api/face-crops")
+async def get_face_crops(dismissed: bool = False, count_only: bool = False):
+    """Get unrecognised face crops inbox."""
+    if not settings.face_recognition_enabled:
+        return {"count": 0} if count_only else {"crops": []}
+    if count_only:
+        return {"count": db.get_face_crop_count(dismissed=dismissed)}
+    crops = db.get_face_crops(dismissed=dismissed)
+    result = []
+    for c in crops:
+        result.append({
+            "id": c["id"],
+            "event_id": c["event_id"],
+            "image_path": f"/api/face-crops/{c['id']}/image",
+            "dismissed": bool(c["dismissed"]),
+            "created_at": c["created_at"],
+            "event_timestamp": c["event_timestamp"],
+        })
+    return {"crops": result}
+
+
+@app.get("/api/face-crops/{crop_id}/image")
+async def get_face_crop_image(crop_id: int):
+    """Serve a face crop image."""
+    crop = db.get_face_crop(crop_id)
+    if not crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+    if not os.path.isfile(crop["image_path"]):
+        raise HTTPException(status_code=404, detail="Crop file missing")
+    return FileResponse(crop["image_path"])
+
+
+@app.post("/api/face-crops/{crop_id}/dismiss", status_code=204)
+async def dismiss_face_crop(crop_id: int):
+    """Dismiss a face crop without assigning."""
+    crop = db.get_face_crop(crop_id)
+    if not crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+    db.dismiss_face_crop(crop_id)
+
+
+@app.post("/api/face-crops/{crop_id}/assign")
+async def assign_face_crop(crop_id: int, request: Request):
+    """Assign a face crop to an existing person or create a new one."""
+    if not settings.face_recognition_enabled:
+        raise HTTPException(status_code=503, detail="Face recognition is not enabled")
+    data = await request.json()
+    has_person_id = "person_id" in data
+    has_name = bool("name" in data and data["name"])
+    if has_person_id == has_name:  # both or neither
+        raise HTTPException(
+            status_code=422,
+            detail="Provide exactly one of person_id or name",
+        )
+    crop = db.get_face_crop(crop_id)
+    if not crop:
+        raise HTTPException(status_code=404, detail="Crop not found")
+
+    created_person_id = None
+    if has_name:
+        created_person_id = db.add_person(data["name"].strip())
+        person_id = created_person_id
+    else:
+        person_id = int(data["person_id"])
+
+    try:
+        faces = await asyncio.to_thread(
+            face_recognition_service.analyze_image, crop["image_path"]
+        )
+        if not faces:
+            if created_person_id:
+                db.delete_person(created_person_id)
+            raise HTTPException(status_code=422, detail="No face detected in crop image")
+
+        best_face = max(faces, key=lambda f: f.det_score)
+        import io as _io
+        import numpy as np
+        buf = _io.BytesIO()
+        np.save(buf, best_face.embedding)
+        emb_bytes = buf.getvalue()
+
+        os.makedirs(settings.persons_path, exist_ok=True)
+        from PIL import Image, ImageOps
+        img_pil = ImageOps.exif_transpose(
+            Image.open(crop["image_path"])
+        ).convert("RGB")
+        x, y, w, h = best_face.bbox
+        padding = int(max(w, h) * 0.2)
+        thumb = img_pil.crop((
+            max(0, x - padding), max(0, y - padding),
+            min(img_pil.width, x + w + padding), min(img_pil.height, y + h + padding),
+        )).resize((200, 200))
+        tmp_thumb = os.path.join(settings.persons_path, f"{person_id}_tmp.jpg")
+        thumb.save(tmp_thumb, "JPEG")
+        emb_id = db.add_person_embedding(person_id, emb_bytes, None)
+        final_thumb = os.path.join(settings.persons_path, f"{person_id}_{emb_id}.jpg")
+        os.rename(tmp_thumb, final_thumb)
+        db.update_person_embedding_thumbnail(emb_id, final_thumb)
+        person = db.get_person(person_id)
+        if person and not person.get("thumbnail_path"):
+            db.update_person_thumbnail(person_id, final_thumb)
+        db.dismiss_face_crop(crop_id)
+        face_recognition_service.refresh_embeddings_cache()
+
+        name = data.get("name") or (person["name"] if person else "Unknown")
+        return {"person_id": person_id, "embedding_id": emb_id, "name": name}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        if created_person_id:
+            try:
+                db.delete_person(created_person_id)
+            except Exception:
+                pass
+        logger.error("Error assigning face crop", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/events/{event_id}/faces")
 async def get_event_faces(event_id: int):
     """Get face data for a specific event."""
