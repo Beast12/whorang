@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.149] - 2026-03-18
+
+### Fixed
+- **llmvision payload aligned with schema** — removed `temperature` (not a valid field in the llmvision service schema); added `include_filename: false` (required field per schema, was missing)
+
 ## [1.0.148] - 2026-03-18
 
 ### Added

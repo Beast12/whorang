@@ -145,7 +145,7 @@ class HomeAssistantAPI:
                 "message": prompt,
                 "image_file": image_file,
                 "max_tokens": max_tokens,
-                "temperature": 0.2,
+                "include_filename": False,
             },
         )
         if not response:
