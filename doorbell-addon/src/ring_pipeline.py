@@ -86,7 +86,6 @@ async def run_ring_pipeline(
             return await ha_api.call_llmvision(
                 image_file=os.path.join(settings.public_image_path, public_filename),
                 provider=settings.llmvision_provider,
-                model=settings.llmvision_model,
                 prompt=settings.llmvision_prompt,
                 max_tokens=settings.llmvision_max_tokens,
             )

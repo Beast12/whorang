@@ -445,7 +445,6 @@ async def get_settings():
         "app_version": settings.app_version,
         "llmvision_enabled": settings.llmvision_enabled,
         "llmvision_provider": settings.llmvision_provider,
-        "llmvision_model": settings.llmvision_model,
         "llmvision_prompt": settings.llmvision_prompt,
         "llmvision_max_tokens": settings.llmvision_max_tokens,
         "default_message": settings.default_message,
@@ -487,8 +486,6 @@ async def update_settings(request: Request):
             settings.llmvision_enabled = bool(data["llmvision_enabled"])
         if "llmvision_provider" in data:
             settings.llmvision_provider = data["llmvision_provider"] or None
-        if "llmvision_model" in data:
-            settings.llmvision_model = data["llmvision_model"]
         if "llmvision_prompt" in data:
             settings.llmvision_prompt = data["llmvision_prompt"]
         if "llmvision_max_tokens" in data:

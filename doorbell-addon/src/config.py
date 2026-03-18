@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     # AI description (llmvision)
     llmvision_enabled: bool = os.getenv("LLMVISION_ENABLED", "false").lower() == "true"
     llmvision_provider: Optional[str] = os.getenv("LLMVISION_PROVIDER")
-    llmvision_model: str = os.getenv("LLMVISION_MODEL", "gpt-4o-mini")
     llmvision_prompt: str = os.getenv(
         "LLMVISION_PROMPT",
         "You are my sarcastic funny security guard. Describe what you see in one funny "
@@ -56,7 +55,7 @@ class Settings(BaseSettings):
     ha_access_token: Optional[str] = os.getenv("HA_ACCESS_TOKEN")
 
     # Application settings
-    app_version: ClassVar[str] = "1.0.149"
+    app_version: ClassVar[str] = "1.0.150"
     debug: bool = os.getenv("DEBUG", "true").lower() == "true"
 
     @property
@@ -104,7 +103,6 @@ class Settings(BaseSettings):
         # automation integration
         "llmvision_enabled",
         "llmvision_provider",
-        "llmvision_model",
         "llmvision_prompt",
         "llmvision_max_tokens",
         "default_message",

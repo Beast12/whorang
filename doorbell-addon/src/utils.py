@@ -121,7 +121,6 @@ class HomeAssistantAPI:
         self,
         image_file: str,
         provider: str,
-        model: str,
         prompt: str,
         max_tokens: int,
     ) -> tuple:
@@ -133,7 +132,6 @@ class HomeAssistantAPI:
         logger.info(
             "Calling llmvision",
             provider=provider,
-            model=model,
             image_file=image_file,
             max_tokens=max_tokens,
         )
@@ -141,7 +139,6 @@ class HomeAssistantAPI:
             "/services/llmvision/image_analyzer?return_response=true",
             {
                 "provider": provider,
-                "model": model,
                 "message": prompt,
                 "image_file": image_file,
                 "max_tokens": max_tokens,

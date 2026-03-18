@@ -449,7 +449,6 @@ async function saveAiDescription() {
         const payload = {
             llmvision_enabled: document.getElementById('llmvision-enabled').checked,
             llmvision_provider: document.getElementById('llmvision-provider').value.trim() || null,
-            llmvision_model: document.getElementById('llmvision-model').value.trim(),
             llmvision_prompt: document.getElementById('llmvision-prompt').value,
             llmvision_max_tokens: parseInt(document.getElementById('llmvision-max-tokens').value),
             default_message: document.getElementById('default-message').value.trim(),
