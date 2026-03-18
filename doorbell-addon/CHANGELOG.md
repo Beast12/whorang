@@ -5,6 +5,120 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.142] - 2026-03-17
+
+### Added
+- **LLM Vision descriptions** — optional AI-generated doorbell descriptions via the [llmvision](https://github.com/valentinfrlch/ha-llmvision) Home Assistant integration; configure provider, model, prompt, and max tokens in Settings
+- **Home Assistant push notifications** — select any `notify.*` service from HA; mobile app, Telegram, and HTML5 services receive the doorbell image as an attachment; TTS/Alexa/Google services receive message only
+- **Public Image Path** — configurable directory (e.g. `/config/www`) where a timestamped copy of each snapshot is written; required for AI descriptions and push notification image attachments
+- **Trigger Helper** — Settings card to select your doorbell binary sensor and copy a ready-to-paste HA automation YAML (including `rest_command` definition and trigger)
+- **Discovery API endpoints** — `GET /api/settings/notify-services` and `GET /api/settings/binary-sensors` populate the new Settings dropdowns from live HA data
+- **Dedicated ring pipeline** — `ring_pipeline.py` runs capture → public copy → parallel LLM/face/weather → save event → notifications → HA event as an async pipeline with graceful degradation on each step
+
+### Changed
+- Ring handler in `app.py` is now a thin wrapper that delegates to `run_ring_pipeline()`
+- `config:ro` mapping changed to `config:rw` to allow writing snapshots to `/config/www`
+
+## [1.0.141] - 2026-03-17
+
+### Fixed
+- **Wider face crop padding** — increased padding around face bounding boxes in crops for better recognition context
+- **Square display** in Unrecognised tab — face crop thumbnails now display as squares to prevent distortion
+
+## [1.0.140] - 2026-03-17
+
+### Fixed
+- **Relative URLs in API responses** — image paths and other URLs returned by the API now use relative paths so the ingress proxy routes them correctly regardless of the base URL
+
+## [1.0.139] - 2026-03-17
+
+### Fixed
+- **Doorbell image timing** — use the pre-captured snapshot when `image_path` is passed to the ring endpoint, preventing a second camera capture that could miss the visitor
+
+## [1.0.138] - 2026-03-17
+
+### Added
+- **Multi-sample face recognition** — each known person can have multiple face embeddings for improved recognition accuracy; add more samples from the Unrecognised tab
+- **Unrecognised faces tab** — new tab on the Persons page showing face crops from recent rings that didn't match any known person; promote them to known persons with one click
+- **Nav badge** — live badge on the Persons nav link shows the count of unrecognised faces waiting for review
+- **Face crops inbox** — unrecognised face crops saved to `{storage_path}/face_crops/` after each ring; dedicated API endpoints for listing, promoting, and deleting crops
+
+### Changed
+- Persons page rewritten with two-tab layout (Known / Unrecognised)
+- `person_embeddings` table added to store multiple embeddings per person
+- `face_crops` table added to store unrecognised face crop metadata
+
+## [1.0.137] - 2026-03-16
+
+### Fixed
+- **Face bounding box position** — corrected coordinate conversion from InsightFace's (x1,y1,x2,y2) format to (x,y,w,h) so overlay rectangles align with actual faces in the image
+
+## [1.0.136] - 2026-03-14
+
+### Fixed
+- **CI build_from** — updated `build.yaml` to reference Debian base images for both amd64 and aarch64, matching the Dockerfile switch made in v1.0.135
+
+## [1.0.135] - 2026-03-14
+
+### Changed
+- **Debian base image** — switched from Alpine to Debian-based HA addon base image so `onnxruntime` PyPI wheels install without compatibility shims
+
+### Fixed
+- `onnxruntime` installation failures on Alpine caused by glibc/musl incompatibility
+
+## [1.0.134] - 2026-03-14
+
+### Fixed
+- **onnxruntime on Alpine** — install `onnxruntime` via `apk` (community package) instead of PyPI to avoid glibc wheel incompatibility
+
+## [1.0.133] - 2026-03-13
+
+### Fixed
+- **mypy type errors** introduced in v1.0.132 — corrected type annotations in `face_recognition_service.py` to pass strict mypy checks in CI
+
+## [1.0.132] - 2026-03-13
+
+### Added
+- **Optional face recognition** powered by [InsightFace](https://github.com/deepinsight/insightface) — disabled by default; enable in Settings to identify known persons at the door
+- **Persons page** — manage known persons: upload a photo, name them, and the add-on will recognise them on future rings; unrecognised faces appear in an inbox
+- **Face overlay** — client-side SVG overlay draws bounding boxes and name labels on doorbell images in gallery and dashboard modals
+- **Model selection** — choose `buffalo_sc` (fast), `buffalo_s` (balanced), or `buffalo_l` (accurate); model downloaded once and cached to `{storage_path}/insightface_models/`
+- **Face data stored per event** — `faces_detected` count and `face_data` JSON (name, bbox, similarity score) saved with each doorbell event
+- Face Recognition card added to Settings page with enable toggle, model selector, threshold slider, and link to Persons page
+
+### Notes
+- Enabling face recognition adds ~2–5 s to startup and meaningful CPU load — not recommended for Raspberry Pi unless needed
+- Model loads in the background; the first ring after enabling may skip face analysis if the model hasn't finished loading yet
+
+## [1.0.131] - 2026-03-13
+
+### Changed
+- **HA-native UI redesign** — refreshed web UI to match Home Assistant's design language (colours, typography, card layout)
+
+## [1.0.130] - 2026-03-13
+
+### Changed
+- **Night Watch UI redesign** — complete visual overhaul with dark-themed, high-contrast design optimised for security monitoring use
+
+## [1.0.129] - 2026-03-12
+
+### Fixed
+- **Multi-arch build** — resolved `exec format error` on aarch64 by correcting the `build_from` base image references in `build.yaml`
+
+## [1.0.128] - 2026-03-12
+
+### Fixed
+- **Image name in config.yaml** — corrected the `image:` field to match the actual container image published by the CI pipeline
+
+## [1.0.127] - 2026-03-12
+
+### Removed
+- **dlib-based face recognition** — removed the `face_recognition` / `dlib` dependency that caused recurring build failures on Alpine and aarch64
+
+### Changed
+- Codebase cleanup and optimisation following face recognition removal
+- Fixed HA add-on build workflow and `build.yaml` metadata
+
 ## [1.0.126] - 2025-12-27
 
 ### Changed

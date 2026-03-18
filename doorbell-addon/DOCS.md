@@ -1,309 +1,174 @@
-# Doorbell Face Recognition Add-on - Technical Documentation
+# WhoRang Doorbell — Documentation
 
-This document contains technical details for the WhoRang Doorbell Face Recognition add-on.
+WhoRang captures a snapshot when your doorbell rings, stores the event with weather data and an optional AI-generated description, and shows everything in a clean web UI accessible via Home Assistant ingress.
 
-> **For user documentation, installation, and setup instructions, see the [main README](../README.md).**
+## Quick Start
 
-## Add-on Information
+1. Install the add-on and start it.
+2. Open the web UI via the **WhoRang Doorbell** panel in your HA sidebar.
+3. Go to **Settings** and configure your camera.
+4. Create a minimal HA automation to call the ring endpoint when your doorbell sensor fires (see below).
 
-- **Name**: Doorbell Face Recognition
-- **Version**: 1.0.75
-- **Slug**: `doorbell_face_recognition`
-- **Architecture Support**: amd64, aarch64
-- **Base Image**: ghcr.io/hassio-addons/base:18.1.0
+---
 
-## Directory Structure
+## Triggering a Ring
+
+The add-on exposes a single REST endpoint:
 
 ```
-doorbell-addon/
-├── src/                    # Python source code
-│   ├── app.py             # FastAPI application
-│   ├── config.py          # Configuration management
-│   ├── database.py        # Database models and operations
-│   ├── face_recognition.py # Face recognition logic
-│   ├── ha_camera.py       # Home Assistant camera integration
-│   ├── ha_integration.py  # Home Assistant sensors and events
-│   └── utils.py           # Utility functions
-├── web/                   # Web interface
-│   ├── static/           # CSS, JS, images
-│   └── templates/        # Jinja2 HTML templates
-├── config.yaml           # Add-on configuration
-├── build.yaml            # Docker build configuration
-├── Dockerfile            # Container definition
-├── requirements.txt      # Python dependencies
-├── run.sh               # Startup script
-└── CHANGELOG.md         # Version history
+POST http://localhost:8099/api/doorbell/ring
 ```
 
-## API Endpoints
+The simplest way to call it is with a `rest_command`. Add this to `configuration.yaml`:
 
-### Events
-- `GET /api/events` - List doorbell events
-- `GET /api/events/{id}` - Get specific event
-- `DELETE /api/events` - Delete multiple events
-- `POST /api/doorbell/ring` - Trigger face recognition
+```yaml
+rest_command:
+  doorbell_ring:
+    url: "http://localhost:8099/api/doorbell/ring"
+    method: POST
+```
 
-### Persons
-- `GET /api/persons` - List all persons
-- `POST /api/persons` - Create new person
-- `PUT /api/persons/{id}` - Update person name
-- `DELETE /api/persons/{id}` - Delete person
-- `POST /api/persons/{id}/faces` - Add face image
+Then create a minimal automation:
+
+```yaml
+alias: Doorbell ring
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.YOUR_DOORBELL_SENSOR
+    from: "off"
+    to: "on"
+actions:
+  - action: rest_command.doorbell_ring
+```
+
+The **Trigger Helper** card in Settings can generate this YAML for you — select your binary sensor and click **Copy automation YAML**.
+
+---
+
+## Settings
+
+All settings are managed through the **Settings** page in the web UI. Changes are saved to `settings.json` and persist across restarts.
 
 ### Camera
-- `GET /api/camera/entities` - List available camera entities
-- `POST /api/camera/capture` - Manual camera capture
-- `POST /api/camera/test` - Test camera connection
 
-### Settings
-- `GET /api/settings` - Get current settings
-- `POST /api/settings` - Update settings
+| Setting | Description |
+|---------|-------------|
+| Camera Entity | HA camera entity (`camera.front_door`) — recommended |
+| Camera URL | Direct RTSP or HTTP URL — fallback if no entity |
 
-### Weather
-- `GET /api/weather-entities` - List weather entities
+### AI Description (requires llmvision integration)
 
-### System
-- `GET /api/stats` - System statistics
-- `GET /health` - Health check
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Enable AI description | off | Call llmvision to describe who's at the door |
+| Provider ID | — | Your llmvision provider (e.g. `openai`) |
+| Model | `gpt-4o-mini` | LLM model to use |
+| Prompt | sarcastic one-liner | Sent with the image to the LLM |
+| Max tokens | 100 | Maximum response length |
+| Default message | `Someone is at the door` | Used when AI is disabled or fails |
 
-## Database Schema
+> **Note:** AI description requires **Public Image Path** to be set, and the [llmvision](https://github.com/valentinfrlch/ha-llmvision) Home Assistant integration to be installed.
 
-### Tables
+### Notifications
 
-**persons**
-- `id` INTEGER PRIMARY KEY
-- `name` TEXT UNIQUE NOT NULL
-- `created_at` TIMESTAMP
-- `updated_at` TIMESTAMP
+**HA Push** — select any `notify.*` services loaded from HA. Each ring sends a push notification with the AI description and a doorbell image. Mobile app, Telegram, and HTML5 services receive the image; TTS/Alexa/Google services receive the message only.
 
-**face_encodings**
-- `id` INTEGER PRIMARY KEY
-- `person_id` INTEGER (FK to persons)
-- `encoding` TEXT (encrypted 128-D face vector)
-- `confidence` REAL
-- `created_at` TIMESTAMP
+**Webhook / Gotify** — optional webhook URL. Supports Gotify (`/message?token=...`) and generic POST webhooks.
 
-**doorbell_events**
-- `id` INTEGER PRIMARY KEY
-- `timestamp` TIMESTAMP
-- `image_path` TEXT
-- `person_id` INTEGER (FK to persons, nullable)
-- `confidence` REAL (nullable)
-- `is_known` BOOLEAN
-- `processed` BOOLEAN
-- `ai_message` TEXT (nullable)
-- `weather_condition` TEXT (nullable)
-- `weather_temperature` REAL (nullable)
-- `weather_humidity` REAL (nullable)
+### Public Image
 
-## Configuration Options
+Directory where the add-on writes a timestamped copy of each doorbell snapshot (e.g. `/config/www`). Files written here are served by HA at `/local/<filename>` and are required for:
+- AI description (llmvision reads the file directly)
+- Image attachments in push notifications
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `camera_entity` | string | "" | Home Assistant camera entity ID |
-| `camera_url` | string | Required | RTSP or HTTP camera URL |
-| `storage_path` | string | `/share/doorbell` | Storage location |
-| `retention_days` | int | 30 | Event retention period (1-365) |
-| `face_confidence_threshold` | float | 0.6 | Recognition threshold (0.1-1.0) |
-| `notification_webhook` | string | "" | Webhook URL for notifications |
-| `database_encryption` | bool | false | Enable face data encryption |
-| `ha_access_token` | string | "" | Home Assistant long-lived token |
+### Storage
 
-## Environment Variables
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Storage Path | `/share/doorbell` | Where events, images, and the database are stored |
+| Retention Days | 30 | Events older than this are automatically deleted |
 
-The add-on uses these environment variables (set automatically by Home Assistant):
+### Face Recognition (optional)
 
-- `HASSIO_TOKEN` - Supervisor API token
-- `SUPERVISOR_TOKEN` - Alternative supervisor token
-- `CAMERA_URL` - Camera stream URL
-- `CAMERA_ENTITY` - Camera entity ID
-- `STORAGE_PATH` - Data storage path
-- `RETENTION_DAYS` - Event retention days
-- `FACE_CONFIDENCE_THRESHOLD` - Recognition threshold
-- `NOTIFICATION_WEBHOOK` - Webhook URL
-- `DATABASE_ENCRYPTION` - Encryption flag
-- `HA_ACCESS_TOKEN` - Home Assistant API token
-- `WEATHER_ENTITY` - Weather entity ID
+Powered by [InsightFace](https://github.com/deepinsight/insightface). Disabled by default — enabling it adds ~2–5 s to startup and meaningful CPU load. Not recommended for Raspberry Pi unless needed.
 
-## Dependencies
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Enable | off | Load the InsightFace model at startup |
+| Model | `buffalo_sc` | `buffalo_sc` (fast), `buffalo_s` (balanced), `buffalo_l` (accurate) |
+| Threshold | 0.45 | Cosine similarity threshold for identity matching |
 
-### Python Packages
-- `fastapi==0.104.1` - Web framework
-- `uvicorn[standard]==0.24.0` - ASGI server
-- `face-recognition>=1.3.0` - Face recognition library
-- `opencv-python-headless>=4.9.0.80` - Image processing
-- `dlib>=19.24.2` - Machine learning toolkit
-- `numpy>=1.24.0` - Numerical computing
-- `sqlalchemy==2.0.23` - Database ORM
-- `cryptography>=42.0.0` - Encryption
-- `pydantic==2.5.0` - Data validation
-- `structlog==23.2.0` - Structured logging
+Manage known persons via the **Persons** page: upload a photo, give the person a name, and the add-on will recognise them on future rings. Unrecognised faces appear in the **Unrecognised** tab where you can promote them to known persons.
 
-### System Packages
-- `python3` - Python runtime
-- `ffmpeg` - Video processing
-- `gstreamer` - Streaming media framework
-- `py3-opencv` - OpenCV system package
-- `gcc`, `g++`, `cmake` - Build tools
-- `blas-dev`, `lapack-dev`, `gfortran` - Math libraries
+### Home Assistant
 
-## Face Recognition Technical Details
+| Setting | Description |
+|---------|-------------|
+| HA Access Token | Long-lived token — only needed when running outside the supervisor |
 
-### Algorithm
-- Uses dlib's ResNet-based face detection
-- Extracts 128-dimensional face encodings
-- Compares using Euclidean distance
-- Configurable tolerance threshold
+### Trigger Helper
 
-### Performance
-- Face detection: ~1-3 seconds per image
-- Face encoding: ~0.5-1 second per face
-- Face comparison: ~0.01 seconds per known face
-- Memory usage: ~100-200MB base + ~1MB per known face
+Select your doorbell binary sensor and click **Copy automation YAML** to get a ready-to-paste HA automation including both the `rest_command` definition and the automation trigger.
 
-### Accuracy
-- Face detection: ~95% accuracy in good lighting
-- Face recognition: ~99% accuracy with quality training images
-- False positive rate: <1% with default threshold (0.6)
-
-## Storage
-
-### File Locations
-- **Database**: `/share/doorbell/database/doorbell.db`
-- **Images**: `/share/doorbell/images/`
-- **Face thumbnails**: `/share/doorbell/faces/`
-- **Config**: `/share/doorbell/config/settings.json`
-- **Encryption key**: `/share/doorbell/database/.key`
-
-### Storage Requirements
-- Database: ~1MB per 1000 events
-- Images: ~200KB per event (JPEG)
-- Face encodings: ~1KB per face
-- Estimated: ~200MB per 1000 events
+---
 
 ## Home Assistant Integration
 
-### Sensors Created
-- `sensor.doorbell_last_event`
-- `sensor.doorbell_known_faces_today`
-- `sensor.doorbell_unknown_faces_today`
-- `sensor.doorbell_total_events`
-- `sensor.doorbell_person_detected`
-- `sensor.doorbell_confidence`
+The add-on registers sensors and fires events automatically on each ring.
 
-### Events Fired
-- `doorbell_face_detected` - Any face detected
-- `doorbell_known_person` - Known person recognized
-- `doorbell_unknown_person` - Unknown person detected
+### Sensors
 
-### Event Data Structure
+- `sensor.whorang_last_event_id`
+- `sensor.whorang_last_event_time`
+- `sensor.whorang_total_events`
+
+### Event fired
+
+`doorbell_ring` — fired after every ring with:
+
 ```json
 {
-  "event_id": 123,
-  "timestamp": "2024-10-24T12:00:00",
-  "person_id": 5,
-  "person_name": "John Doe",
-  "confidence": 0.92,
-  "faces_detected": 1,
-  "image_path": "/share/doorbell/images/doorbell_20241024_120000.jpg",
-  "image_url": "https://ha.example.com/local/doorbell_snapshot_123.jpg",
-  "ai_message": "Just a friendly neighbor stopping by",
-  "weather_condition": "sunny",
-  "weather_temperature": 22.5,
-  "weather_humidity": 65
+  "event_id": 42,
+  "timestamp": "2026-03-18T10:30:00",
+  "image_path": "/share/doorbell/images/doorbell_20260318_103000.jpg",
+  "ai_message": "A suspicious-looking package delivery person"
 }
 ```
 
-## Security
+---
 
-### Authentication
-- Uses Home Assistant ingress authentication
-- Supervisor token for API access
-- Optional long-lived token for external access
+## Storage Layout
 
-### Data Protection
-- Optional AES-256 encryption for face encodings
-- Local processing only - no cloud services
-- Secure key storage with restricted permissions
-- HTTPS through Home Assistant proxy
-
-### Privacy
-- All data stored locally
-- No external API calls (except optional AI/weather)
-- Face data encrypted at rest (if enabled)
-- Configurable data retention
-
-## Logging
-
-### Log Levels
-- `INFO` - Normal operations
-- `WARNING` - Non-critical issues
-- `ERROR` - Errors requiring attention
-- `DEBUG` - Detailed debugging (disabled by default)
-
-### Log Locations
-- Container logs: `docker logs addon_doorbell_face_recognition`
-- Home Assistant logs: Settings → System → Logs
-- Structured logging with context fields
-
-## Troubleshooting
-
-### Common Issues
-
-**Face recognition not loading:**
-- Check if dlib/face_recognition installed correctly
-- Verify sufficient RAM available
-- Check container logs for import errors
-
-**Camera connection fails:**
-- Test RTSP URL with VLC
-- Verify network connectivity
-- Check camera credentials
-- Try Home Assistant camera entity instead
-
-**High CPU usage:**
-- Face recognition is CPU-intensive
-- Consider reducing capture frequency
-- Use event-driven approach (not continuous)
-- Upgrade to more powerful hardware
-
-**Database errors:**
-- Check disk space
-- Verify write permissions
-- Disable encryption if causing issues
-- Check for corrupted database file
-
-## Development
-
-### Local Testing
-See [TESTING.md](TESTING.md) for local development setup.
-
-### Building
-```bash
-docker build -t doorbell-face-recognition .
+```
+/share/doorbell/
+├── database/doorbell.db       SQLite event database
+├── images/                    Doorbell snapshots
+├── persons/                   Known person thumbnails
+├── face_crops/                Unrecognised face crops (inbox)
+├── insightface_models/        InsightFace model cache (downloaded once)
+└── config/settings.json       Persisted settings
 ```
 
-### Linting
-```bash
-flake8 src/
-black src/
-isort --profile black src/
-mypy src/ --config-file mypy.ini
-```
+---
 
-## Version History
+## Configuration Options (config.yaml)
 
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+These are the initial defaults. All settings can be changed from the web UI after first start.
 
-## License
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `camera_entity` | string | `""` | HA camera entity ID |
+| `camera_url` | string | — | RTSP or HTTP camera URL |
+| `storage_path` | string | `/share/doorbell` | Storage location |
+| `retention_days` | int (1–365) | `30` | Event retention period |
+| `notification_webhook` | string | `""` | Gotify / webhook URL |
+| `ha_access_token` | string | `""` | HA long-lived access token |
+| `face_recognition_enabled` | bool | `false` | Enable InsightFace |
+| `face_recognition_model` | string | `buffalo_sc` | InsightFace model |
 
-MIT License - see [LICENSE](../LICENSE) file.
+---
 
-## Links
+## Support
 
-- **Main Documentation**: [../README.md](../README.md)
-- **Automation Examples**: [AUTOMATION.md](AUTOMATION.md)
-- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
-- **Testing Guide**: [TESTING.md](TESTING.md)
-- **GitHub Repository**: https://github.com/Beast12/whorang
 - **Issues**: https://github.com/Beast12/whorang/issues
+- **Repository**: https://github.com/Beast12/whorang
