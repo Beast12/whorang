@@ -607,6 +607,23 @@ async def get_llmvision_providers():
         return {"providers": []}
 
 
+@app.get("/api/settings/llmvision-schema")
+async def get_llmvision_schema():
+    """Return the raw llmvision service schema from HA — useful for diagnosing field name issues."""
+    try:
+        ha_api = HomeAssistantAPI()
+        response = await ha_api._get("/services")
+        if not response:
+            return {"error": "Could not reach HA services API"}
+        domains = {d["domain"]: d["services"] for d in response.json()}
+        llmvision_svcs = domains.get("llmvision")
+        if not llmvision_svcs:
+            return {"error": "llmvision domain not found — is the integration installed?"}
+        return {"services": llmvision_svcs}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/api/settings/notify-services")
 async def get_notify_services():
     """Fetch and classify notify.* services from HA. Returns empty list on failure."""

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.146] - 2026-03-18
+
+### Fixed
+- **llmvision error details now logged** — the HA API response body is included in the error log when a service call returns 4xx/5xx, making it possible to see exactly which field HA rejects
+
+### Added
+- `GET /api/settings/llmvision-schema` diagnostic endpoint — returns the raw llmvision service schema from HA so the exact field names and selectors can be inspected without guessing
+
 ## [1.0.145] - 2026-03-18
 
 ### Fixed

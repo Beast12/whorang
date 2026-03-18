@@ -52,6 +52,10 @@ class HomeAssistantAPI:
                 )
                 response.raise_for_status()
                 return response
+        except httpx.HTTPStatusError as e:
+            body = e.response.text[:500] if e.response is not None else ""
+            logger.error("HA API POST failed", path=path, error=str(e), response_body=body)
+            return None
         except Exception as e:
             logger.error("HA API POST failed", path=path, error=str(e))
             return None
