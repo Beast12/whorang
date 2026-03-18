@@ -588,6 +588,25 @@ async def get_available_weather_entities():
         return {"entities": []}
 
 
+@app.get("/api/settings/llmvision-providers")
+async def get_llmvision_providers():
+    """Fetch llmvision config entries from HA. Returns empty list on failure."""
+    try:
+        ha_api = HomeAssistantAPI()
+        response = await ha_api._get("/config/config_entries/entry")
+        if not response:
+            return {"providers": []}
+        providers = [
+            {"id": e["entry_id"], "title": e["title"]}
+            for e in response.json()
+            if e.get("domain") == "llmvision"
+        ]
+        return {"providers": providers}
+    except Exception as e:
+        logger.warning("Failed to fetch llmvision providers", error=str(e))
+        return {"providers": []}
+
+
 @app.get("/api/settings/notify-services")
 async def get_notify_services():
     """Fetch and classify notify.* services from HA. Returns empty list on failure."""

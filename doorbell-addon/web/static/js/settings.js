@@ -7,6 +7,7 @@ const API = {
     cameraTest: 'api/camera/test',
     notifyServices: 'api/settings/notify-services',
     binarySensors: 'api/settings/binary-sensors',
+    llmvisionProviders: 'api/settings/llmvision-providers',
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -36,6 +37,7 @@ function initializeSettings() {
         updateCameraStatus();
         window._currentNotifyServices = (data && data.ha_notify_services) || [];
         loadNotifyServices();
+        loadLlmvisionProviders();
         loadDropdownOptions(
             'trigger-entity',
             API.binarySensors,
@@ -420,6 +422,17 @@ async function loadNotifyServices() {
     } catch (e) {
         container.innerHTML = '<span class="text-danger small">Error loading services.</span>';
     }
+}
+
+async function loadLlmvisionProviders() {
+    loadDropdownOptions(
+        'llmvision-provider',
+        API.llmvisionProviders,
+        data => data.providers || [],
+        p => ({ value: p.id, label: p.title }),
+        'No llmvision providers found',
+        'Error loading providers'
+    );
 }
 
 function checkAiPublicPathWarning() {

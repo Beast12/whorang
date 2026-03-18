@@ -210,11 +210,18 @@
                 </div>
                 <div id="llmvision-fields">
                     <div class="mb-3">
-                        <label for="llmvision-provider" class="form-label">Provider ID</label>
-                        <input type="text" class="form-control font-mono" id="llmvision-provider"
-                            value="{{ settings.llmvision_provider or '' }}"
-                            placeholder="e.g. openai">
-                        <div class="form-text">The llmvision provider configured in your HA integration</div>
+                        <label for="llmvision-provider" class="form-label">Provider</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select font-mono" id="llmvision-provider"
+                                data-current-value="{{ settings.llmvision_provider or '' }}">
+                                <option value="">Loading…</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                                onclick="loadLlmvisionProviders()" title="Refresh providers">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Select your llmvision integration provider</div>
                     </div>
                     <div class="mb-3">
                         <label for="llmvision-model" class="form-label">Model</label>

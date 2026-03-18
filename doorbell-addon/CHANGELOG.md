@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.144] - 2026-03-18
+
+### Fixed
+- **llmvision 400 Bad Request** — the `provider` field now sends the config entry ID (UUID) instead of a free-text string like `"openai"`; the llmvision integration's `image_analyzer` service uses a `config_entry` selector that requires the entry UUID
+
+### Added
+- **llmvision provider dropdown** — the Provider field in AI Description settings is now a dropdown populated live from HA config entries; shows the display name (e.g. "OpenAI", "Google Gemini") and saves the correct entry ID automatically
+
 ## [1.0.143] - 2026-03-18
 
 ### Changed
