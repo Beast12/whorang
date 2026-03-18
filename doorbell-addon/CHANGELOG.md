@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.143] - 2026-03-18
+
+### Changed
+- **Documentation update** — rewrote `DOCS.md` (the add-on info tab) to reflect the current feature set; the previous version described the removed dlib face recognition system from v1.0.125 and earlier
+- **Changelog backfill** — added missing entries for v1.0.127 through v1.0.142
+
 ## [1.0.142] - 2026-03-17
 
 ### Added
