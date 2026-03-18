@@ -131,9 +131,8 @@ class HomeAssistantAPI:
         when the call fails or the response is malformed. Timeout is 10 s (set in _post).
         """
         response = await self._post(
-            "/services/llmvision/image_analyzer",
+            "/services/llmvision/image_analyzer?return_response=true",
             {
-                "return_response": True,
                 "provider": provider,
                 "model": model,
                 "message": prompt,
