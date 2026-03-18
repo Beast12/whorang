@@ -782,6 +782,38 @@ async def get_persons():
     return {"persons": result}
 
 
+@app.get("/api/persons/{person_id}")
+async def get_person(person_id: int):
+    """Get a single person with their sample embeddings."""
+    persons = db.get_persons()
+    p = next((x for x in persons if x["id"] == person_id), None)
+    if not p:
+        raise HTTPException(status_code=404, detail="Person not found")
+    embeddings = db.get_person_embeddings(p["id"])
+    thumb_url = (
+        f"api/persons/{p['id']}/thumbnail"
+        if p.get("thumbnail_path")
+        else None
+    )
+    samples = [
+        {
+            "id": e["id"],
+            "thumbnail_path": f"api/persons/{p['id']}/samples/{e['id']}/thumbnail",
+            "created_at": e["created_at"],
+        }
+        for e in embeddings
+    ]
+    return {
+        "persons": [{
+            "id": p["id"],
+            "name": p["name"],
+            "thumbnail_path": thumb_url,
+            "sample_count": len(samples),
+            "samples": samples,
+        }]
+    }
+
+
 @app.post("/api/persons", status_code=201)
 async def add_person(name: str = Form(...), image: UploadFile = File(...)):
     """Add a known person from an uploaded image."""
