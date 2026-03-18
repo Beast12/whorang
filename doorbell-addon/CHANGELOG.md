@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.151] - 2026-03-18
+
+### Added
+- **Clickable known persons** — clicking a person's avatar or name on the Persons page opens a modal showing all stored face samples with individual delete buttons and upload dates
+- **Add sample from modal** — "Add sample" button in the person detail modal lets you upload additional face samples without leaving the page
+- **In-place modal refresh** — deleting a sample while the modal is open refreshes only the modal grid instead of reloading the full page
+
 ## [1.0.150] - 2026-03-18
 
 ### Changed

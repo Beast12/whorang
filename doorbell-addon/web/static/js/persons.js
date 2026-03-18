@@ -125,10 +125,131 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!confirm('Remove this sample?')) return;
         fetch('api/persons/' + personId + '/samples/' + embId, { method: 'DELETE' })
             .then(function (r) {
-                if (r.ok) location.reload();
-                else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
+                if (r.ok) {
+                    // Refresh modal if open for this person, otherwise reload
+                    if (_modalPersonId === personId) {
+                        loadModalSamples(personId);
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
+                }
             });
     };
+
+    // ── Person detail modal ────────────────────────────────────────────────
+    var _modalPersonId = null;
+    var _modalBsInstance = null;
+
+    window.openPersonDetail = function (personId, name) {
+        _modalPersonId = personId;
+        var el = document.getElementById('person-detail-modal');
+        if (!el) return;
+        document.getElementById('modal-person-name').textContent = name;
+        document.getElementById('modal-sample-count').textContent = '';
+        document.getElementById('modal-samples-grid').innerHTML = '';
+        document.getElementById('modal-samples-grid').style.display = 'grid';
+        document.getElementById('modal-no-samples').style.display = 'none';
+        document.getElementById('modal-loading').style.display = '';
+        document.getElementById('modal-add-sample-btn').onclick = function () { addSampleFromModal(personId); };
+        _modalBsInstance = _modalBsInstance || new bootstrap.Modal(el);
+        _modalBsInstance.show();
+        loadModalSamples(personId);
+    };
+
+    function loadModalSamples(personId) {
+        var grid = document.getElementById('modal-samples-grid');
+        var noSamples = document.getElementById('modal-no-samples');
+        var loading = document.getElementById('modal-loading');
+        var countEl = document.getElementById('modal-sample-count');
+        if (!grid) return;
+        if (loading) loading.style.display = '';
+        grid.innerHTML = '';
+
+        fetch('api/persons/' + personId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (loading) loading.style.display = 'none';
+                var p = (data.persons || []).find(function (x) { return x.id === personId; });
+                if (!p) return;
+                var samples = p.samples || [];
+                if (countEl) countEl.textContent = samples.length + ' sample' + (samples.length !== 1 ? 's' : '');
+                if (samples.length === 0) {
+                    grid.style.display = 'none';
+                    if (noSamples) noSamples.style.display = '';
+                    return;
+                }
+                grid.style.display = 'grid';
+                if (noSamples) noSamples.style.display = 'none';
+                samples.forEach(function (s) {
+                    var item = document.createElement('div');
+                    item.style.cssText = 'position:relative';
+                    var date = s.created_at
+                        ? '<div style="font-size:10px;color:#666;margin-top:4px;text-align:center">' +
+                          new Date(s.created_at).toLocaleDateString() + '</div>'
+                        : '';
+                    item.innerHTML =
+                        '<img src="' + s.thumbnail_path + '" ' +
+                        'style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid #38bdf840" ' +
+                        'onerror="this.style.background=\'#333\'">' +
+                        '<button onclick="deleteSample(' + personId + ',' + s.id + ')" ' +
+                        'style="position:absolute;top:4px;right:4px;background:#33333380;border:none;' +
+                        'border-radius:50%;width:22px;height:22px;font-size:11px;color:#fff;cursor:pointer;' +
+                        'display:flex;align-items:center;justify-content:center" title="Remove sample">✕</button>' +
+                        date;
+                    grid.appendChild(item);
+                });
+                // Also sync the inline card strip
+                var cardStrip = document.getElementById('sample-strip-' + personId);
+                var cardCount = document.getElementById('sample-count-' + personId);
+                if (cardCount) cardCount.textContent = samples.length + ' sample' + (samples.length !== 1 ? 's' : '');
+                if (cardStrip) {
+                    cardStrip.innerHTML = '';
+                    samples.forEach(function (s) {
+                        var wrap = document.createElement('div');
+                        wrap.style.cssText = 'position:relative';
+                        wrap.innerHTML =
+                            '<img src="' + s.thumbnail_path + '" ' +
+                            'style="width:34px;height:34px;border-radius:4px;border:1px solid #38bdf860;object-fit:cover" ' +
+                            'onerror="this.style.background=\'#333\'">' +
+                            '<div onclick="deleteSample(' + personId + ',' + s.id + ')" ' +
+                            'style="position:absolute;top:-4px;right:-4px;background:#333;border-radius:50%;' +
+                            'width:14px;height:14px;font-size:9px;display:flex;align-items:center;' +
+                            'justify-content:center;cursor:pointer;color:#aaa">✕</div>';
+                        cardStrip.appendChild(wrap);
+                    });
+                    // Add sample button
+                    var addBtn = document.createElement('div');
+                    addBtn.onclick = function () { addSampleFromModal(personId); };
+                    addBtn.style.cssText = 'width:34px;height:34px;border-radius:4px;border:1px dashed #38bdf860;' +
+                        'display:flex;align-items:center;justify-content:center;color:#38bdf8;font-size:18px;cursor:pointer';
+                    addBtn.textContent = '+';
+                    cardStrip.appendChild(addBtn);
+                }
+            })
+            .catch(function () {
+                if (loading) loading.style.display = 'none';
+                grid.innerHTML = '<p style="color:#f87171;font-size:12px;grid-column:1/-1">Error loading samples</p>';
+            });
+    }
+
+    function addSampleFromModal(personId) {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.addEventListener('change', function () {
+            if (!input.files[0]) return;
+            var fd = new FormData();
+            fd.append('image', input.files[0]);
+            fetch('api/persons/' + personId + '/samples', { method: 'POST', body: fd })
+                .then(function (r) {
+                    if (r.ok) loadModalSamples(personId);
+                    else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
+                });
+        });
+        input.click();
+    }
 
     // ── Add sample ─────────────────────────────────────────────────────────
     window.addSample = function (personId) {

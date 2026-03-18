@@ -44,10 +44,14 @@
             <!-- Avatar + name row -->
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
                 <img src="api/persons/{{ person.id }}/thumbnail"
+                     onclick="openPersonDetail({{ person.id }}, '{{ person.name|replace("'", "\\'") }}')"
                      style="width:40px;height:40px;border-radius:50%;object-fit:cover;
-                            border:2px solid #38bdf8;flex-shrink:0"
-                     onerror="this.outerHTML='<div style=\'width:40px;height:40px;border-radius:50%;background:#6c757d;border:2px solid #38bdf8;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold\'>{{ person.name[0]|upper }}</div>'">
-                <div style="flex:1;min-width:0">
+                            border:2px solid #38bdf8;flex-shrink:0;cursor:pointer"
+                     title="View samples"
+                     onerror="this.outerHTML='<div onclick=\'openPersonDetail({{ person.id }}, &quot;{{ person.name|replace("\"", "\\&quot;") }}&quot;)\' style=\'width:40px;height:40px;border-radius:50%;background:#6c757d;border:2px solid #38bdf8;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;cursor:pointer\' title=\'View samples\'>{{ person.name[0]|upper }}</div>'">
+                <div style="flex:1;min-width:0;cursor:pointer"
+                     onclick="openPersonDetail({{ person.id }}, '{{ person.name|replace("'", "\\'") }}')"
+                     title="View samples">
                     <div id="person-name-{{ person.id }}"
                          style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                         {{ person.name }}
@@ -138,6 +142,41 @@
 </div>
 
 {% endblock %}
+
+<!-- Person detail modal -->
+<div class="modal fade" id="person-detail-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:#1c1c1f;border:1px solid #38bdf840;color:#e5e7eb">
+            <div class="modal-header" style="border-bottom:1px solid #333;padding:12px 16px">
+                <div>
+                    <h6 class="modal-title mb-0" id="modal-person-name" style="font-size:15px;font-weight:600"></h6>
+                    <div id="modal-sample-count" style="font-size:11px;color:#888;margin-top:2px"></div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="margin-left:auto"></button>
+            </div>
+            <div class="modal-body" style="padding:16px">
+                <div id="modal-samples-grid"
+                     style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+                <div id="modal-no-samples"
+                     style="display:none;text-align:center;padding:24px;color:#666;font-size:13px">
+                    No samples stored yet
+                </div>
+                <div id="modal-loading"
+                     style="text-align:center;padding:24px;color:#666;font-size:13px">
+                    Loading…
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #333;padding:10px 16px;justify-content:space-between">
+                <button id="modal-add-sample-btn" type="button"
+                        style="background:#38bdf820;border:1px solid #38bdf860;border-radius:6px;
+                               padding:5px 12px;font-size:12px;color:#38bdf8;cursor:pointer">
+                    <i class="bi bi-plus-circle"></i> Add sample
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% block extra_scripts %}
 <script>
