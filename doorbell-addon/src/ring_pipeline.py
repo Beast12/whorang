@@ -67,13 +67,19 @@ async def run_ring_pipeline(
     # ── Step 3: Parallel analysis ──────────────────────────────────────────
     async def _llm_call() -> tuple:
         if ai_message is not None:
+            logger.debug("LLM skipped — ai_message provided by caller")
             return ai_message, "Doorbell"
-        if not (
-            settings.llmvision_enabled
-            and settings.llmvision_provider
-            and settings.public_image_path
-            and public_filename
-        ):
+        if not settings.llmvision_enabled:
+            logger.debug("LLM skipped — llmvision_enabled=false")
+            return settings.default_message, "Doorbell"
+        if not settings.llmvision_provider:
+            logger.debug("LLM skipped — no provider configured")
+            return settings.default_message, "Doorbell"
+        if not settings.public_image_path:
+            logger.debug("LLM skipped — no public_image_path configured")
+            return settings.default_message, "Doorbell"
+        if not public_filename:
+            logger.debug("LLM skipped — public image write failed")
             return settings.default_message, "Doorbell"
         ha_api = HomeAssistantAPI()
         try:

@@ -130,6 +130,13 @@ class HomeAssistantAPI:
         Returns (response_text, title). Falls back to (default_message, "Doorbell")
         when the call fails or the response is malformed. Timeout is 10 s (set in _post).
         """
+        logger.info(
+            "Calling llmvision",
+            provider=provider,
+            model=model,
+            image_file=image_file,
+            max_tokens=max_tokens,
+        )
         response = await self._post(
             "/services/llmvision/image_analyzer?return_response=true",
             {
@@ -143,7 +150,9 @@ class HomeAssistantAPI:
         )
         if not response:
             return settings.default_message, "Doorbell"
-        svc = response.json().get("service_response", {})
+        raw = response.json()
+        logger.debug("llmvision raw response", response=raw)
+        svc = raw.get("service_response", {})
         text = svc.get("response_text") or settings.default_message
         title = svc.get("title") or "Doorbell"
         return text, title

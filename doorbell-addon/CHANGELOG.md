@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.148] - 2026-03-18
+
+### Added
+- **llmvision call logging** — logs provider, model, and image path at info level before calling the service; logs the full raw response at debug level
+- **LLM skip reason logging** — logs the specific reason the LLM call is skipped (disabled, no provider, no public path, write failed) to make configuration issues visible in the log
+
 ## [1.0.147] - 2026-03-18
 
 ### Fixed
