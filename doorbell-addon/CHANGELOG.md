@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.153] - 2026-03-19
+
+### Fixed
+- **Double ring / duplicate events** — added 10-second debounce to `POST /api/doorbell/ring`; a second call within 10 s of a processed ring is silently ignored (logged as debounced). Prevents duplicate events and notifications caused by doorbell buttons that fire multiple HA events per physical press.
+
 ## [1.0.152] - 2026-03-18
 
 ### Fixed

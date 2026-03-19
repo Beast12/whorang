@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import time
 from datetime import datetime
 from typing import Any, List, Optional
 
@@ -81,6 +82,9 @@ class IngressAuthMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
+_RING_DEBOUNCE_SECS = 10
+_last_ring_time: float = 0.0
 
 app = FastAPI(
     title="WhoRang Doorbell API",
@@ -343,6 +347,13 @@ async def doorbell_ring(
     image_path: Optional[str] = Form(None),
 ):
     """Handle a doorbell ring event — capture image, run pipeline, return result."""
+    global _last_ring_time
+    now = time.monotonic()
+    if now - _last_ring_time < _RING_DEBOUNCE_SECS:
+        elapsed = round(now - _last_ring_time, 1)
+        logger.info("Ring debounced — too soon after last ring", elapsed_secs=elapsed)
+        return {"success": True, "message": "Debounced — ring already processed", "debounced": True}
+    _last_ring_time = now
     logger.info("Doorbell ring event received", ai_message=ai_message)
     try:
         result = await run_ring_pipeline(image_path=image_path, ai_message=ai_message)
