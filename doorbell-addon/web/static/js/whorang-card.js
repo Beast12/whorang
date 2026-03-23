@@ -120,11 +120,33 @@ class WhoRangCard extends HTMLElement {
   }
 
   disconnectedCallback() {
-    // implemented in Task 4
+    this._unsubscribeEvent();
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+      this._pollInterval = null;
+    }
+    // Reset subscription flag so set hass re-subscribes if the card is re-inserted.
+    this._subscribed = false;
   }
 
   set hass(hass) {
-    // implemented in Task 4
+    // Guard — only act on the first hass assignment.
+    if (this._subscribed) return;
+    this._subscribed = true;
+
+    // Fetch immediately on first assignment.
+    this._fetchLastEvent();
+
+    // Subscribe to doorbell_ring HA events for instant updates.
+    // The payload is intentionally ignored — a fresh fetch avoids DB write races.
+    try {
+      hass.connection
+        .subscribeEvents(() => { this._fetchLastEvent(); }, 'doorbell_ring')
+        .then((unsub) => { this._unsubscribeEvent = unsub; })
+        .catch(() => { /* silent — polling covers it */ });
+    } catch (_) {
+      // subscribeEvents not available — polling covers it.
+    }
   }
 
   _startPolling() {
