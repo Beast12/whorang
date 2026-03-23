@@ -137,20 +137,112 @@ class WhoRangCard extends HTMLElement {
     }, 60000);
   }
 
+  _escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   async _fetchLastEvent() {
-    // implemented in Task 3
+    if (!this._baseUrl) return;
+    try {
+      const resp = await fetch(`${this._baseUrl}/api/events?limit=1`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data.events || data.events.length === 0) {
+        this._state = 'no-events';
+        this._eventData = null;
+      } else {
+        this._state = 'loaded';
+        this._eventData = data.events[0];
+      }
+    } catch (err) {
+      this._state = 'error';
+      this._eventData = null;
+    }
+    this._render();
   }
 
   _render() {
-    // implemented in Task 3
+    const card = this.shadowRoot && this.shadowRoot.querySelector('ha-card');
+    if (!card) return;
+
+    if (this._state === 'loading') {
+      card.innerHTML = `
+        <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
+        <div class="spinner"><ha-circular-progress active></ha-circular-progress></div>
+      `;
+      return;
+    }
+
+    if (this._state === 'no-events') {
+      card.innerHTML = `
+        <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
+        <div class="state-message">No rings recorded yet</div>
+      `;
+      return;
+    }
+
+    if (this._state === 'error') {
+      card.innerHTML = `
+        <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
+        <div class="state-message">Unable to reach WhoRang</div>
+      `;
+      return;
+    }
+
+    // Loaded state
+    const ev = this._eventData;
+    const basename = ev.image_path ? ev.image_path.split('/').pop() : '';
+    const hasImage = basename !== '';
+    const imageUrl = hasImage ? `${this._baseUrl}/api/images/${basename}` : '';
+    const description = this._escapeHtml(ev.ai_message || 'No description available');
+    const timestamp = this._relativeTime(ev.timestamp);
+
+    const imageHtml = hasImage
+      ? `<img src="${imageUrl}" alt="Doorbell image"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : '';
+    const placeholderHtml = `
+      <div class="placeholder-icon" style="${hasImage ? 'display:none' : ''}">
+        <ha-icon icon="mdi:camera-off"></ha-icon>
+      </div>`;
+
+    card.innerHTML = `
+      <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
+      <div class="image-wrapper">
+        ${imageHtml}
+        ${placeholderHtml}
+      </div>
+      <div class="body">
+        <div class="description">${description}</div>
+        <div class="timestamp" id="wr-timestamp">${timestamp}</div>
+      </div>
+    `;
   }
 
   _updateTimestamp() {
-    // implemented in Task 3
+    // No-op if no event loaded yet.
+    if (!this._eventData) return;
+    const el = this.shadowRoot && this.shadowRoot.querySelector('#wr-timestamp');
+    if (el) el.textContent = this._relativeTime(this._eventData.timestamp);
   }
 
   _relativeTime(iso) {
-    // implemented in Task 3
+    const now = Date.now();
+    const then = new Date(iso).getTime();
+    const diffMs = now - then;
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 30) return 'just now';
+    if (diffSecs < 90) return '1m ago';
+    const diffMins = Math.round(diffSecs / 60);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.round(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.round(diffHours / 24);
+    return `${diffDays}d ago`;
   }
 }
 
