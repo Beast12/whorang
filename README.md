@@ -192,6 +192,33 @@ Replace these placeholders:
 3. If you've added people, they should be recognized
 4. View events in the **Gallery** with filtering options
 
+## 🃏 Lovelace Dashboard Card
+
+WhoRang ships a custom Lovelace card that displays the last doorbell ring — image, AI description, and relative timestamp — directly on your dashboard. It updates instantly via WebSocket when a new ring arrives, with 60-second polling as a fallback.
+
+### Setup (one time)
+
+**Step 1 — Register the resource**
+
+Go to **Settings → Dashboards → Resources** and add:
+
+| Field | Value |
+|-------|-------|
+| URL | `/local/whorang-card.js` |
+| Type | JavaScript module |
+
+The add-on copies the card file to `/config/www/` on every startup, so it self-updates with add-on releases.
+
+**Step 2 — Add the card to your dashboard**
+
+```yaml
+type: custom:whorang-card
+```
+
+No other configuration needed. The card auto-discovers the add-on via HA ingress and works on any network — local, Nabu Casa, or reverse proxy.
+
+---
+
 ## 📊 Home Assistant Integration
 
 ### Sensors
