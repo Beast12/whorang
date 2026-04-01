@@ -135,7 +135,7 @@ The add-on copies the file to `/config/www/` on every startup — no manual upda
 type: custom:whorang-card
 ```
 
-No URL configuration required. The card discovers the add-on automatically via HA ingress and works on any network (local, Nabu Casa, reverse proxy).
+No configuration needed. The card discovers the add-on automatically and works on any network (local, Nabu Casa, reverse proxy).
 
 ---
 

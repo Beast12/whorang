@@ -2,12 +2,12 @@
 // Displays the last doorbell ring: image, AI description, timestamp.
 // Auto-updates via HA WebSocket doorbell_ring event + 60s polling fallback.
 // Served by HA at /local/whorang-card.js (copied by run.sh on startup).
-// Uses HA ingress for all API calls — works on any network.
+// Discovers ingress URL automatically via HA WebSocket supervisor/api.
 
 class WhoRangCard extends HTMLElement {
   constructor() {
     super();
-    // Ingress URL discovered at runtime via hass.callApi (e.g. "/api/hassio_ingress/abc123")
+    // Discovered at runtime via HA WebSocket supervisor/api
     this._ingressUrl = null;
 
     // State
@@ -29,8 +29,6 @@ class WhoRangCard extends HTMLElement {
   }
 
   setConfig(config) {
-    // url is no longer required — ingress URL is discovered automatically.
-    // Existing card YAML with url: set will silently ignore the value.
     this.config = config;
   }
 
@@ -138,21 +136,30 @@ class WhoRangCard extends HTMLElement {
   }
 
   async _discoverAndInit(hass) {
-    // Discover ingress URL from HA Supervisor, then fetch and subscribe.
-    // Custom-repo add-ons have a hash prefix in their Supervisor slug
-    // (e.g. "a48cb117_whorang"), so we resolve the full slug from hass.panels
-    // first rather than hard-coding "whorang".
+    // Discover ingress URL via HA's WebSocket supervisor/api channel.
+    // This is how HA's own frontend talks to the Supervisor — more reliable
+    // than REST API calls and works for all user types.
+    //
+    // Step 1: find the full addon slug from hass.panels (no API call needed).
+    // Custom-repo add-ons have a hash prefix, e.g. "a48cb117_whorang".
     try {
       const panel = Object.values(hass.panels || {}).find(p => {
         const path = p.url_path || '';
         return path === 'whorang' || path.endsWith('_whorang');
       });
-      if (!panel) throw new Error('panel not found');
+      const slug = panel ? panel.url_path : 'whorang';
 
-      const info = await hass.callApi('GET', `hassio/addons/${panel.url_path}/info`);
-      const url = info && info.data && info.data.ingress_url;
-      if (!url) throw new Error('ingress_url missing');
-      this._ingressUrl = url;
+      // Step 2: fetch addon info via WebSocket supervisor/api.
+      const info = await hass.connection.sendMessagePromise({
+        type: 'supervisor/api',
+        endpoint: `/addons/${slug}/info`,
+        method: 'GET',
+      });
+
+      // The WebSocket supervisor/api response is the Supervisor data directly.
+      const url = (info && info.ingress_url) || (info && info.data && info.data.ingress_url);
+      if (!url) throw new Error('ingress_url missing from supervisor response');
+      this._ingressUrl = url.replace(/\/$/, '');
     } catch (_) {
       this._state = 'error';
       this._errorMessage = 'WhoRang add-on not found';
@@ -160,10 +167,9 @@ class WhoRangCard extends HTMLElement {
       return;
     }
 
-    // Fetch immediately after discovery.
+    // Step 3: fetch and subscribe now that we have the ingress URL.
     await this._fetchLastEvent();
 
-    // Subscribe to doorbell_ring HA events for instant updates.
     try {
       hass.connection
         .subscribeEvents(() => { this._fetchLastEvent(); }, 'doorbell_ring')

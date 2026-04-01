@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.159] - 2026-04-01
+
+### Fixed
+- `whorang-card`: auto-discovery now uses HA's WebSocket `supervisor/api` channel instead of the REST API — the same mechanism HA's own frontend uses. No configuration required.
+
+## [1.0.158] - 2026-04-01
+
+### Changed
+- `whorang-card`: dropped unreliable auto-discovery of the ingress URL. The card now requires `ingress_path` in the card YAML (e.g. `/api/hassio_ingress/abc123`). Find the value in HA → Add-ons → WhoRang — open the web UI and copy the path from the browser URL bar.
+
 ## [1.0.157] - 2026-04-01
 
 ### Fixed

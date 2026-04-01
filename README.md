@@ -112,7 +112,7 @@ The add-on copies the file to `/config/www/` on every startup — no manual upda
 type: custom:whorang-card
 ```
 
-No URL configuration required. The card discovers the add-on automatically.
+No configuration needed. The card discovers the add-on automatically and works on any network — local, Nabu Casa, or reverse proxy.
 
 ---
 

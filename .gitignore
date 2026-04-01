@@ -1,2 +1,7 @@
-privaterepo.txt.worktrees/
+privaterepo.txt
 .worktrees/
+__pycache__/
+*.pyc
+*.pyo
+.superpowers/
+automatic_backup_*/
