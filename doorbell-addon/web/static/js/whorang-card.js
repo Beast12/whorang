@@ -1,16 +1,19 @@
 // whorang-card.js — WhoRang Lovelace custom card
 // Displays the last doorbell ring: image, AI description, timestamp.
 // Auto-updates via HA WebSocket doorbell_ring event + 60s polling fallback.
+// Served by HA at /local/whorang-card.js (copied by run.sh on startup).
+// Uses HA ingress for all API calls — works on any network.
 
 class WhoRangCard extends HTMLElement {
   constructor() {
     super();
-    // Config
-    this._baseUrl = '';
+    // Ingress URL discovered at runtime via hass.callApi (e.g. "/api/hassio_ingress/abc123")
+    this._ingressUrl = null;
 
     // State
     this._eventData = null;   // last fetched event object or null
     this._state = 'loading';  // 'loading' | 'no-events' | 'loaded' | 'error'
+    this._errorMessage = '';  // displayed in error state
 
     // WebSocket subscription
     this._subscribed = false;
@@ -26,10 +29,8 @@ class WhoRangCard extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!config.url) {
-      throw new Error('WhoRang card: "url" is required. Example: http://192.168.10.28:8099');
-    }
-    this._baseUrl = config.url.replace(/\/$/, '');  // strip trailing slash
+    // url is no longer required — ingress URL is discovered automatically.
+    // Existing card YAML with url: set will silently ignore the value.
     this.config = config;
   }
 
@@ -112,7 +113,7 @@ class WhoRangCard extends HTMLElement {
 
     // Open WhoRang gallery on click anywhere on the card.
     this.shadowRoot.querySelector('ha-card').addEventListener('click', () => {
-      window.open(`${this._baseUrl}/gallery`, '_blank');
+      if (this._ingressUrl) window.open(`${this._ingressUrl}/gallery`, '_blank');
     });
 
     this._render();
@@ -133,12 +134,25 @@ class WhoRangCard extends HTMLElement {
     // Guard — only act on the first hass assignment.
     if (this._subscribed) return;
     this._subscribed = true;
+    this._discoverAndInit(hass);
+  }
 
-    // Fetch immediately on first assignment.
-    this._fetchLastEvent();
+  async _discoverAndInit(hass) {
+    // Discover ingress URL from HA Supervisor, then fetch and subscribe.
+    try {
+      const info = await hass.callApi('GET', 'hassio/addons/whorang/info');
+      this._ingressUrl = info.data.ingress_url;
+    } catch (_) {
+      this._state = 'error';
+      this._errorMessage = 'WhoRang add-on not found';
+      this._render();
+      return;
+    }
+
+    // Fetch immediately after discovery.
+    await this._fetchLastEvent();
 
     // Subscribe to doorbell_ring HA events for instant updates.
-    // The payload is intentionally ignored — a fresh fetch avoids DB write races.
     try {
       hass.connection
         .subscribeEvents(() => { this._fetchLastEvent(); }, 'doorbell_ring')
@@ -152,8 +166,6 @@ class WhoRangCard extends HTMLElement {
   _startPolling() {
     // Idempotent — do nothing if already polling.
     if (this._pollInterval) return;
-    // _fetchLastEvent resolves async and calls _render(), which recalculates
-    // the timestamp. No need to call _updateTimestamp() separately here.
     this._pollInterval = setInterval(() => {
       this._fetchLastEvent();
     }, 60000);
@@ -168,9 +180,9 @@ class WhoRangCard extends HTMLElement {
   }
 
   async _fetchLastEvent() {
-    if (!this._baseUrl) return;
+    if (!this._ingressUrl) return;
     try {
-      const resp = await fetch(`${this._baseUrl}/api/events?limit=1`);
+      const resp = await fetch(`${this._ingressUrl}/api/events?limit=1`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.events || data.events.length === 0) {
@@ -182,6 +194,7 @@ class WhoRangCard extends HTMLElement {
       }
     } catch (err) {
       this._state = 'error';
+      this._errorMessage = 'Unable to reach WhoRang';
       this._eventData = null;
     }
     this._render();
@@ -210,7 +223,7 @@ class WhoRangCard extends HTMLElement {
     if (this._state === 'error') {
       card.innerHTML = `
         <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
-        <div class="state-message">Unable to reach WhoRang</div>
+        <div class="state-message">${this._escapeHtml(this._errorMessage)}</div>
       `;
       return;
     }
@@ -219,7 +232,7 @@ class WhoRangCard extends HTMLElement {
     const ev = this._eventData;
     const basename = ev.image_path ? ev.image_path.split('/').pop() : '';
     const hasImage = basename !== '';
-    const imageUrl = hasImage ? `${this._baseUrl}/api/images/${basename}` : '';
+    const imageUrl = hasImage ? `${this._ingressUrl}/api/images/${basename}` : '';
     const description = this._escapeHtml(ev.ai_message || 'No description available');
     const timestamp = this._relativeTime(ev.timestamp);
 
