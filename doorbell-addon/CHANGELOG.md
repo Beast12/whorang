@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- `whorang-card.js` now works on any network (remote, Nabu Casa, reverse proxy). All API calls are routed through HA ingress instead of directly to the local IP.
+- Lovelace resource URL changes from `http://<ip>:8099/static/js/whorang-card.js` to `/local/whorang-card.js` (the add-on now copies the file to `/config/www/` on startup).
+- Card YAML no longer requires a `url:` field — removed entirely.
+
 ## [1.0.155] - 2026-03-25
 
 ### Changed
