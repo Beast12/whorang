@@ -55,6 +55,11 @@ bashio::log.info "Camera URL: ${CAMERA_URL}"
 bashio::log.info "Storage Path: ${STORAGE_PATH}"
 bashio::log.info "Retention Days: ${RETENTION_DAYS}"
 
+# Copy Lovelace card to HA www folder — served at /local/whorang-card.js
+mkdir -p /config/www
+cp /app/web/static/js/whorang-card.js /config/www/whorang-card.js
+bashio::log.info "Lovelace card copied to /config/www/whorang-card.js"
+
 # Start the application
 cd /app
 exec python3 -m uvicorn src.app:app --host 0.0.0.0 --port 8099 --log-level info
