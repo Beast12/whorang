@@ -139,8 +139,17 @@ class WhoRangCard extends HTMLElement {
 
   async _discoverAndInit(hass) {
     // Discover ingress URL from HA Supervisor, then fetch and subscribe.
+    // Custom-repo add-ons have a hash prefix in their Supervisor slug
+    // (e.g. "a48cb117_whorang"), so we resolve the full slug from hass.panels
+    // first rather than hard-coding "whorang".
     try {
-      const info = await hass.callApi('GET', 'hassio/addons/whorang/info');
+      const panel = Object.values(hass.panels || {}).find(p => {
+        const path = p.url_path || '';
+        return path === 'whorang' || path.endsWith('_whorang');
+      });
+      if (!panel) throw new Error('panel not found');
+
+      const info = await hass.callApi('GET', `hassio/addons/${panel.url_path}/info`);
       const url = info && info.data && info.data.ingress_url;
       if (!url) throw new Error('ingress_url missing');
       this._ingressUrl = url;
