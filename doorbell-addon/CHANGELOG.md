@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.156] - 2026-04-01
 
 ### Changed
 - `whorang-card.js` now works on any network (remote, Nabu Casa, reverse proxy). All API calls are routed through HA ingress instead of directly to the local IP.
