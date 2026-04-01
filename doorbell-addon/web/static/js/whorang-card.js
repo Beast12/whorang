@@ -141,7 +141,9 @@ class WhoRangCard extends HTMLElement {
     // Discover ingress URL from HA Supervisor, then fetch and subscribe.
     try {
       const info = await hass.callApi('GET', 'hassio/addons/whorang/info');
-      this._ingressUrl = info.data.ingress_url;
+      const url = info && info.data && info.data.ingress_url;
+      if (!url) throw new Error('ingress_url missing');
+      this._ingressUrl = url;
     } catch (_) {
       this._state = 'error';
       this._errorMessage = 'WhoRang add-on not found';
@@ -223,7 +225,7 @@ class WhoRangCard extends HTMLElement {
     if (this._state === 'error') {
       card.innerHTML = `
         <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
-        <div class="state-message">${this._escapeHtml(this._errorMessage)}</div>
+        <div class="state-message">${this._escapeHtml(this._errorMessage || 'Unknown error')}</div>
       `;
       return;
     }
@@ -256,13 +258,6 @@ class WhoRangCard extends HTMLElement {
         <div class="timestamp" id="wr-timestamp">${timestamp}</div>
       </div>
     `;
-  }
-
-  _updateTimestamp() {
-    // No-op if no event loaded yet.
-    if (!this._eventData) return;
-    const el = this.shadowRoot && this.shadowRoot.querySelector('#wr-timestamp');
-    if (el) el.textContent = this._relativeTime(this._eventData.timestamp);
   }
 
   _relativeTime(iso) {
