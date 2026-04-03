@@ -124,9 +124,9 @@ Three sensors are created and updated on each ring:
 
 | Sensor | Description |
 |--------|-------------|
-| `sensor.whorang_last_event_id` | ID of the most recent event |
-| `sensor.whorang_last_event_time` | Timestamp of the most recent event |
-| `sensor.whorang_total_events` | Total number of stored events |
+| `sensor.doorbell_last_event` | Timestamp of the most recent ring (attributes: `event_id`, `description`, `image_url`) |
+| `sensor.doorbell_total_events` | Total number of stored rings |
+| `binary_sensor.doorbell_person_detected` | On for 30 s after a ring |
 
 ### Event
 

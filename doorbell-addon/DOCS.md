@@ -145,9 +145,9 @@ The add-on registers sensors and fires events automatically on each ring.
 
 ### Sensors
 
-- `sensor.whorang_last_event_id`
-- `sensor.whorang_last_event_time`
-- `sensor.whorang_total_events`
+- `sensor.doorbell_last_event` — timestamp of last ring; attributes: `event_id`, `description`, `image_url`
+- `sensor.doorbell_total_events` — total rings recorded
+- `binary_sensor.doorbell_person_detected` — on for 30 s after a ring
 
 ### Event fired
 
