@@ -137,40 +137,33 @@ class WhoRangCard extends HTMLElement {
 
   async _discoverAndInit(hass) {
     // Discover ingress URL via HA's WebSocket supervisor/api channel.
-    // This is how HA's own frontend talks to the Supervisor — more reliable
-    // than REST API calls and works for all user types.
-    //
     // Step 1: find the full addon slug from hass.panels (no API call needed).
     // Custom-repo add-ons have a hash prefix, e.g. "a48cb117_whorang".
     try {
-      const panelKeys = Object.keys(hass.panels || {});
-      console.log('[WhoRang] hass.panels keys:', panelKeys);
-
       const panel = Object.values(hass.panels || {}).find(p => {
         const path = p.url_path || '';
         return path === 'whorang' || path.endsWith('_whorang');
       });
       const slug = panel ? panel.url_path : 'whorang';
-      console.log('[WhoRang] resolved slug:', slug, '| panel found:', !!panel);
 
       // Step 2: fetch addon info via WebSocket supervisor/api.
-      console.log('[WhoRang] sending supervisor/api for /addons/' + slug + '/info');
       const info = await hass.connection.sendMessagePromise({
         type: 'supervisor/api',
         endpoint: `/addons/${slug}/info`,
         method: 'GET',
       });
-      console.log('[WhoRang] supervisor/api response:', JSON.stringify(info));
 
-      // The WebSocket supervisor/api response is the Supervisor data directly.
       const url = (info && info.ingress_url) || (info && info.data && info.data.ingress_url);
       if (!url) throw new Error('ingress_url missing from supervisor response');
       this._ingressUrl = url.replace(/\/$/, '');
-      console.log('[WhoRang] ingress URL:', this._ingressUrl);
+
+      // Step 3: establish ingress session cookie so fetch() and <img> can authenticate.
+      // This is what HA's own frontend does before loading any ingress panel.
+      await hass.callApi('POST', 'hassio/ingress/session');
     } catch (err) {
       console.error('[WhoRang] discovery failed:', err);
       this._state = 'error';
-      this._errorMessage = 'WhoRang add-on not found — see DevTools console for details';
+      this._errorMessage = 'WhoRang add-on not found';
       this._render();
       return;
     }
