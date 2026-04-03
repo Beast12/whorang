@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.160] - 2026-04-03
+
+### Fixed
+- `whorang-card`: eliminated all HTTP calls to the add-on. The card now reads last-event data directly from `hass.states['sensor.doorbell_last_event']` — works on any network without authentication issues.
+
+### Changed
+- `sensor.doorbell_last_event` now includes attributes: `event_id`, `description`, `image_url`. The latest ring image is copied to `/config/www/whorang_latest.jpg` (served at `/local/`) on every ring.
+- Lovelace card click navigates to the WhoRang sidebar panel instead of opening a new tab.
+
 ## [1.0.159] - 2026-04-01
 
 ### Fixed
