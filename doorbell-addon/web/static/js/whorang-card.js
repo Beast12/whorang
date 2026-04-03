@@ -169,7 +169,7 @@ class WhoRangCard extends HTMLElement {
     if (this._state === 'no-events') {
       card.innerHTML = `
         <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
-        <div class="state-message">No rings recorded yet</div>
+        <div class="state-message">No rings yet — press your doorbell to record the first event</div>
       `;
       return;
     }
