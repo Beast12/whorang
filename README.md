@@ -1,6 +1,6 @@
 # WhoRang — Doorbell History for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-1.0.156-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.160-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 [![Build](https://github.com/Beast12/whorang/actions/workflows/build.yml/badge.svg)](https://github.com/Beast12/whorang/actions/workflows/build.yml)
@@ -91,7 +91,7 @@ For automations that pass AI descriptions, camera snapshots, or weather data, se
 
 ## Lovelace Dashboard Card
 
-WhoRang ships a custom Lovelace card showing the last ring — image, AI description, and relative timestamp. It updates instantly via WebSocket on each ring, with 60-second polling as fallback. Works on any network (local, Nabu Casa, reverse proxy).
+WhoRang ships a custom Lovelace card showing the last ring — image, AI description, and relative timestamp. It reads data directly from the `sensor.doorbell_last_event` HA sensor, so it updates instantly whenever the sensor changes and works on any network (local, Nabu Casa, reverse proxy) without any authentication issues.
 
 ### Setup (one time)
 
@@ -104,7 +104,7 @@ Go to **Settings → Dashboards → Resources** and add:
 | URL | `/local/whorang-card.js` |
 | Type | JavaScript module |
 
-The add-on copies the file to `/config/www/` on every startup — no manual updates needed.
+The add-on copies the card file to `/config/www/` on every startup — no manual updates needed.
 
 **Step 2 — Add the card**
 
@@ -112,7 +112,7 @@ The add-on copies the file to `/config/www/` on every startup — no manual upda
 type: custom:whorang-card
 ```
 
-No configuration needed. The card discovers the add-on automatically and works on any network — local, Nabu Casa, or reverse proxy.
+No configuration needed. Clicking the card opens the WhoRang gallery in the sidebar.
 
 ---
 
@@ -245,10 +245,13 @@ Any URL in the webhook field receives a POST with this JSON body on each ring:
 - Lower the confidence threshold in Settings (lower = more lenient)
 - Check add-on logs for InsightFace errors
 
-**Card showing spinner or "add-on not found"**
-- Confirm the resource is registered as `/local/whorang-card.js`
-- Restart the add-on once to ensure the file was copied to `/config/www/`
+**Card shows spinner indefinitely**
+- Confirm the resource is registered as `/local/whorang-card.js` (Settings → Dashboards → Resources)
+- Restart the add-on to ensure the card file is copied to `/config/www/`
 - Hard-reload HA in the browser (Ctrl+Shift+R)
+
+**Card shows "No rings yet"**
+- This is normal before the first ring — trigger a ring to populate the card
 
 ---
 

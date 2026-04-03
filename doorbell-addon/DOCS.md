@@ -16,7 +16,7 @@ WhoRang captures a snapshot when your doorbell rings, stores the event with weat
 The add-on exposes a single REST endpoint:
 
 ```
-POST http://localhost:8099/api/doorbell/ring
+POST http://<addon-hostname>:8099/api/doorbell/ring
 ```
 
 The simplest way to call it is with a `rest_command`. Add this to `configuration.yaml`:
@@ -24,9 +24,11 @@ The simplest way to call it is with a `rest_command`. Add this to `configuration
 ```yaml
 rest_command:
   doorbell_ring:
-    url: "http://localhost:8099/api/doorbell/ring"
+    url: "http://<addon-hostname>:8099/api/doorbell/ring"
     method: POST
 ```
+
+> The addon hostname follows the pattern `<hash>-whorang`. Find it on the add-on info page, or use the **Trigger Helper** in the web UI Settings which fills it in automatically.
 
 Then create a minimal automation:
 
@@ -114,7 +116,7 @@ Select your doorbell binary sensor and click **Copy automation YAML** to get a r
 
 ## Lovelace Dashboard Card
 
-WhoRang ships a custom Lovelace card that shows the last doorbell ring (image, description, timestamp) directly on your dashboard. It updates instantly via WebSocket on each ring, with 60-second polling as fallback.
+WhoRang ships a custom Lovelace card that shows the last doorbell ring (image, description, timestamp) directly on your dashboard. It reads from `sensor.doorbell_last_event` and updates instantly whenever a new ring is recorded. Works on any network — local, Nabu Casa, or reverse proxy.
 
 ### Setup (one time)
 
@@ -127,7 +129,7 @@ Go to **Settings → Dashboards → Resources** and add:
 | URL | `/local/whorang-card.js` |
 | Type | JavaScript module |
 
-The add-on copies the file to `/config/www/` on every startup — no manual updates needed.
+The add-on copies the card file to `/config/www/` on every startup — no manual updates needed.
 
 **Step 2 — Add the card**
 
@@ -135,7 +137,7 @@ The add-on copies the file to `/config/www/` on every startup — no manual upda
 type: custom:whorang-card
 ```
 
-No configuration needed. The card discovers the add-on automatically and works on any network (local, Nabu Casa, reverse proxy).
+No configuration needed. Before the first ring the card shows "No rings yet". Clicking the card opens the WhoRang gallery in the HA sidebar.
 
 ---
 
