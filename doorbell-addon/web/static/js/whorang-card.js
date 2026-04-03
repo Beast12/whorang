@@ -1,30 +1,19 @@
 // whorang-card.js — WhoRang Lovelace custom card
 // Displays the last doorbell ring: image, AI description, timestamp.
-// Auto-updates via HA WebSocket doorbell_ring event + 60s polling fallback.
+// Reads data from hass.states['sensor.doorbell_last_event'] — no HTTP calls.
+// The add-on pushes event_id, description, image_url as sensor attributes on each ring.
 // Served by HA at /local/whorang-card.js (copied by run.sh on startup).
-// Discovers ingress URL automatically via HA WebSocket supervisor/api.
 
 class WhoRangCard extends HTMLElement {
   constructor() {
     super();
-    // Discovered at runtime via HA WebSocket supervisor/api
-    this._ingressUrl = null;
-
-    // State
-    this._eventData = null;   // last fetched event object or null
-    this._state = 'loading';  // 'loading' | 'no-events' | 'loaded' | 'error'
-    this._errorMessage = '';  // displayed in error state
-
-    // WebSocket subscription
-    this._subscribed = false;
-    this._unsubscribeEvent = () => {};  // no-op until subscribeEvents resolves
-
-    // Polling
-    this._pollInterval = null;
+    this._lastEventId = undefined; // tracks last rendered event to skip no-op updates
+    this._hass = null;
+    this._state = 'loading'; // 'loading' | 'no-events' | 'loaded'
+    this._eventData = null;  // { description, image_url, timestamp }
   }
 
   getCardSize() {
-    // 16:9 image + header + description ≈ 5 grid rows (~250px). Layout hint only.
     return 5;
   }
 
@@ -36,7 +25,6 @@ class WhoRangCard extends HTMLElement {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: 'open' });
     }
-    // Build initial DOM (loading state); _render() will update it.
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: block; }
@@ -109,84 +97,53 @@ class WhoRangCard extends HTMLElement {
       <ha-card></ha-card>
     `;
 
-    // Open WhoRang gallery on click anywhere on the card.
     this.shadowRoot.querySelector('ha-card').addEventListener('click', () => {
-      if (this._ingressUrl) window.open(`${this._ingressUrl}/gallery`, '_blank');
-    });
-
-    this._render();
-    this._startPolling();
-  }
-
-  disconnectedCallback() {
-    this._unsubscribeEvent();
-    if (this._pollInterval) {
-      clearInterval(this._pollInterval);
-      this._pollInterval = null;
-    }
-    // Reset subscription flag so set hass re-subscribes if the card is re-inserted.
-    this._subscribed = false;
-  }
-
-  set hass(hass) {
-    // Guard — only act on the first hass assignment.
-    if (this._subscribed) return;
-    this._subscribed = true;
-    this._discoverAndInit(hass);
-  }
-
-  async _discoverAndInit(hass) {
-    // Discover ingress URL via HA's WebSocket supervisor/api channel.
-    // Step 1: find the full addon slug from hass.panels (no API call needed).
-    // Custom-repo add-ons have a hash prefix, e.g. "a48cb117_whorang".
-    try {
-      const panel = Object.values(hass.panels || {}).find(p => {
+      if (!this._hass) return;
+      // Navigate to the WhoRang sidebar panel
+      const panel = Object.values(this._hass.panels || {}).find(p => {
         const path = p.url_path || '';
         return path === 'whorang' || path.endsWith('_whorang');
       });
-      const slug = panel ? panel.url_path : 'whorang';
+      if (panel) {
+        this.dispatchEvent(new CustomEvent('hass-navigate', {
+          detail: { path: '/' + panel.url_path },
+          bubbles: true,
+          composed: true,
+        }));
+      }
+    });
 
-      // Step 2: fetch addon info via WebSocket supervisor/api.
-      const info = await hass.connection.sendMessagePromise({
-        type: 'supervisor/api',
-        endpoint: `/addons/${slug}/info`,
-        method: 'GET',
-      });
+    this._render();
+  }
 
-      const url = (info && info.ingress_url) || (info && info.data && info.data.ingress_url);
-      if (!url) throw new Error('ingress_url missing from supervisor response');
-      this._ingressUrl = url.replace(/\/$/, '');
+  set hass(hass) {
+    this._hass = hass;
 
-      // Step 3: establish ingress session cookie so fetch() and <img> can authenticate.
-      // This is what HA's own frontend does before loading any ingress panel.
-      await hass.callApi('POST', 'hassio/ingress/session');
-    } catch (err) {
-      console.error('[WhoRang] discovery failed:', err);
-      this._state = 'error';
-      this._errorMessage = 'WhoRang add-on not found';
-      this._render();
+    const stateObj = hass.states['sensor.doorbell_last_event'];
+    if (!stateObj) {
+      // Sensor not yet registered — keep spinner
       return;
     }
 
-    // Step 3: fetch and subscribe now that we have the ingress URL.
-    await this._fetchLastEvent();
+    const eventId = stateObj.attributes.event_id ?? null;
 
-    try {
-      hass.connection
-        .subscribeEvents(() => { this._fetchLastEvent(); }, 'doorbell_ring')
-        .then((unsub) => { this._unsubscribeEvent = unsub; })
-        .catch(() => { /* silent — polling covers it */ });
-    } catch (_) {
-      // subscribeEvents not available — polling covers it.
+    // Skip re-render if nothing changed
+    if (eventId === this._lastEventId) return;
+    this._lastEventId = eventId;
+
+    if (!eventId || stateObj.state === 'unknown') {
+      this._state = 'no-events';
+      this._eventData = null;
+    } else {
+      this._state = 'loaded';
+      this._eventData = {
+        description: stateObj.attributes.description || '',
+        image_url: stateObj.attributes.image_url || '',
+        timestamp: stateObj.state, // ISO timestamp string
+      };
     }
-  }
 
-  _startPolling() {
-    // Idempotent — do nothing if already polling.
-    if (this._pollInterval) return;
-    this._pollInterval = setInterval(() => {
-      this._fetchLastEvent();
-    }, 60000);
+    this._render();
   }
 
   _escapeHtml(str) {
@@ -195,27 +152,6 @@ class WhoRangCard extends HTMLElement {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-  }
-
-  async _fetchLastEvent() {
-    if (!this._ingressUrl) return;
-    try {
-      const resp = await fetch(`${this._ingressUrl}/api/events?limit=1`);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      if (!data.events || data.events.length === 0) {
-        this._state = 'no-events';
-        this._eventData = null;
-      } else {
-        this._state = 'loaded';
-        this._eventData = data.events[0];
-      }
-    } catch (err) {
-      this._state = 'error';
-      this._errorMessage = 'Unable to reach WhoRang';
-      this._eventData = null;
-    }
-    this._render();
   }
 
   _render() {
@@ -238,24 +174,14 @@ class WhoRangCard extends HTMLElement {
       return;
     }
 
-    if (this._state === 'error') {
-      card.innerHTML = `
-        <div class="header"><ha-icon icon="mdi:doorbell"></ha-icon> WhoRang — Last Ring</div>
-        <div class="state-message">${this._escapeHtml(this._errorMessage || 'Unknown error')}</div>
-      `;
-      return;
-    }
-
     // Loaded state
     const ev = this._eventData;
-    const basename = ev.image_path ? ev.image_path.split('/').pop() : '';
-    const hasImage = basename !== '';
-    const imageUrl = hasImage ? `${this._ingressUrl}/api/images/${basename}` : '';
-    const description = this._escapeHtml(ev.ai_message || 'No description available');
+    const hasImage = !!ev.image_url;
+    const description = this._escapeHtml(ev.description || 'No description available');
     const timestamp = this._relativeTime(ev.timestamp);
 
     const imageHtml = hasImage
-      ? `<img src="${imageUrl}" alt="Doorbell image"
+      ? `<img src="${this._escapeHtml(ev.image_url)}" alt="Doorbell image"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
       : '';
     const placeholderHtml = `
@@ -271,7 +197,7 @@ class WhoRangCard extends HTMLElement {
       </div>
       <div class="body">
         <div class="description">${description}</div>
-        <div class="timestamp" id="wr-timestamp">${timestamp}</div>
+        <div class="timestamp">${timestamp}</div>
       </div>
     `;
   }
@@ -279,16 +205,14 @@ class WhoRangCard extends HTMLElement {
   _relativeTime(iso) {
     const now = Date.now();
     const then = new Date(iso).getTime();
-    const diffMs = now - then;
-    const diffSecs = Math.floor(diffMs / 1000);
+    const diffSecs = Math.floor((now - then) / 1000);
     if (diffSecs < 30) return 'just now';
     if (diffSecs < 90) return '1m ago';
     const diffMins = Math.round(diffSecs / 60);
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHours = Math.round(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.round(diffHours / 24);
-    return `${diffDays}d ago`;
+    return `${Math.round(diffHours / 24)}d ago`;
   }
 }
 
