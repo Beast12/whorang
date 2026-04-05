@@ -92,7 +92,7 @@ For automations that pass AI descriptions, camera snapshots, or weather data, se
 
 ### Sensors
 
-Three sensors are created and updated on each ring:
+Six sensors are registered — five are always created, one only when face recognition is enabled:
 
 | Sensor | Description |
 |--------|-------------|
