@@ -114,40 +114,13 @@ Select your doorbell binary sensor and click **Copy automation YAML** to get a r
 
 ---
 
-## Lovelace Dashboard Card
-
-WhoRang ships a custom Lovelace card that shows the last doorbell ring (image, description, timestamp) directly on your dashboard. It reads from `sensor.doorbell_last_event` and updates instantly whenever a new ring is recorded. Works on any network — local, Nabu Casa, or reverse proxy.
-
-### Setup (one time)
-
-**Step 1 — Register the resource**
-
-Go to **Settings → Dashboards → Resources** and add:
-
-| Field | Value |
-|-------|-------|
-| URL | `/local/whorang-card.js` |
-| Type | JavaScript module |
-
-The add-on copies the card file to `/config/www/` on every startup — no manual updates needed.
-
-**Step 2 — Add the card**
-
-```yaml
-type: custom:whorang-card
-```
-
-No configuration needed. Before the first ring the card shows "No rings yet". Clicking the card opens the WhoRang gallery in the HA sidebar.
-
----
-
 ## Home Assistant Integration
 
 The add-on registers sensors and fires events automatically on each ring.
 
 ### Sensors
 
-- `sensor.doorbell_last_event` — timestamp of last ring; attributes: `event_id`, `description`, `image_url`
+- `sensor.doorbell_last_event` — timestamp of last ring; attributes: `event_id`, `description`
 - `sensor.doorbell_total_events` — total rings recorded
 - `binary_sensor.doorbell_person_detected` — on for 30 s after a ring
 

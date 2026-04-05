@@ -1,8 +1,6 @@
 """Home Assistant integration module for the doorbell addon."""
 
 import asyncio
-import os
-import shutil
 from datetime import datetime
 from typing import Any, Dict
 
@@ -14,23 +12,6 @@ from .utils import notification_manager
 logger = structlog.get_logger()
 
 _PERSON_DETECTED_THRESHOLD_SECS = 30
-_WWW_LATEST_IMAGE = "/config/www/whorang_latest.jpg"
-
-
-def _copy_latest_image(image_path: str) -> bool:
-    """Copy the given image file to /config/www/whorang_latest.jpg.
-
-    Returns True on success, False if the source file does not exist or copy fails.
-    """
-    if not image_path or not os.path.isfile(image_path):
-        return False
-    try:
-        os.makedirs(os.path.dirname(_WWW_LATEST_IMAGE), exist_ok=True)
-        shutil.copy2(image_path, _WWW_LATEST_IMAGE)
-        return True
-    except Exception as exc:
-        logger.warning("Failed to copy latest image to www", src=image_path, error=str(exc))
-        return False
 
 _ENTITIES = [
     {
@@ -110,19 +91,14 @@ class HomeAssistantIntegration:
                 < _PERSON_DETECTED_THRESHOLD_SECS
             )
 
-            # Build last-event attributes for the card to consume from hass.states
+            # Build last-event attributes for automations
             if last_event:
-                image_ok = _copy_latest_image(last_event.image_path)
-                image_url = (
-                    f"/local/whorang_latest.jpg?t={last_event.id}" if image_ok else ""
-                )
                 last_event_attrs = {
                     "friendly_name": "Doorbell Last Event",
                     "icon": "mdi:doorbell-video",
                     "device_class": "timestamp",
                     "event_id": last_event.id,
                     "description": last_event.ai_message or "",
-                    "image_url": image_url,
                 }
             else:
                 last_event_attrs = {
@@ -131,7 +107,6 @@ class HomeAssistantIntegration:
                     "device_class": "timestamp",
                     "event_id": None,
                     "description": "",
-                    "image_url": "",
                 }
 
             await asyncio.gather(

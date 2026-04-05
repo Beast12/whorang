@@ -1,6 +1,6 @@
 # WhoRang — Doorbell History for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-1.0.160-blue.svg)](https://github.com/Beast12/whorang/releases)
+[![Version](https://img.shields.io/badge/version-1.0.161-blue.svg)](https://github.com/Beast12/whorang/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 [![Build](https://github.com/Beast12/whorang/actions/workflows/build.yml/badge.svg)](https://github.com/Beast12/whorang/actions/workflows/build.yml)
@@ -13,7 +13,6 @@ WhoRang is a Home Assistant add-on that captures a doorbell image when your bell
 
 - **Event history** — every ring is stored with image, timestamp, weather snapshot, and an optional comment or AI description
 - **Web UI** — dashboard, gallery with date/person filtering, and settings page accessible via HA ingress
-- **Lovelace card** — custom card showing the last ring directly on any HA dashboard; works remotely via ingress
 - **Face recognition** — optional InsightFace-powered identification of known people (disabled by default)
 - **HA sensors** — three sensors updated on each ring for use in automations and dashboards
 - **Notifications** — HA push notifications and optional Gotify / generic webhook
@@ -89,33 +88,6 @@ For automations that pass AI descriptions, camera snapshots, or weather data, se
 
 ---
 
-## Lovelace Dashboard Card
-
-WhoRang ships a custom Lovelace card showing the last ring — image, AI description, and relative timestamp. It reads data directly from the `sensor.doorbell_last_event` HA sensor, so it updates instantly whenever the sensor changes and works on any network (local, Nabu Casa, reverse proxy) without any authentication issues.
-
-### Setup (one time)
-
-**Step 1 — Register the resource**
-
-Go to **Settings → Dashboards → Resources** and add:
-
-| Field | Value |
-|-------|-------|
-| URL | `/local/whorang-card.js` |
-| Type | JavaScript module |
-
-The add-on copies the card file to `/config/www/` on every startup — no manual updates needed.
-
-**Step 2 — Add the card**
-
-```yaml
-type: custom:whorang-card
-```
-
-No configuration needed. Clicking the card opens the WhoRang gallery in the sidebar.
-
----
-
 ## Home Assistant Integration
 
 ### Sensors
@@ -124,7 +96,7 @@ Three sensors are created and updated on each ring:
 
 | Sensor | Description |
 |--------|-------------|
-| `sensor.doorbell_last_event` | Timestamp of the most recent ring (attributes: `event_id`, `description`, `image_url`) |
+| `sensor.doorbell_last_event` | Timestamp of the most recent ring (attributes: `event_id`, `description`) |
 | `sensor.doorbell_total_events` | Total number of stored rings |
 | `binary_sensor.doorbell_person_detected` | On for 30 s after a ring |
 
@@ -245,13 +217,6 @@ Any URL in the webhook field receives a POST with this JSON body on each ring:
 - Lower the confidence threshold in Settings (lower = more lenient)
 - Check add-on logs for InsightFace errors
 
-**Card shows spinner indefinitely**
-- Confirm the resource is registered as `/local/whorang-card.js` (Settings → Dashboards → Resources)
-- Restart the add-on to ensure the card file is copied to `/config/www/`
-- Hard-reload HA in the browser (Ctrl+Shift+R)
-
-**Card shows "No rings yet"**
-- This is normal before the first ring — trigger a ring to populate the card
 
 ---
 
