@@ -419,6 +419,15 @@ class DatabaseManager:
                 "SELECT COUNT(*) FROM doorbell_events"
             ).fetchone()[0]
 
+    def get_today_event_count(self) -> int:
+        """Return number of doorbell events recorded today (since midnight local time)."""
+        today_midnight = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        with sqlite3.connect(self.db_path) as conn:
+            return conn.execute(
+                "SELECT COUNT(*) FROM doorbell_events WHERE timestamp >= ?",
+                (today_midnight.isoformat(),),
+            ).fetchone()[0]
+
     def get_last_event(self) -> Optional[DoorbellEvent]:
         """Return the most recent doorbell event."""
         with sqlite3.connect(self.db_path) as conn:
