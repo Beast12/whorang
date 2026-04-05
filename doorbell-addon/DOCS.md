@@ -122,7 +122,10 @@ The add-on registers sensors and fires events automatically on each ring.
 
 - `sensor.doorbell_last_event` — timestamp of last ring; attributes: `event_id`, `description`
 - `sensor.doorbell_total_events` — total rings recorded
+- `sensor.doorbell_today_count` — rings recorded today (resets at midnight)
+- `sensor.doorbell_last_weather` — weather at the time of the last ring (e.g. `"sunny, 18°C"`)
 - `binary_sensor.doorbell_person_detected` — on for 30 s after a ring
+- `sensor.doorbell_last_visitor` — name of the last recognised visitor; only created when face recognition is enabled
 
 ### Event fired
 

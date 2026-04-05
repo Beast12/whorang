@@ -98,7 +98,10 @@ Three sensors are created and updated on each ring:
 |--------|-------------|
 | `sensor.doorbell_last_event` | Timestamp of the most recent ring (attributes: `event_id`, `description`) |
 | `sensor.doorbell_total_events` | Total number of stored rings |
+| `sensor.doorbell_today_count` | Number of rings recorded today (resets at midnight) |
+| `sensor.doorbell_last_weather` | Weather at the time of the last ring (e.g. `"sunny, 18°C"`) |
 | `binary_sensor.doorbell_person_detected` | On for 30 s after a ring |
+| `sensor.doorbell_last_visitor` | Name of the last recognised visitor — only created when face recognition is enabled |
 
 ### Event
 
