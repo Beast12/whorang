@@ -1,6 +1,7 @@
 """Home Assistant integration module for the doorbell addon."""
 
 import asyncio
+import json
 from datetime import datetime
 from typing import Any, Dict
 
@@ -122,10 +123,12 @@ class HomeAssistantIntegration:
             # Build last visitor name from face_data JSON
             last_visitor = None
             if settings.face_recognition_enabled and last_event and last_event.face_data:
-                import json as _json
-                faces = _json.loads(last_event.face_data)
-                known = [f["name"] for f in faces if f.get("name") and f["name"] != "Unknown"]
-                last_visitor = known[0] if known else "Unknown"
+                try:
+                    faces = json.loads(last_event.face_data)
+                    known = [f["name"] for f in faces if f.get("name") and f["name"] != "Unknown"]
+                    last_visitor = known[0] if known else "Unknown"
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    last_visitor = None
 
             sensors = [
                 self.ha_api.update_sensor(
