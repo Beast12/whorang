@@ -83,6 +83,7 @@ class HomeAssistantIntegration:
 
             last_event = db.get_last_event()
             total_events = db.get_event_count()
+            today_count = db.get_today_event_count()
             last_event_time = last_event.timestamp.isoformat() if last_event else "unknown"
 
             person_detected = (
@@ -109,7 +110,24 @@ class HomeAssistantIntegration:
                     "description": "",
                 }
 
-            await asyncio.gather(
+            # Build weather state string from last event
+            if last_event and last_event.weather_condition:
+                if last_event.weather_temperature is not None:
+                    weather_state = f"{last_event.weather_condition}, {last_event.weather_temperature:.0f}°C"
+                else:
+                    weather_state = last_event.weather_condition
+            else:
+                weather_state = "unknown"
+
+            # Build last visitor name from face_data JSON
+            last_visitor = None
+            if settings.face_recognition_enabled and last_event and last_event.face_data:
+                import json as _json
+                faces = _json.loads(last_event.face_data)
+                known = [f["name"] for f in faces if f.get("name") and f["name"] != "Unknown"]
+                last_visitor = known[0] if known else "Unknown"
+
+            sensors = [
                 self.ha_api.update_sensor(
                     "sensor.doorbell_last_event",
                     last_event_time,
@@ -121,11 +139,32 @@ class HomeAssistantIntegration:
                     {"friendly_name": "Doorbell Total Events", "icon": "mdi:counter", "unit_of_measurement": "events"},
                 ),
                 self.ha_api.update_sensor(
+                    "sensor.doorbell_today_count",
+                    today_count,
+                    {"friendly_name": "Doorbell Today", "icon": "mdi:calendar-today", "unit_of_measurement": "events"},
+                ),
+                self.ha_api.update_sensor(
+                    "sensor.doorbell_last_weather",
+                    weather_state,
+                    {"friendly_name": "Doorbell Last Weather", "icon": "mdi:weather-partly-cloudy"},
+                ),
+                self.ha_api.update_sensor(
                     "binary_sensor.doorbell_person_detected",
                     "on" if person_detected else "off",
                     {"friendly_name": "Doorbell Person Detected", "device_class": "occupancy", "icon": "mdi:motion-sensor"},
                 ),
-            )
+            ]
+
+            if last_visitor is not None:
+                sensors.append(
+                    self.ha_api.update_sensor(
+                        "sensor.doorbell_last_visitor",
+                        last_visitor,
+                        {"friendly_name": "Doorbell Last Visitor", "icon": "mdi:account"},
+                    )
+                )
+
+            await asyncio.gather(*sensors)
             logger.debug("Sensors updated successfully")
 
         except Exception as e:
