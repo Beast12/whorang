@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.162] - 2026-04-05
+
+### Added
+- `sensor.doorbell_today_count` — rings recorded today, resets at midnight
+- `sensor.doorbell_last_weather` — weather condition and temperature at the time of the last ring (e.g. `"sunny, 18°C"`)
+- `sensor.doorbell_last_visitor` — name of the last recognised visitor; only created when face recognition is enabled
+
 ## [1.0.161] - 2026-04-05
 
 ### Removed
