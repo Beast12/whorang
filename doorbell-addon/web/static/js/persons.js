@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tabs.forEach(function (t) {
         t.addEventListener('click', function () { showTab(t.dataset.tab); });
     });
-    showTab('known');
+    showTab(new URLSearchParams(location.search).get('tab') || 'known');
 
     // ── Inline rename ──────────────────────────────────────────────────────
     document.addEventListener('click', function (e) {
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ person_id: personId }),
         })
             .then(function (r) {
-                if (r.ok) location.reload();
+                if (r.ok) location.href = location.pathname + '?tab=unrecognised';
                 else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
             });
     };
@@ -360,16 +360,37 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ name: name }),
         })
             .then(function (r) {
-                if (r.ok) location.reload();
+                if (r.ok) location.href = location.pathname + '?tab=unrecognised';
                 else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
             });
     };
 
     window.dismissCrop = function () {
         if (!selectedCropId) return;
-        fetch('api/face-crops/' + selectedCropId + '/dismiss', { method: 'POST' })
+        var cropId = selectedCropId;
+        fetch('api/face-crops/' + cropId + '/dismiss', { method: 'POST' })
             .then(function (r) {
-                if (r.ok) location.reload();
+                if (!r.ok) return;
+                // Remove the card without a full page reload
+                var el = document.getElementById('crop-' + cropId);
+                if (el) el.remove();
+                selectedCropId = null;
+                var panel = document.getElementById('crop-action-panel');
+                if (panel) panel.style.display = 'none';
+                // Update the tab badge
+                var badge = document.getElementById('unrecognised-tab-badge');
+                if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent || '0', 10) - 1);
+                var navBadge = document.getElementById('unrecognised-count');
+                if (navBadge) {
+                    var n = Math.max(0, parseInt(navBadge.textContent || '0', 10) - 1);
+                    navBadge.textContent = n;
+                    navBadge.style.display = n > 0 ? 'inline-block' : 'none';
+                }
+                // Show empty message if no crops remain
+                var grid = document.getElementById('crops-grid');
+                if (grid && grid.children.length === 0) {
+                    grid.innerHTML = '<p style="color:#666;font-size:13px;grid-column:1/-1">No unrecognised faces — great!</p>';
+                }
             });
     };
 });

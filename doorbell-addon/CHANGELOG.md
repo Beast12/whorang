@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.164] - 2026-04-08
+
+### Fixed
+- Dismissing or assigning an unrecognised face no longer redirects to the Known tab — dismiss removes the card in-place (no reload), assign/create reloads but returns to the Unrecognised tab
+
 ## [1.0.163] - 2026-04-08
 
 ### Fixed
