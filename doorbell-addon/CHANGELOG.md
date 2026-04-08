@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.163] - 2026-04-08
+
+### Fixed
+- `sensor.doorbell_today_count` always returned 0 — timestamp format mismatch between Python (`isoformat()` uses `T` separator) and SQLite (stores with space separator) caused all today's events to fail the `>=` comparison
+- Sensors become unavailable after Home Assistant restart — added a background task that re-pushes all sensor states to HA every 5 minutes, ensuring sensors are restored automatically without requiring an add-on restart
+- `binary_sensor.doorbell_person_detected` never resets to off — the same periodic refresh now re-evaluates the 30-second window continuously, so the sensor turns off automatically after no ring has occurred
+
 ## [1.0.162] - 2026-04-05
 
 ### Added

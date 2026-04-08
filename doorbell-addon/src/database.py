@@ -425,7 +425,7 @@ class DatabaseManager:
         with sqlite3.connect(self.db_path) as conn:
             return conn.execute(
                 "SELECT COUNT(*) FROM doorbell_events WHERE timestamp >= ?",
-                (today_midnight.isoformat(),),
+                (today_midnight.strftime('%Y-%m-%d %H:%M:%S'),),
             ).fetchone()[0]
 
     def get_last_event(self) -> Optional[DoorbellEvent]:

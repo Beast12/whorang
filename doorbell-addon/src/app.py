@@ -109,12 +109,23 @@ templates = Jinja2Templates(directory="/app/web/templates")
 templates.env.filters["fromjson"] = lambda s: json.loads(s) if s else []
 
 
+async def _sensor_refresh_loop():
+    """Periodically re-push all HA sensor states so they survive HA restarts."""
+    while True:
+        await asyncio.sleep(300)  # every 5 minutes
+        try:
+            await ha_integration.update_sensors()
+        except Exception as e:
+            logger.warning("Periodic sensor refresh failed", error=str(e))
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize the application on startup."""
     logger.info("Starting WhoRang doorbell addon", version=settings.app_version)
     ensure_directories()
     await ha_integration.initialize()
+    asyncio.create_task(_sensor_refresh_loop())
     if settings.face_recognition_enabled:
         asyncio.create_task(face_recognition_service.initialize())
     logger.info("WhoRang addon ready - waiting for doorbell ring events")
