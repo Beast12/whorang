@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import time
 from typing import Dict, Optional
 
 import requests
@@ -100,6 +101,7 @@ class HACameraManager:
                     logger.error("No token available for camera entity capture")
                     return False
 
+                t0 = time.monotonic()
                 response = requests.get(
                     f"{self.base_url}/camera_proxy/{settings.camera_entity}",
                     headers=headers,
@@ -109,7 +111,12 @@ class HACameraManager:
                 if response.status_code == 200:
                     with open(destination_path, "wb") as f:
                         f.write(response.content)
-                    logger.info("Image captured from HA camera entity", entity=settings.camera_entity)
+                    proxy_ms = round((time.monotonic() - t0) * 1000)
+                    logger.info(
+                        "Image captured from HA camera entity",
+                        entity=settings.camera_entity,
+                        proxy_ms=proxy_ms,
+                    )
                     return True
                 logger.error("Failed to capture from HA camera entity", status=response.status_code)
                 return False

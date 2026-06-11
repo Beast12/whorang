@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import shutil
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -38,10 +39,12 @@ async def run_ring_pipeline(
         RuntimeError: Only if image capture fails (non-degradable).
     """
     # ── Step 1: Capture image ──────────────────────────────────────────────
+    t_pipeline_start = time.monotonic()
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     image_filename = f"doorbell_{timestamp_str}.jpg"
     dest_path = os.path.join(settings.images_path, image_filename)
 
+    t_capture_start = time.monotonic()
     if image_path and os.path.isfile(image_path):
         os.makedirs(settings.images_path, exist_ok=True)
         shutil.copy2(image_path, dest_path)
@@ -50,6 +53,8 @@ async def run_ring_pipeline(
         captured = await asyncio.to_thread(ha_camera_manager.capture_image, dest_path)
         if not captured:
             raise RuntimeError("Failed to capture image from camera")
+    capture_ms = round((time.monotonic() - t_capture_start) * 1000)
+    logger.info("Capture step complete", capture_ms=capture_ms)
 
     image_path = dest_path
 
@@ -204,6 +209,13 @@ async def run_ring_pipeline(
         })
     except Exception as e:
         logger.error("HA integration error", error=str(e))
+
+    logger.info(
+        "Ring pipeline complete",
+        capture_ms=capture_ms,
+        pipeline_ms=round((time.monotonic() - t_pipeline_start) * 1000),
+        faces_detected=faces_detected,
+    )
 
     return {
         "event_id": event.id,

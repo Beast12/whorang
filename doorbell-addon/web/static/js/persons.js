@@ -293,6 +293,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Unrecognised crops tab ─────────────────────────────────────────────
     var selectedCropId = null;
+    var EMPTY_CROPS_HTML = '<p style="color:#666;font-size:13px;grid-column:1/-1">No unrecognised faces — great!</p>';
+
+    function goToUnrecognisedTab() {
+        location.href = location.pathname + '?tab=unrecognised';
+    }
 
     function loadCrops() {
         fetch('api/face-crops?dismissed=false')
@@ -307,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!grid) return;
         grid.innerHTML = '';
         if (crops.length === 0) {
-            grid.innerHTML = '<p style="color:#666;font-size:13px;grid-column:1/-1">No unrecognised faces — great!</p>';
+            grid.innerHTML = EMPTY_CROPS_HTML;
             if (panel) panel.style.display = 'none';
             return;
         }
@@ -345,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ person_id: personId }),
         })
             .then(function (r) {
-                if (r.ok) location.href = location.pathname + '?tab=unrecognised';
+                if (r.ok) goToUnrecognisedTab();
                 else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
             });
     };
@@ -360,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ name: name }),
         })
             .then(function (r) {
-                if (r.ok) location.href = location.pathname + '?tab=unrecognised';
+                if (r.ok) goToUnrecognisedTab();
                 else r.json().then(function (d) { alert('Error: ' + (d.detail || 'Unknown')); });
             });
     };
@@ -389,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Show empty message if no crops remain
                 var grid = document.getElementById('crops-grid');
                 if (grid && grid.children.length === 0) {
-                    grid.innerHTML = '<p style="color:#666;font-size:13px;grid-column:1/-1">No unrecognised faces — great!</p>';
+                    grid.innerHTML = EMPTY_CROPS_HTML;
                 }
             });
     };
