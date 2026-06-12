@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.166] - 2026-06-12
+
+### Fixed
+- A slow or failing notification service no longer delays the `doorbell_ring` event, sensor updates, or the API response. The HA event and sensors now fire immediately after analysis, and notifications are dispatched in the background — previously a hung notify service (e.g. an erroring `notify.google_assistant_sdk`) could add ~10s to every ring before sensors updated and the request returned.
+
 ## [1.0.165] - 2026-06-11
 
 ### Added

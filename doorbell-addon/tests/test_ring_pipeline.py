@@ -1,4 +1,5 @@
 """Tests for run_ring_pipeline()."""
+import asyncio
 import os
 import sys
 import pytest
@@ -173,8 +174,39 @@ async def test_ha_notifications_sent_for_each_service(tmp_path, pipeline_mod):
     for p in patches: p.start()
     with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api):
         await pipeline_mod.run_ring_pipeline()
+        # Notifications are fire-and-forget — drain them before asserting.
+        await asyncio.gather(*pipeline_mod._background_tasks)
     for p in patches: p.stop()
     assert mock_ha_api.send_ha_notification.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_slow_notification_does_not_block_event_or_return(tmp_path, pipeline_mod):
+    """A hanging notify service must not delay the doorbell_ring event or the
+    pipeline's return — notifications are dispatched in the background."""
+    mocks = _make_mocks(tmp_path, llm_enabled=False,
+                        notify_services=["notify.slow_service"])
+    release = asyncio.Event()
+
+    async def hang(*args, **kwargs):
+        await release.wait()
+
+    mock_ha_api = MagicMock()
+    mock_ha_api.send_ha_notification = AsyncMock(side_effect=hang)
+    patches = _patch_pipeline(pipeline_mod, *mocks)
+    for p in patches: p.start()
+    try:
+        with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api):
+            # Must return promptly even though the notification never resolves.
+            result = await asyncio.wait_for(pipeline_mod.run_ring_pipeline(), timeout=2)
+            assert result["event_id"] == 42
+            # The time-sensitive HA event fired despite the hanging notification.
+            mocks[4].handle_doorbell_ring.assert_awaited_once()
+            # Let the background notification finish cleanly (no pending-task warning).
+            release.set()
+            await asyncio.gather(*pipeline_mod._background_tasks)
+    finally:
+        for p in patches: p.stop()
 
 
 @pytest.mark.asyncio

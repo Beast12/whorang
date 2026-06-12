@@ -20,6 +20,27 @@ from .utils import notification_manager
 
 logger = structlog.get_logger()
 
+# Strong references to in-flight fire-and-forget tasks, so they are not garbage
+# collected mid-flight (see asyncio.create_task docs). Cleared on completion.
+_background_tasks: set = set()
+
+
+def _spawn_background(coro):
+    """Run a coroutine independently of the request that created it.
+
+    Used for notifications: a slow or failing notify service must never delay
+    the doorbell_ring event or the ring pipeline's return.
+    """
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
+
+
+async def _dispatch_notifications(coros: list):
+    """Await all notification coroutines, isolating individual failures."""
+    await asyncio.gather(*coros, return_exceptions=True)
+
 
 async def run_ring_pipeline(
     image_path: Optional[str] = None,
@@ -171,12 +192,27 @@ async def run_ring_pipeline(
             except Exception as crop_err:
                 logger.warning("Failed to save face crop", error=str(crop_err))
 
-    # ── Step 6: Send notifications ─────────────────────────────────────────
-    notify_tasks = []
+    # ── Step 6: Fire HA event + update sensors (time-sensitive) ────────────
+    # Downstream HA automations key off the doorbell_ring event and these
+    # sensors, so they must fire promptly — never gated behind notifications.
+    try:
+        await ha_integration.handle_doorbell_ring({
+            "event_id": event.id,
+            "timestamp": event.timestamp.isoformat(),
+            "image_path": image_path,
+            "ai_message": resolved_message,
+        })
+    except Exception as e:
+        logger.error("HA integration error", error=str(e))
+
+    # ── Step 7: Dispatch notifications (fire-and-forget) ───────────────────
+    # A slow or failing notify service must not delay the event above or this
+    # pipeline's return, so notifications run in the background.
+    notify_coros = []
     if settings.ha_notify_services:
         ha_api = HomeAssistantAPI()
         for svc in settings.ha_notify_services:
-            notify_tasks.append(
+            notify_coros.append(
                 ha_api.send_ha_notification(
                     service_name=svc,
                     message=resolved_message,
@@ -185,7 +221,7 @@ async def run_ring_pipeline(
                 )
             )
     if settings.notification_webhook:
-        notify_tasks.append(
+        notify_coros.append(
             notification_manager._send_webhook_notification({
                 "title": resolved_title,
                 "message": resolved_message,
@@ -196,19 +232,8 @@ async def run_ring_pipeline(
                 "timestamp": event.timestamp.isoformat(),
             })
         )
-    if notify_tasks:
-        await asyncio.gather(*notify_tasks, return_exceptions=True)
-
-    # ── Step 7: Fire HA event + update sensors ─────────────────────────────
-    try:
-        await ha_integration.handle_doorbell_ring({
-            "event_id": event.id,
-            "timestamp": event.timestamp.isoformat(),
-            "image_path": image_path,
-            "ai_message": resolved_message,
-        })
-    except Exception as e:
-        logger.error("HA integration error", error=str(e))
+    if notify_coros:
+        _spawn_background(_dispatch_notifications(notify_coros))
 
     logger.info(
         "Ring pipeline complete",
