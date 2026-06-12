@@ -176,6 +176,11 @@
                     <button class="btn btn-outline-primary btn-sm" onclick="copyAutomationYaml()">
                         <i class="bi bi-clipboard"></i> Copy automation YAML
                     </button>
+                    <span id="trigger-copy-status" class="small ms-2"></span>
+                    <textarea id="automation-yaml-preview" class="form-control font-mono mt-3"
+                        readonly spellcheck="false" rows="8"
+                        style="display:none;font-size:11px;white-space:pre;background:#1c1c1f;color:#e5e7eb;border:1px solid #333"
+                        aria-label="Generated automation YAML"></textarea>
                 </div>
             </div>
 

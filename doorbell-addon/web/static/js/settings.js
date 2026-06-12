@@ -45,12 +45,43 @@ function initializeSettings() {
             e => ({ value: e.entity_id, label: e.friendly_name }),
             'No binary sensors found',
             'Error loading sensors'
-        );
+        ).then(renderAutomationPreview);
         checkAiPublicPathWarning();
     });
 
     const llmToggle = document.getElementById('llmvision-enabled');
     if (llmToggle) llmToggle.addEventListener('change', checkAiPublicPathWarning);
+
+    // Keep the Trigger Helper YAML preview in sync with the sensor/camera choice.
+    ['trigger-entity', 'camera-entity', 'camera-entity-option', 'camera-url-option']
+        .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', renderAutomationPreview);
+        });
+}
+
+/**
+ * Render the generated automation YAML into the read-only preview box, so it is
+ * always visible (HA is often served over a non-secure context where the
+ * clipboard API is unavailable). Hidden until a binary sensor is selected.
+ */
+function renderAutomationPreview() {
+    const preview = document.getElementById('automation-yaml-preview');
+    if (!preview) return;
+    const entity = document.getElementById('trigger-entity').value;
+    if (!entity) {
+        preview.style.display = 'none';
+        preview.value = '';
+        return;
+    }
+    const entityOption = document.getElementById('camera-entity-option');
+    const cameraEntity = (entityOption && entityOption.checked)
+        ? document.getElementById('camera-entity').value
+        : '';
+    const yaml = buildAutomationYaml(entity, cameraEntity);
+    preview.value = yaml;
+    preview.rows = yaml.split('\n').length;
+    preview.style.display = 'block';
 }
 
 function setupCameraSourceToggle() {
@@ -539,20 +570,43 @@ function loadBinarySensors() {
     );
 }
 
-function copyAutomationYaml() {
+async function copyAutomationYaml() {
     const entity = document.getElementById('trigger-entity').value;
     if (!entity) { alert('Select a binary sensor first.'); return; }
-    // When a camera entity is configured, buildAutomationYaml emits the
-    // low-latency press-time handoff (snapshot + image_path); otherwise the
-    // simple version. URL/RTSP sources have no entity to snapshot.
-    const entityOption = document.getElementById('camera-entity-option');
-    const cameraEntity = (entityOption && entityOption.checked)
-        ? document.getElementById('camera-entity').value
-        : '';
-    const yaml = buildAutomationYaml(entity, cameraEntity);
-    navigator.clipboard.writeText(yaml)
-        .then(() => alert('Automation YAML copied to clipboard!'))
-        .catch(() => { alert('Copy failed. YAML:\n\n' + yaml); });
+    // The preview (which calls buildAutomationYaml) is the single source of the
+    // YAML — render it so it is visible, then copy from it.
+    renderAutomationPreview();
+    const preview = document.getElementById('automation-yaml-preview');
+    const yaml = preview ? preview.value : '';
+
+    // Prefer the async clipboard API, but it only exists in a secure context
+    // (HTTPS/localhost). HA is frequently served over plain HTTP, so fall back
+    // to selecting the preview for a manual copy.
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(yaml);
+            setCopyStatus('Copied to clipboard!', true);
+            return;
+        }
+    } catch { /* fall through to manual fallback */ }
+
+    if (preview) {
+        preview.focus();
+        preview.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch { copied = false; }
+        setCopyStatus(
+            copied ? 'Copied to clipboard!' : 'Press Ctrl/Cmd+C to copy the YAML below.',
+            copied
+        );
+    }
+}
+
+function setCopyStatus(message, ok) {
+    const status = document.getElementById('trigger-copy-status');
+    if (!status) return;
+    status.textContent = message;
+    status.className = 'small ms-2 ' + (ok ? 'text-success' : 'text-warning');
 }
 
 // Export functions for global access

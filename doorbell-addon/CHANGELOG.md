@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.168] - 2026-06-12
+
+### Fixed
+- Trigger Helper "Copy automation YAML" did nothing when Home Assistant is served over plain HTTP — the browser clipboard API is unavailable outside a secure (HTTPS/localhost) context, so the click threw silently. Copy now falls back to selecting the YAML for a manual copy.
+
+### Added
+- Trigger Helper now shows a live, always-visible preview of the generated automation YAML (updates as you change the binary sensor or camera). Restores the inline preview and lets you read/copy the YAML even when the clipboard API is blocked.
+
 ## [1.0.167] - 2026-06-12
 
 ### Added
