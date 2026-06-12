@@ -6,17 +6,22 @@
 // image_path — WhoRang then uses that frame and skips its own (later) capture,
 // eliminating the ring-to-capture delay. RTSP/URL users (no camera entity) get
 // the simple version.
-function buildAutomationYaml(triggerEntity, cameraEntity) {
+function buildAutomationYaml(triggerEntity, cameraEntity, host) {
+    // The rest_command runs from the HA Core container, so it must target the
+    // add-on by its Docker hostname (e.g. a48cb117-whorang) — "localhost" there
+    // is HA Core, not the add-on. The backend supplies the real hostname; fall
+    // back to localhost only when it is unknown.
+    const url = `http://${host || 'localhost'}:8099/api/doorbell/ring`;
     const restCommand = cameraEntity
         ? `rest_command:
   doorbell_ring:
-    url: "http://localhost:8099/api/doorbell/ring"
+    url: "${url}"
     method: POST
     content_type: "application/x-www-form-urlencoded"
     payload: "image_path={{ image_path | default('') }}"`
         : `rest_command:
   doorbell_ring:
-    url: "http://localhost:8099/api/doorbell/ring"
+    url: "${url}"
     method: POST`;
 
     const automation = cameraEntity

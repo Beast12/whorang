@@ -10,6 +10,10 @@ const API = {
     llmvisionProviders: 'api/settings/llmvision-providers',
 };
 
+// Add-on container hostname (e.g. "a48cb117-whorang"), supplied by /api/settings.
+// Used to build the Trigger Helper rest_command URL.
+let addonHost = 'localhost';
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
 });
@@ -18,6 +22,7 @@ function initializeSettings() {
     setupCameraSourceToggle();
 
     loadCurrentSettings().then(data => {
+        addonHost = (data && data.addon_hostname) || 'localhost';
         loadDropdownOptions(
             'camera-entity',
             API.cameras,
@@ -78,7 +83,7 @@ function renderAutomationPreview() {
     const cameraEntity = (entityOption && entityOption.checked)
         ? document.getElementById('camera-entity').value
         : '';
-    const yaml = buildAutomationYaml(entity, cameraEntity);
+    const yaml = buildAutomationYaml(entity, cameraEntity, addonHost);
     preview.value = yaml;
     preview.rows = yaml.split('\n').length;
     preview.style.display = 'block';

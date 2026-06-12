@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+import socket
 import time
 from datetime import datetime
 from typing import Any, List, Optional
@@ -473,6 +474,10 @@ async def get_settings():
         "ha_notify_services": settings.ha_notify_services,
         "public_image_path": settings.public_image_path,
         "trigger_entity": settings.trigger_entity,
+        # Container hostname (e.g. "a48cb117-whorang") — the address HA Core uses
+        # to reach this add-on. Used by the Trigger Helper to build the
+        # rest_command URL; "localhost" would point at HA Core, not the add-on.
+        "addon_hostname": socket.gethostname(),
     }
 
 

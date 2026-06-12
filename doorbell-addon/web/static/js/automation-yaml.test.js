@@ -13,6 +13,17 @@ test('without a camera entity, generates the simple rest_command (no snapshot)',
     assert.doesNotMatch(yaml, /content_type/);
 });
 
+test('uses the provided add-on host in the rest_command URL', () => {
+    const yaml = buildAutomationYaml('binary_sensor.x', '', 'a48cb117-whorang');
+    assert.match(yaml, /url: "http:\/\/a48cb117-whorang:8099\/api\/doorbell\/ring"/);
+    assert.doesNotMatch(yaml, /localhost/);
+});
+
+test('defaults host to localhost when omitted', () => {
+    const yaml = buildAutomationYaml('binary_sensor.x', '');
+    assert.match(yaml, /url: "http:\/\/localhost:8099\/api\/doorbell\/ring"/);
+});
+
 test('with a camera entity, generates the low-latency press-time handoff', () => {
     const yaml = buildAutomationYaml('binary_sensor.my_doorbell', 'camera.front_door');
     // Snapshot is taken from the configured camera at press-time...

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.169] - 2026-06-12
+
+### Fixed
+- Trigger Helper now generates the `rest_command` URL with the add-on's real Docker hostname (e.g. `http://a48cb117-whorang:8099/...`) instead of `localhost`. From the HA Core container `localhost` is HA itself, not the add-on, so the copied automation never worked unedited. The hostname is supplied by the backend via `/api/settings` (`addon_hostname`).
+
 ## [1.0.168] - 2026-06-12
 
 ### Fixed
