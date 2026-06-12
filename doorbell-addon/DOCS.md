@@ -45,6 +45,41 @@ actions:
 
 The **Trigger Helper** card in Settings can generate this YAML for you — select your binary sensor and click **Copy automation YAML**.
 
+### Reduce capture latency (recommended)
+
+By default WhoRang captures the camera frame when it *receives* the ring, which can be ~0.5–2s after the button press — enough for a moving visitor to turn away or change angle. To capture at the exact moment of the press instead, snapshot your camera in the automation and hand the file to WhoRang via the `image_path` field. WhoRang then uses that frame and skips its own (later) capture.
+
+If you have a **camera entity** configured (Settings → Camera), the **Trigger Helper** generates this lower-latency version automatically:
+
+```yaml
+rest_command:
+  doorbell_ring:
+    url: "http://<addon-hostname>:8099/api/doorbell/ring"
+    method: POST
+    content_type: "application/x-www-form-urlencoded"
+    payload: "image_path={{ image_path | default('') }}"
+
+alias: Doorbell ring
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.YOUR_DOORBELL_SENSOR
+    from: "off"
+    to: "on"
+variables:
+  snapshot_path: "/config/www/whorang_last_press.jpg"
+actions:
+  - action: camera.snapshot
+    target:
+      entity_id: camera.YOUR_DOORBELL_CAMERA
+    data:
+      filename: "{{ snapshot_path }}"
+  - action: rest_command.doorbell_ring
+    data:
+      image_path: "{{ snapshot_path }}"
+```
+
+The `default('')` keeps the `rest_command` backward compatible — callers that don't pass `image_path` fall back to WhoRang's own capture. Confirm it's working in the add-on log: a ring shows `Using pre-captured snapshot …` instead of `Image captured from HA camera entity`.
+
 ---
 
 ## Settings

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.167] - 2026-06-12
+
+### Added
+- Trigger Helper now generates a low-latency automation when a camera entity is configured: it snapshots the camera at the moment of the press and passes the frame to WhoRang via `image_path`, so WhoRang uses the press-time frame instead of capturing ~0.5–2s later. URL/RTSP setups still get the simple version. Documented under "Reduce capture latency" in DOCS.md.
+
 ## [1.0.166] - 2026-06-12
 
 ### Fixed

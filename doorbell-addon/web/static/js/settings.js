@@ -542,21 +542,14 @@ function loadBinarySensors() {
 function copyAutomationYaml() {
     const entity = document.getElementById('trigger-entity').value;
     if (!entity) { alert('Select a binary sensor first.'); return; }
-    const yaml = `# Add to configuration.yaml:
-rest_command:
-  doorbell_ring:
-    url: "http://localhost:8099/api/doorbell/ring"
-    method: POST
-
-# Automation:
-alias: Doorbell ring
-triggers:
-  - trigger: state
-    entity_id: ${entity}
-    from: "off"
-    to: "on"
-actions:
-  - action: rest_command.doorbell_ring`;
+    // When a camera entity is configured, buildAutomationYaml emits the
+    // low-latency press-time handoff (snapshot + image_path); otherwise the
+    // simple version. URL/RTSP sources have no entity to snapshot.
+    const entityOption = document.getElementById('camera-entity-option');
+    const cameraEntity = (entityOption && entityOption.checked)
+        ? document.getElementById('camera-entity').value
+        : '';
+    const yaml = buildAutomationYaml(entity, cameraEntity);
     navigator.clipboard.writeText(yaml)
         .then(() => alert('Automation YAML copied to clipboard!'))
         .catch(() => { alert('Copy failed. YAML:\n\n' + yaml); });
