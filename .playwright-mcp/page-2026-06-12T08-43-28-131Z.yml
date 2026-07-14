@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - radio [ref=e2]
+  - radio [checked] [ref=e3]
+  - combobox [ref=e4]:
+    - option "Error loading cameras" [selected]
+  - combobox [ref=e5]:
+    - option "Error loading weather entities" [selected]
+  - combobox [ref=e6]:
+    - option "Error loading sensors" [selected]
+  - button "Copy" [ref=e7]

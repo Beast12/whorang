@@ -1,0 +1,5 @@
+[      61ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8777/api/settings:0
+[      70ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8777/api/weather-entities:0
+[      70ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8777/api/cameras:0
+[      71ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8777/favicon.ico:0
+[      71ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8777/api/settings/binary-sensors:0
