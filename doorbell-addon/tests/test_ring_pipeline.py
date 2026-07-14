@@ -181,6 +181,56 @@ async def test_ha_notifications_sent_for_each_service(tmp_path, pipeline_mod):
 
 
 @pytest.mark.asyncio
+async def test_ha_notification_uses_public_image_url_helper(tmp_path, pipeline_mod):
+    """The notification image URL must account for public_image_path being a
+    subdirectory of HA's /config/www (regression: image missing from push
+    notifications when public_image_path is e.g. /config/www/messages)."""
+    public_path = str(tmp_path / "www")
+    mocks = _make_mocks(tmp_path, llm_enabled=False, public_path=public_path,
+                        notify_services=["notify.mobile_app_phone"])
+    mock_ha_api = MagicMock()
+    mock_ha_api.send_ha_notification = AsyncMock()
+    patches = _patch_pipeline(pipeline_mod, *mocks)
+    for p in patches: p.start()
+    try:
+        with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api), \
+             patch.object(pipeline_mod, 'public_image_url_filename',
+                          return_value="messages/doorbell_x.jpg") as mock_helper:
+            await pipeline_mod.run_ring_pipeline()
+            await asyncio.gather(*pipeline_mod._background_tasks)
+    finally:
+        for p in patches: p.stop()
+    mock_helper.assert_called_once()
+    call_args = mock_helper.call_args[0]
+    assert call_args[0] == public_path
+    assert call_args[1].endswith(".jpg")
+    kwargs = mock_ha_api.send_ha_notification.call_args.kwargs
+    assert kwargs["image_filename"] == "messages/doorbell_x.jpg"
+
+
+@pytest.mark.asyncio
+async def test_ha_notification_image_filename_none_without_public_path(tmp_path, pipeline_mod):
+    """No public_image_path configured → notification gets image_filename=None
+    (message-only push), matching send_ha_notification's documented behavior."""
+    mocks = _make_mocks(tmp_path, llm_enabled=False, public_path=None,
+                        notify_services=["notify.mobile_app_phone"])
+    mock_ha_api = MagicMock()
+    mock_ha_api.send_ha_notification = AsyncMock()
+    patches = _patch_pipeline(pipeline_mod, *mocks)
+    for p in patches: p.start()
+    try:
+        with patch.object(pipeline_mod, 'HomeAssistantAPI', return_value=mock_ha_api), \
+             patch.object(pipeline_mod, 'public_image_url_filename') as mock_helper:
+            await pipeline_mod.run_ring_pipeline()
+            await asyncio.gather(*pipeline_mod._background_tasks)
+    finally:
+        for p in patches: p.stop()
+    mock_helper.assert_not_called()
+    kwargs = mock_ha_api.send_ha_notification.call_args.kwargs
+    assert kwargs["image_filename"] is None
+
+
+@pytest.mark.asyncio
 async def test_slow_notification_does_not_block_event_or_return(tmp_path, pipeline_mod):
     """A hanging notify service must not delay the doorbell_ring event or the
     pipeline's return — notifications are dispatched in the background."""

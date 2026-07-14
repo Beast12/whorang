@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.170] - 2026-07-14
+
+### Fixed
+- Push notifications were missing the doorbell photo when **Public Image Path** is set to a subdirectory of `/config/www` (e.g. `/config/www/messages`). Home Assistant serves that file at `/local/messages/<filename>`, but the notification's image URL was hardcoded to `/local/<filename>` — a 404 that mobile apps silently drop, so only the title/message came through. The image URL now includes the subdirectory.
+
 ## [1.0.169] - 2026-06-12
 
 ### Fixed

@@ -17,6 +17,21 @@ _UNSAFE_FILENAME_RE = re.compile(r'[<>:"/\\|?*]')
 _AUDIO_ONLY_PREFIXES = ("tts_", "alexa_media_", "google_")
 _IMAGE_CAPABLE_PREFIXES = ("mobile_app_", "telegram_", "html5_")
 
+_HA_WWW_ROOT = "/config/www"
+
+
+def public_image_url_filename(public_image_path: str, filename: str) -> str:
+    """Filename (with subpath) HA needs to serve this file at /local/<...>.
+
+    HA serves everything under /config/www at /local/, so a file written to a
+    subdirectory of it (e.g. /config/www/messages) is reachable at
+    /local/messages/<filename>, not /local/<filename>.
+    """
+    rel_dir = os.path.relpath(public_image_path, _HA_WWW_ROOT)
+    if rel_dir in (".", "") or rel_dir.startswith(".."):
+        return filename
+    return f"{rel_dir}/{filename}"
+
 
 def classify_notify_service(name: str) -> str:
     """Classify a notify service name (without domain prefix).

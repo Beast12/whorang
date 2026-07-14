@@ -17,6 +17,7 @@ from .ha_camera import ha_camera_manager
 from .ha_integration import ha_integration
 from .utils import HomeAssistantAPI
 from .utils import notification_manager
+from .utils import public_image_url_filename
 
 logger = structlog.get_logger()
 
@@ -211,13 +212,17 @@ async def run_ring_pipeline(
     notify_coros = []
     if settings.ha_notify_services:
         ha_api = HomeAssistantAPI()
+        notify_image_filename = (
+            public_image_url_filename(settings.public_image_path, public_filename)
+            if public_filename else None
+        )
         for svc in settings.ha_notify_services:
             notify_coros.append(
                 ha_api.send_ha_notification(
                     service_name=svc,
                     message=resolved_message,
                     title=resolved_title,
-                    image_filename=public_filename,
+                    image_filename=notify_image_filename,
                 )
             )
     if settings.notification_webhook:

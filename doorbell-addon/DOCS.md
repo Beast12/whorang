@@ -114,7 +114,7 @@ All settings are managed through the **Settings** page in the web UI. Changes ar
 
 ### Public Image
 
-Directory where the add-on writes a timestamped copy of each doorbell snapshot (e.g. `/config/www`). Files written here are served by HA at `/local/<filename>` and are required for:
+Directory where the add-on writes a timestamped copy of each doorbell snapshot. Must be `/config/www` or a subdirectory of it (e.g. `/config/www/doorbell`) — HA serves anything under `/config/www` at the matching `/local/` path, and the add-on's notification URLs account for the subdirectory automatically. Required for:
 - AI description (llmvision reads the file directly)
 - Image attachments in push notifications
 

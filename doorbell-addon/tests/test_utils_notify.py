@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.utils import classify_notify_service, HomeAssistantAPI
+from src.utils import classify_notify_service, HomeAssistantAPI, public_image_url_filename
 
 
 # ── classify_notify_service ────────────────────────────────────────────────
@@ -37,6 +37,24 @@ def test_google_is_audio_only():
 def test_unknown_service_is_full():
     assert classify_notify_service("pushover") == "full"
     assert classify_notify_service("smtp_email") == "full"
+
+
+# ── public_image_url_filename ──────────────────────────────────────────────
+
+def test_public_image_url_filename_at_www_root():
+    assert public_image_url_filename("/config/www", "doorbell_123.jpg") == "doorbell_123.jpg"
+
+
+def test_public_image_url_filename_in_subdirectory():
+    assert public_image_url_filename("/config/www/messages", "doorbell_123.jpg") == "messages/doorbell_123.jpg"
+
+
+def test_public_image_url_filename_in_nested_subdirectory():
+    assert public_image_url_filename("/config/www/a/b", "doorbell_123.jpg") == "a/b/doorbell_123.jpg"
+
+
+def test_public_image_url_filename_outside_www_root_falls_back_to_bare_filename():
+    assert public_image_url_filename("/share/doorbell/public", "doorbell_123.jpg") == "doorbell_123.jpg"
 
 
 # ── send_ha_notification ───────────────────────────────────────────────────
