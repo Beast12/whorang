@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import structlog
@@ -85,7 +85,16 @@ class HomeAssistantIntegration:
             last_event = db.get_last_event()
             total_events = db.get_event_count()
             today_count = db.get_today_event_count()
-            last_event_time = last_event.timestamp.isoformat() if last_event else "unknown"
+            # sensor.doorbell_last_event has device_class "timestamp", which HA's
+            # REST API requires as a UTC-offset ISO 8601 string (see e.g. sun.sun's
+            # next_rising in HA's own API docs). last_event.timestamp is naive but
+            # already in the system's local time, so astimezone() attaches that
+            # local tzinfo before converting — a bare .isoformat() would send an
+            # unlabeled local time that HA misinterprets, showing the wrong time.
+            last_event_time = (
+                last_event.timestamp.astimezone(timezone.utc).isoformat()
+                if last_event else "unknown"
+            )
 
             person_detected = (
                 last_event is not None

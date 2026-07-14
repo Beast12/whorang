@@ -3,7 +3,12 @@
  * Usage: FaceOverlay.render(containerEl, imageSrc, eventId)
  */
 window.FaceOverlay = (function () {
-    let _debounceTimer = null;
+    // One ResizeObserver per <img>, so re-opening the same modal doesn't pile
+    // up observers, and so we redraw whenever the image's rendered size
+    // actually changes — including the first time it goes from 0×0 (still
+    // inside a not-yet-shown Bootstrap modal, whose fade transition isn't
+    // finished when the image's "load" event fires) to its real size.
+    const _observers = new WeakMap();
 
     function _removeSvg(container) {
         const existing = container.querySelector('.face-overlay-svg');
@@ -101,23 +106,25 @@ window.FaceOverlay = (function () {
         if (!img) return;
 
         function doDraw() {
+            // Not laid out yet (e.g. still inside a Bootstrap modal mid fade-in) —
+            // skip and wait for the ResizeObserver to fire again once it is.
+            if (!img.clientWidth || !img.clientHeight) return;
             _drawOverlay(containerEl, img, faces);
         }
 
+        const existing = _observers.get(img);
+        if (existing) existing.disconnect();
+        const observer = new ResizeObserver(doDraw);
+        observer.observe(img);
+        _observers.set(img, observer);
+
         if (img.complete && img.naturalWidth) {
-            // Defer one frame so the browser finishes layout before we read clientWidth
             requestAnimationFrame(doDraw);
         } else {
             img.addEventListener('load', function () {
                 requestAnimationFrame(doDraw);
             }, { once: true });
         }
-
-        // Redraw on window resize (debounced)
-        window.addEventListener('resize', function () {
-            clearTimeout(_debounceTimer);
-            _debounceTimer = setTimeout(doDraw, 150);
-        });
     }
 
     return { render };

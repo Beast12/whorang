@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.171] - 2026-07-14
+
+### Fixed
+- Face bounding-box overlay (name + confidence) never appeared when viewing an event's image in a Chrome browser, though it worked reliably from the Home Assistant iOS Companion app. The overlay was drawn immediately after opening the Bootstrap modal, racing its fade-in transition — the `<img>` still measured 0×0 at that instant on fast desktop browsers, producing an invisible zero-size overlay that was never redrawn. It now uses a `ResizeObserver` on the image, so it (re)draws whenever the image's rendered size actually changes, including the moment the modal finishes showing.
+- `sensor.doorbell_last_event` could display the wrong time (reported as consistently behind the real event time). The entity has `device_class: timestamp`, which Home Assistant's REST API requires as a UTC-offset ISO 8601 string (see HA's own docs, e.g. `sun.sun`'s `next_rising: "...+00:00"`), but the add-on was sending a naive local-time string with no offset — HA had no reliable way to interpret it correctly. The state now carries an explicit UTC offset.
+
 ## [1.0.170] - 2026-07-14
 
 ### Fixed
