@@ -189,21 +189,25 @@ class DatabaseManager:
         face_data: Optional[str] = None,
     ) -> DoorbellEvent:
         """Add a new doorbell event."""
+        # Passed explicitly rather than relying on the schema's DEFAULT
+        # CURRENT_TIMESTAMP — SQLite generates that in UTC, which every
+        # reader (web UI, retention, HA sensors) treats as naive local time.
+        now = datetime.now()
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO doorbell_events
-                   (image_path, ai_message, weather_condition, weather_temperature, weather_humidity,
-                    faces_detected, face_data)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (image_path, ai_message, weather_condition, weather_temperature, weather_humidity,
-                 faces_detected, face_data),
+                   (timestamp, image_path, ai_message, weather_condition, weather_temperature,
+                    weather_humidity, faces_detected, face_data)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (now.isoformat(), image_path, ai_message, weather_condition, weather_temperature,
+                 weather_humidity, faces_detected, face_data),
             )
             event_id = cursor.lastrowid
             conn.commit()
 
             return DoorbellEvent(
                 id=event_id,
-                timestamp=datetime.now(),
+                timestamp=now,
                 image_path=image_path,
                 ai_message=ai_message,
                 weather_condition=weather_condition,
@@ -217,8 +221,8 @@ class DatabaseManager:
         """Add a known person. Returns new person id."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO known_persons (name) VALUES (?)",
-                (name,),
+                "INSERT INTO known_persons (name, created_at) VALUES (?, ?)",
+                (name, datetime.now().isoformat()),
             )
             conn.commit()
             assert cursor.lastrowid is not None
@@ -280,9 +284,9 @@ class DatabaseManager:
         """Insert a face embedding for a person. Returns new embedding id."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO person_embeddings (person_id, embedding, thumbnail_path) "
-                "VALUES (?, ?, ?)",
-                (person_id, embedding_bytes, thumbnail_path),
+                "INSERT INTO person_embeddings (person_id, embedding, thumbnail_path, created_at) "
+                "VALUES (?, ?, ?, ?)",
+                (person_id, embedding_bytes, thumbnail_path, datetime.now().isoformat()),
             )
             conn.commit()
             assert cursor.lastrowid is not None
@@ -334,8 +338,8 @@ class DatabaseManager:
         """Insert an unrecognised face crop. Returns new crop id."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "INSERT INTO face_crops (event_id, image_path) VALUES (?, ?)",
-                (event_id, image_path),
+                "INSERT INTO face_crops (event_id, image_path, created_at) VALUES (?, ?, ?)",
+                (event_id, image_path, datetime.now().isoformat()),
             )
             conn.commit()
             assert cursor.lastrowid is not None

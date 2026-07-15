@@ -222,6 +222,80 @@ def test_update_person_thumbnail_accepts_none(tmp_path):
     assert val is None
 
 
+# ── Explicit local timestamps (not SQLite's UTC CURRENT_TIMESTAMP default) ──
+#
+# Regression: the schema's DEFAULT CURRENT_TIMESTAMP generates UTC, but every
+# reader (web UI, retention, HA sensors) treats the stored value as naive
+# local time — showing times behind by the local UTC offset. Fixed by always
+# passing Python's local datetime.now() explicitly in the INSERT.
+
+def test_add_doorbell_event_stores_explicit_local_timestamp(tmp_path):
+    import src.database as db_mod
+    from datetime import datetime
+
+    mgr = make_db(tmp_path)
+    sentinel = datetime(2030, 6, 15, 9, 30, 0)
+    with patch.object(db_mod, 'datetime', MagicMock(now=MagicMock(return_value=sentinel))):
+        event = mgr.add_doorbell_event(image_path="/img/test.jpg")
+
+    assert event.timestamp == sentinel
+    with sqlite3.connect(mgr.db_path) as conn:
+        row = conn.execute(
+            "SELECT timestamp FROM doorbell_events WHERE id = ?", (event.id,)
+        ).fetchone()
+    assert datetime.fromisoformat(row[0]) == sentinel
+
+
+def test_add_person_stores_explicit_local_created_at(tmp_path):
+    import src.database as db_mod
+    from datetime import datetime
+
+    mgr = make_db(tmp_path)
+    sentinel = datetime(2030, 6, 15, 9, 30, 0)
+    with patch.object(db_mod, 'datetime', MagicMock(now=MagicMock(return_value=sentinel))):
+        pid = mgr.add_person("Alice")
+
+    with sqlite3.connect(mgr.db_path) as conn:
+        row = conn.execute(
+            "SELECT created_at FROM known_persons WHERE id = ?", (pid,)
+        ).fetchone()
+    assert datetime.fromisoformat(row[0]) == sentinel
+
+
+def test_add_person_embedding_stores_explicit_local_created_at(tmp_path):
+    import src.database as db_mod
+    from datetime import datetime
+
+    mgr = make_db(tmp_path)
+    pid = mgr.add_person("Alice")
+    sentinel = datetime(2030, 6, 15, 9, 30, 0)
+    with patch.object(db_mod, 'datetime', MagicMock(now=MagicMock(return_value=sentinel))):
+        emb_id = mgr.add_person_embedding(pid, _make_embedding_bytes(), None)
+
+    with sqlite3.connect(mgr.db_path) as conn:
+        row = conn.execute(
+            "SELECT created_at FROM person_embeddings WHERE id = ?", (emb_id,)
+        ).fetchone()
+    assert datetime.fromisoformat(row[0]) == sentinel
+
+
+def test_add_face_crop_stores_explicit_local_created_at(tmp_path):
+    import src.database as db_mod
+    from datetime import datetime
+
+    mgr = make_db(tmp_path)
+    event = mgr.add_doorbell_event(image_path="/img/test.jpg")
+    sentinel = datetime(2030, 6, 15, 9, 30, 0)
+    with patch.object(db_mod, 'datetime', MagicMock(now=MagicMock(return_value=sentinel))):
+        crop_id = mgr.add_face_crop(event.id, "/face_crops/42_0.jpg")
+
+    with sqlite3.connect(mgr.db_path) as conn:
+        row = conn.execute(
+            "SELECT created_at FROM face_crops WHERE id = ?", (crop_id,)
+        ).fetchone()
+    assert datetime.fromisoformat(row[0]) == sentinel
+
+
 # ── face_crops CRUD ────────────────────────────────────────────────────────
 
 def test_add_face_crop(tmp_path):

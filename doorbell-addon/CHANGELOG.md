@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.172] - 2026-07-15
+
+### Fixed
+- Found the actual root cause behind the "time is off" reports v1.0.171 only partly addressed: every INSERT into `doorbell_events`, `known_persons`, `person_embeddings`, and `face_crops` omitted the timestamp/`created_at` column, so SQLite's schema default `CURRENT_TIMESTAMP` was used — which SQLite generates in **UTC**, not local time. Every reader (the gallery/dashboard, retention cleanup, "today" event count, the person-detected 30-second window, and the HA sensor) treated that value as naive local time, so displayed/compared times ran behind by the local UTC offset (2h right now under CEST). All four inserts now pass Python's local `datetime.now()` explicitly. Confirmed live against a real event: the stored timestamp now matches the image's own embedded capture time and Home Assistant's logbook receipt time, instead of trailing it by 2 hours.
+
 ## [1.0.171] - 2026-07-14
 
 ### Fixed
