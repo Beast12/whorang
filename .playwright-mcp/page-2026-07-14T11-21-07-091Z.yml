@@ -1,0 +1,720 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link " WhoRang" [ref=e4] [cursor=pointer]:
+        - /url: ./
+        - generic [ref=e5]: 
+        - text: WhoRang
+      - button "Toggle navigation" [ref=e7] [cursor=pointer]
+      - text:    
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - heading "Gallery" [level=1] [ref=e11]
+      - paragraph [ref=e12]: Browse and manage all doorbell events
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]: From
+        - textbox "From" [ref=e16]: 2026-06-14
+      - generic [ref=e17]:
+        - generic [ref=e18]: To
+        - textbox "To" [ref=e19]: 2026-07-14
+      - button " Clear" [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: 
+        - text: Clear
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - img "Event image" [ref=e29] [cursor=pointer]
+            - generic [ref=e30]:
+              - generic [ref=e31]: 
+              - text: "1"
+          - generic [ref=e32]:
+            - heading " 07/14 10:57" [level=6] [ref=e33]:
+              - generic [ref=e34]: 
+              - text: 07/14 10:57
+            - paragraph [ref=e35]: "\"A delivery person is speed-walking past the parked van.\""
+            - generic [ref=e36]:
+              - generic [ref=e37]: 
+              - text: Sunny · 27.8°C
+            - generic [ref=e38]:
+              - generic [ref=e39]: "#53"
+              - button "" [ref=e40] [cursor=pointer]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - img "Event image" [ref=e45] [cursor=pointer]
+            - generic [ref=e46]:
+              - generic [ref=e47]: 
+              - text: "1"
+          - generic [ref=e48]:
+            - heading " 07/13 17:04" [level=6] [ref=e49]:
+              - generic [ref=e50]: 
+              - text: 07/13 17:04
+            - paragraph [ref=e51]: "\"A person in a red turban is photobombing my view.\""
+            - generic [ref=e52]:
+              - generic [ref=e53]: 
+              - text: Partlycloudy · 28.5°C
+            - generic [ref=e54]:
+              - generic [ref=e55]: "#52"
+              - button "" [ref=e56] [cursor=pointer]
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - img "Event image" [ref=e61] [cursor=pointer]
+            - generic [ref=e62]:
+              - generic [ref=e63]: 
+              - text: "1"
+          - generic [ref=e64]:
+            - heading " 07/13 08:12" [level=6] [ref=e65]:
+              - generic [ref=e66]: 
+              - text: 07/13 08:12
+            - paragraph [ref=e67]: "\"A guy in a red shirt photobombs the neighborhood watch.\""
+            - generic [ref=e68]:
+              - generic [ref=e69]: 
+              - text: Partlycloudy · 20.8°C
+            - generic [ref=e70]:
+              - generic [ref=e71]: "#51"
+              - button "" [ref=e72] [cursor=pointer]
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - img "Event image" [ref=e77] [cursor=pointer]
+            - generic [ref=e78]:
+              - generic [ref=e79]: 
+              - text: "1"
+          - generic [ref=e80]:
+            - heading " 07/11 17:13" [level=6] [ref=e81]:
+              - generic [ref=e82]: 
+              - text: 07/11 17:13
+            - paragraph [ref=e83]: "\"A bearded man strolls by while his car watches.\""
+            - generic [ref=e84]:
+              - generic [ref=e85]: 
+              - text: Sunny · 30.1°C
+            - generic [ref=e86]:
+              - generic [ref=e87]: "#50"
+              - button "" [ref=e88] [cursor=pointer]
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - img "Event image" [ref=e93] [cursor=pointer]
+            - generic [ref=e94]:
+              - generic [ref=e95]: 
+              - text: "1"
+          - generic [ref=e96]:
+            - heading " 07/10 16:40" [level=6] [ref=e97]:
+              - generic [ref=e98]: 
+              - text: 07/10 16:40
+            - paragraph [ref=e99]: "\"A tattooed driver reaches out to high-five the camera.\""
+            - generic [ref=e100]:
+              - generic [ref=e101]: 
+              - text: Sunny · 29.1°C
+            - generic [ref=e102]:
+              - generic [ref=e103]: "#49"
+              - button "" [ref=e104] [cursor=pointer]
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - img "Event image" [ref=e109] [cursor=pointer]
+            - generic [ref=e110]:
+              - generic [ref=e111]: 
+              - text: "1"
+          - generic [ref=e112]:
+            - heading " 07/10 15:41" [level=6] [ref=e113]:
+              - generic [ref=e114]: 
+              - text: 07/10 15:41
+            - paragraph [ref=e115]: "\"A delivery guy is auditioning for a cargo van commercial.\""
+            - generic [ref=e116]:
+              - generic [ref=e117]: 
+              - text: Sunny · 29.4°C
+            - generic [ref=e118]:
+              - generic [ref=e119]: "#48"
+              - button "" [ref=e120] [cursor=pointer]
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - img "Event image" [ref=e125] [cursor=pointer]
+            - generic [ref=e126]:
+              - generic [ref=e127]: 
+              - text: "1"
+          - generic [ref=e128]:
+            - heading " 07/10 15:41" [level=6] [ref=e129]:
+              - generic [ref=e130]: 
+              - text: 07/10 15:41
+            - paragraph [ref=e131]: "\"A guy in a neon vest is befriending a van.\""
+            - generic [ref=e132]:
+              - generic [ref=e133]: 
+              - text: Sunny · 29.4°C
+            - generic [ref=e134]:
+              - generic [ref=e135]: "#47"
+              - button "" [ref=e136] [cursor=pointer]
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - img "Event image" [ref=e141] [cursor=pointer]
+            - generic [ref=e142]:
+              - generic [ref=e143]: 
+              - text: "1"
+          - generic [ref=e144]:
+            - heading " 07/10 10:24" [level=6] [ref=e145]:
+              - generic [ref=e146]: 
+              - text: 07/10 10:24
+            - paragraph [ref=e147]: "\"A woman and a van are photobombing my peaceful street.\""
+            - generic [ref=e148]:
+              - generic [ref=e149]: 
+              - text: Partlycloudy · 23.4°C
+            - generic [ref=e150]:
+              - generic [ref=e151]: "#46"
+              - button "" [ref=e152] [cursor=pointer]
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - img "Event image" [ref=e157] [cursor=pointer]
+            - generic [ref=e158]:
+              - generic [ref=e159]: 
+              - text: "1"
+          - generic [ref=e160]:
+            - heading " 07/10 09:05" [level=6] [ref=e161]:
+              - generic [ref=e162]: 
+              - text: 07/10 09:05
+            - paragraph [ref=e163]: "\"A guy photobombs the camera while a cyclist escapes.\""
+            - generic [ref=e164]:
+              - generic [ref=e165]: 
+              - text: Partlycloudy · 21.6°C
+            - generic [ref=e166]:
+              - generic [ref=e167]: "#45"
+              - button "" [ref=e168] [cursor=pointer]
+        - generic [ref=e171]:
+          - generic [ref=e172]:
+            - img "Event image" [ref=e173] [cursor=pointer]
+            - generic [ref=e174]:
+              - generic [ref=e175]: 
+              - text: "1"
+          - generic [ref=e176]:
+            - heading " 07/10 08:05" [level=6] [ref=e177]:
+              - generic [ref=e178]: 
+              - text: 07/10 08:05
+            - paragraph [ref=e179]: "\"A guy in a bright shirt and a delivery van.\""
+            - generic [ref=e180]:
+              - generic [ref=e181]: 
+              - text: Partlycloudy · 19.8°C
+            - generic [ref=e182]:
+              - generic [ref=e183]: "#44"
+              - button "" [ref=e184] [cursor=pointer]
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - img "Event image" [ref=e189] [cursor=pointer]
+            - generic [ref=e190]:
+              - generic [ref=e191]: 
+              - text: "1"
+          - generic [ref=e192]:
+            - heading " 07/07 17:46" [level=6] [ref=e193]:
+              - generic [ref=e194]: 
+              - text: 07/07 17:46
+            - paragraph [ref=e195]: "\"A guy is treating his van like a walk-in closet.\""
+            - generic [ref=e196]:
+              - generic [ref=e197]: 
+              - text: Partlycloudy · 25.0°C
+            - generic [ref=e198]:
+              - generic [ref=e199]: "#43"
+              - button "" [ref=e200] [cursor=pointer]
+        - generic [ref=e203]:
+          - generic [ref=e204]:
+            - img "Event image" [ref=e205] [cursor=pointer]
+            - generic [ref=e206]:
+              - generic [ref=e207]: 
+              - text: "1"
+          - generic [ref=e208]:
+            - heading " 07/07 15:11" [level=6] [ref=e209]:
+              - generic [ref=e210]: 
+              - text: 07/07 15:11
+            - paragraph [ref=e211]: "\"A bearded man and a HelloFresh van are loitering.\""
+            - generic [ref=e212]:
+              - generic [ref=e213]: 
+              - text: Partlycloudy · 27.3°C
+            - generic [ref=e214]:
+              - generic [ref=e215]: "#42"
+              - button "" [ref=e216] [cursor=pointer]
+        - generic [ref=e219]:
+          - img "Event image" [ref=e221] [cursor=pointer]
+          - generic [ref=e222]:
+            - heading " 07/07 09:37" [level=6] [ref=e223]:
+              - generic [ref=e224]: 
+              - text: 07/07 09:37
+            - paragraph [ref=e225]: "\"A guy in a cap is abandoning his white van.\""
+            - generic [ref=e226]:
+              - generic [ref=e227]: 
+              - text: Partlycloudy · 23.5°C
+            - generic [ref=e228]:
+              - generic [ref=e229]: "#41"
+              - button "" [ref=e230] [cursor=pointer]
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - img "Event image" [ref=e235] [cursor=pointer]
+            - generic [ref=e236]:
+              - generic [ref=e237]: 
+              - text: "1"
+          - generic [ref=e238]:
+            - heading " 07/06 08:10" [level=6] [ref=e239]:
+              - generic [ref=e240]: 
+              - text: 07/06 08:10
+            - paragraph [ref=e241]: "\"A delivery guy is photobombing his own van again.\""
+            - generic [ref=e242]:
+              - generic [ref=e243]: 
+              - text: Partlycloudy · 19.5°C
+            - generic [ref=e244]:
+              - generic [ref=e245]: "#40"
+              - button "" [ref=e246] [cursor=pointer]
+        - generic [ref=e249]:
+          - generic [ref=e250]:
+            - img "Event image" [ref=e251] [cursor=pointer]
+            - generic [ref=e252]:
+              - generic [ref=e253]: 
+              - text: "1"
+          - generic [ref=e254]:
+            - heading " 07/05 12:49" [level=6] [ref=e255]:
+              - generic [ref=e256]: 
+              - text: 07/05 12:49
+            - paragraph [ref=e257]: "\"A man and two girls are photobombing my view.\""
+            - generic [ref=e258]:
+              - generic [ref=e259]: 
+              - text: Partlycloudy · 23.0°C
+            - generic [ref=e260]:
+              - generic [ref=e261]: "#39"
+              - button "" [ref=e262] [cursor=pointer]
+        - generic [ref=e265]:
+          - generic [ref=e266]:
+            - img "Event image" [ref=e267] [cursor=pointer]
+            - generic [ref=e268]:
+              - generic [ref=e269]: 
+              - text: "1"
+          - generic [ref=e270]:
+            - heading " 07/04 16:10" [level=6] [ref=e271]:
+              - generic [ref=e272]: 
+              - text: 07/04 16:10
+            - paragraph [ref=e273]: "\"A man with a phone is photobombing my view.\""
+            - generic [ref=e274]:
+              - generic [ref=e275]: 
+              - text: Partlycloudy · 24.4°C
+            - generic [ref=e276]:
+              - generic [ref=e277]: "#38"
+              - button "" [ref=e278] [cursor=pointer]
+        - generic [ref=e281]:
+          - img "Event image" [ref=e283] [cursor=pointer]
+          - generic [ref=e284]:
+            - heading " 07/04 06:07" [level=6] [ref=e285]:
+              - generic [ref=e286]: 
+              - text: 07/04 06:07
+            - paragraph [ref=e287]: "\"A guy in a blue hoodie is abandoning his truck.\""
+            - generic [ref=e288]:
+              - generic [ref=e289]: 
+              - text: Sunny · 14.8°C
+            - generic [ref=e290]:
+              - generic [ref=e291]: "#37"
+              - button "" [ref=e292] [cursor=pointer]
+        - generic [ref=e295]:
+          - generic [ref=e296]:
+            - img "Event image" [ref=e297] [cursor=pointer]
+            - generic [ref=e298]:
+              - generic [ref=e299]: 
+              - text: "1"
+          - generic [ref=e300]:
+            - heading " 07/03 18:29" [level=6] [ref=e301]:
+              - generic [ref=e302]: 
+              - text: 07/03 18:29
+            - paragraph [ref=e303]: "\"A man is holding his phone hostage for the camera.\""
+            - generic [ref=e304]:
+              - generic [ref=e305]: 
+              - text: Partlycloudy · 18.5°C
+            - generic [ref=e306]:
+              - generic [ref=e307]: "#36"
+              - button "" [ref=e308] [cursor=pointer]
+        - generic [ref=e311]:
+          - generic [ref=e312]:
+            - img "Event image" [ref=e313] [cursor=pointer]
+            - generic [ref=e314]:
+              - generic [ref=e315]: 
+              - text: "1"
+          - generic [ref=e316]:
+            - heading " 07/03 16:28" [level=6] [ref=e317]:
+              - generic [ref=e318]: 
+              - text: 07/03 16:28
+            - paragraph [ref=e319]: "\"A pizza-bearing dude is stalking my camera lens.\""
+            - generic [ref=e320]:
+              - generic [ref=e321]: 
+              - text: Partlycloudy · 19.9°C
+            - generic [ref=e322]:
+              - generic [ref=e323]: "#35"
+              - button "" [ref=e324] [cursor=pointer]
+        - generic [ref=e327]:
+          - generic [ref=e328]:
+            - img "Event image" [ref=e329] [cursor=pointer]
+            - generic [ref=e330]:
+              - generic [ref=e331]: 
+              - text: "1"
+          - generic [ref=e332]:
+            - heading " 07/03 10:21" [level=6] [ref=e333]:
+              - generic [ref=e334]: 
+              - text: 07/03 10:21
+            - paragraph [ref=e335]: "\"A delivery guy is about to drop off my package.\""
+            - generic [ref=e336]:
+              - generic [ref=e337]: 
+              - text: Partlycloudy · 19.4°C
+            - generic [ref=e338]:
+              - generic [ref=e339]: "#34"
+              - button "" [ref=e340] [cursor=pointer]
+        - generic [ref=e343]:
+          - generic [ref=e344]:
+            - img "Event image" [ref=e345] [cursor=pointer]
+            - generic [ref=e346]:
+              - generic [ref=e347]: 
+              - text: "1"
+          - generic [ref=e348]:
+            - heading " 07/02 08:28" [level=6] [ref=e349]:
+              - generic [ref=e350]: 
+              - text: 07/02 08:28
+            - paragraph [ref=e351]: "\"Looks like the DHL guy is trying to eat my camera.\""
+            - generic [ref=e352]:
+              - generic [ref=e353]: 
+              - text: Sunny · 17.9°C
+            - generic [ref=e354]:
+              - generic [ref=e355]: "#33"
+              - button "" [ref=e356] [cursor=pointer]
+        - generic [ref=e359]:
+          - generic [ref=e360]:
+            - img "Event image" [ref=e361] [cursor=pointer]
+            - generic [ref=e362]:
+              - generic [ref=e363]: 
+              - text: "1"
+          - generic [ref=e364]:
+            - heading " 06/30 13:12" [level=6] [ref=e365]:
+              - generic [ref=e366]: 
+              - text: 06/30 13:12
+            - paragraph [ref=e367]: "\"A HelloFresh delivery guy is currently stalking his own van.\""
+            - generic [ref=e368]:
+              - generic [ref=e369]: 
+              - text: Cloudy · 19.6°C
+            - generic [ref=e370]:
+              - generic [ref=e371]: "#32"
+              - button "" [ref=e372] [cursor=pointer]
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - img "Event image" [ref=e377] [cursor=pointer]
+            - generic [ref=e378]:
+              - generic [ref=e379]: 
+              - text: "1"
+          - generic [ref=e380]:
+            - heading " 06/30 12:18" [level=6] [ref=e381]:
+              - generic [ref=e382]: 
+              - text: 06/30 12:18
+            - paragraph [ref=e383]: "\"A woman with a pink bag photobombs the street.\""
+            - generic [ref=e384]:
+              - generic [ref=e385]: 
+              - text: Cloudy · 20.3°C
+            - generic [ref=e386]:
+              - generic [ref=e387]: "#31"
+              - button "" [ref=e388] [cursor=pointer]
+        - generic [ref=e391]:
+          - generic [ref=e392]:
+            - img "Event image" [ref=e393] [cursor=pointer]
+            - generic [ref=e394]:
+              - generic [ref=e395]: 
+              - text: "1"
+          - generic [ref=e396]:
+            - heading " 06/29 15:29" [level=6] [ref=e397]:
+              - generic [ref=e398]: 
+              - text: 06/29 15:29
+            - paragraph [ref=e399]: "\"A guy and his bike, clearly lost in thought.\""
+            - generic [ref=e400]:
+              - generic [ref=e401]: 
+              - text: Partlycloudy · 23.9°C
+            - generic [ref=e402]:
+              - generic [ref=e403]: "#30"
+              - button "" [ref=e404] [cursor=pointer]
+        - generic [ref=e407]:
+          - generic [ref=e408]:
+            - img "Event image" [ref=e409] [cursor=pointer]
+            - generic [ref=e410]:
+              - generic [ref=e411]: 
+              - text: "1"
+          - generic [ref=e412]:
+            - heading " 06/27 13:06" [level=6] [ref=e413]:
+              - generic [ref=e414]: 
+              - text: 06/27 13:06
+            - paragraph [ref=e415]: "\"Some kid is trying to poke my camera lens.\""
+            - generic [ref=e416]:
+              - generic [ref=e417]: 
+              - text: Partlycloudy · 29.6°C
+            - generic [ref=e418]:
+              - generic [ref=e419]: "#29"
+              - button "" [ref=e420] [cursor=pointer]
+        - generic [ref=e423]:
+          - generic [ref=e424]:
+            - img "Event image" [ref=e425] [cursor=pointer]
+            - generic [ref=e426]:
+              - generic [ref=e427]: 
+              - text: "1"
+          - generic [ref=e428]:
+            - heading " 06/26 12:14" [level=6] [ref=e429]:
+              - generic [ref=e430]: 
+              - text: 06/26 12:14
+            - paragraph [ref=e431]: "\"A guy is walking and talking to himself again.\""
+            - generic [ref=e432]:
+              - generic [ref=e433]: 
+              - text: Rainy · 34.4°C
+            - generic [ref=e434]:
+              - generic [ref=e435]: "#28"
+              - button "" [ref=e436] [cursor=pointer]
+        - generic [ref=e439]:
+          - generic [ref=e440]:
+            - img "Event image" [ref=e441] [cursor=pointer]
+            - generic [ref=e442]:
+              - generic [ref=e443]: 
+              - text: "1"
+          - generic [ref=e444]:
+            - heading " 06/26 08:30" [level=6] [ref=e445]:
+              - generic [ref=e446]: 
+              - text: 06/26 08:30
+            - paragraph [ref=e447]: "\"Someone is at the door\""
+            - generic [ref=e448]:
+              - generic [ref=e449]: 
+              - text: Partlycloudy · 28.4°C
+            - generic [ref=e450]:
+              - generic [ref=e451]: "#27"
+              - button "" [ref=e452] [cursor=pointer]
+        - generic [ref=e455]:
+          - generic [ref=e456]:
+            - img "Event image" [ref=e457] [cursor=pointer]
+            - generic [ref=e458]:
+              - generic [ref=e459]: 
+              - text: "1"
+          - generic [ref=e460]:
+            - heading " 06/25 10:49" [level=6] [ref=e461]:
+              - generic [ref=e462]: 
+              - text: 06/25 10:49
+            - paragraph [ref=e463]: "\"A PostNL van and a guy who forgot his shirt.\""
+            - generic [ref=e464]:
+              - generic [ref=e465]: 
+              - text: Sunny · 30.9°C
+            - generic [ref=e466]:
+              - generic [ref=e467]: "#26"
+              - button "" [ref=e468] [cursor=pointer]
+        - generic [ref=e471]:
+          - generic [ref=e472]:
+            - img "Event image" [ref=e473] [cursor=pointer]
+            - generic [ref=e474]:
+              - generic [ref=e475]: 
+              - text: "1"
+          - generic [ref=e476]:
+            - heading " 06/24 10:52" [level=6] [ref=e477]:
+              - generic [ref=e478]: 
+              - text: 06/24 10:52
+            - paragraph [ref=e479]: "\"A man in a German jersey is photobombing my view.\""
+            - generic [ref=e480]:
+              - generic [ref=e481]: 
+              - text: Sunny · 30.6°C
+            - generic [ref=e482]:
+              - generic [ref=e483]: "#25"
+              - button "" [ref=e484] [cursor=pointer]
+        - generic [ref=e487]:
+          - generic [ref=e488]:
+            - img "Event image" [ref=e489] [cursor=pointer]
+            - generic [ref=e490]:
+              - generic [ref=e491]: 
+              - text: "1"
+          - generic [ref=e492]:
+            - heading " 06/23 11:00" [level=6] [ref=e493]:
+              - generic [ref=e494]: 
+              - text: 06/23 11:00
+            - paragraph [ref=e495]: "\"A woman jogs by, clearly running from her responsibilities.\""
+            - generic [ref=e496]:
+              - generic [ref=e497]: 
+              - text: Partlycloudy · 27.3°C
+            - generic [ref=e498]:
+              - generic [ref=e499]: "#24"
+              - button "" [ref=e500] [cursor=pointer]
+        - generic [ref=e503]:
+          - generic [ref=e504]:
+            - img "Event image" [ref=e505] [cursor=pointer]
+            - generic [ref=e506]:
+              - generic [ref=e507]: 
+              - text: "1"
+          - generic [ref=e508]:
+            - heading " 06/20 15:44" [level=6] [ref=e509]:
+              - generic [ref=e510]: 
+              - text: 06/20 15:44
+            - paragraph [ref=e511]: "\"A bearded man is photobombing my camera again.\""
+            - generic [ref=e512]:
+              - generic [ref=e513]: 
+              - text: Sunny · 27.7°C
+            - generic [ref=e514]:
+              - generic [ref=e515]: "#23"
+              - button "" [ref=e516] [cursor=pointer]
+        - generic [ref=e519]:
+          - generic [ref=e520]:
+            - img "Event image" [ref=e521] [cursor=pointer]
+            - generic [ref=e522]:
+              - generic [ref=e523]: 
+              - text: "1"
+          - generic [ref=e524]:
+            - heading " 06/19 12:33" [level=6] [ref=e525]:
+              - generic [ref=e526]: 
+              - text: 06/19 12:33
+            - paragraph [ref=e527]: "\"A blonde woman is aggressively trying to feed me flowers.\""
+            - generic [ref=e528]:
+              - generic [ref=e529]: 
+              - text: Rainy · 31.2°C
+            - generic [ref=e530]:
+              - generic [ref=e531]: "#22"
+              - button "" [ref=e532] [cursor=pointer]
+        - generic [ref=e535]:
+          - generic [ref=e536]:
+            - img "Event image" [ref=e537] [cursor=pointer]
+            - generic [ref=e538]:
+              - generic [ref=e539]: 
+              - text: "1"
+          - generic [ref=e540]:
+            - heading " 06/19 10:26" [level=6] [ref=e541]:
+              - generic [ref=e542]: 
+              - text: 06/19 10:26
+            - paragraph [ref=e543]: "\"A delivery driver is clearly lost in her own thoughts.\""
+            - generic [ref=e544]:
+              - generic [ref=e545]: 
+              - text: Sunny · 29.8°C
+            - generic [ref=e546]:
+              - generic [ref=e547]: "#21"
+              - button "" [ref=e548] [cursor=pointer]
+        - generic [ref=e551]:
+          - generic [ref=e552]:
+            - img "Event image" [ref=e553] [cursor=pointer]
+            - generic [ref=e554]:
+              - generic [ref=e555]: 
+              - text: "1"
+          - generic [ref=e556]:
+            - heading " 06/17 10:20" [level=6] [ref=e557]:
+              - generic [ref=e558]: 
+              - text: 06/17 10:20
+            - paragraph [ref=e559]: "\"A guy with a box is photobombing my view.\""
+            - generic [ref=e560]:
+              - generic [ref=e561]: 
+              - text: Cloudy · 20.5°C
+            - generic [ref=e562]:
+              - generic [ref=e563]: "#20"
+              - button "" [ref=e564] [cursor=pointer]
+        - generic [ref=e567]:
+          - generic [ref=e568]:
+            - img "Event image" [ref=e569] [cursor=pointer]
+            - generic [ref=e570]:
+              - generic [ref=e571]: 
+              - text: "1"
+          - generic [ref=e572]:
+            - heading " 06/17 08:47" [level=6] [ref=e573]:
+              - generic [ref=e574]: 
+              - text: 06/17 08:47
+            - paragraph [ref=e575]: "\"A guy is checking if I’m watching him. I am.\""
+            - generic [ref=e576]:
+              - generic [ref=e577]: 
+              - text: Partlycloudy · 18.0°C
+            - generic [ref=e578]:
+              - generic [ref=e579]: "#19"
+              - button "" [ref=e580] [cursor=pointer]
+        - generic [ref=e583]:
+          - generic [ref=e584]:
+            - img "Event image" [ref=e585] [cursor=pointer]
+            - generic [ref=e586]:
+              - generic [ref=e587]: 
+              - text: "1"
+          - generic [ref=e588]:
+            - heading " 06/17 07:18" [level=6] [ref=e589]:
+              - generic [ref=e590]: 
+              - text: 06/17 07:18
+            - paragraph [ref=e591]: "\"A guy in athletic gear is wandering around outside again.\""
+            - generic [ref=e592]:
+              - generic [ref=e593]: 
+              - text: Rainy · 16.7°C
+            - generic [ref=e594]:
+              - generic [ref=e595]: "#18"
+              - button "" [ref=e596] [cursor=pointer]
+        - generic [ref=e599]:
+          - generic [ref=e600]:
+            - img "Event image" [ref=e601] [cursor=pointer]
+            - generic [ref=e602]:
+              - generic [ref=e603]: 
+              - text: "1"
+          - generic [ref=e604]:
+            - heading " 06/16 16:45" [level=6] [ref=e605]:
+              - generic [ref=e606]: 
+              - text: 06/16 16:45
+            - paragraph [ref=e607]: "\"Delivery guy is clearly ignoring the van to text.\""
+            - generic [ref=e608]:
+              - generic [ref=e609]: 
+              - text: Partlycloudy · 21.7°C
+            - generic [ref=e610]:
+              - generic [ref=e611]: "#17"
+              - button "" [ref=e612] [cursor=pointer]
+        - generic [ref=e615]:
+          - img "Event image" [ref=e617] [cursor=pointer]
+          - generic [ref=e618]:
+            - heading " 06/16 12:36" [level=6] [ref=e619]:
+              - generic [ref=e620]: 
+              - text: 06/16 12:36
+            - paragraph [ref=e621]: "\"A man stares at his phone while a van watches.\""
+            - generic [ref=e622]:
+              - generic [ref=e623]: 
+              - text: Partlycloudy · 21.5°C
+            - generic [ref=e624]:
+              - generic [ref=e625]: "#16"
+              - button "" [ref=e626] [cursor=pointer]
+        - generic [ref=e629]:
+          - generic [ref=e630]:
+            - img "Event image" [ref=e631] [cursor=pointer]
+            - generic [ref=e632]:
+              - generic [ref=e633]: 
+              - text: "1"
+          - generic [ref=e634]:
+            - heading " 06/16 10:47" [level=6] [ref=e635]:
+              - generic [ref=e636]: 
+              - text: 06/16 10:47
+            - paragraph [ref=e637]: "\"A delivery van and a woman ignoring the world.\""
+            - generic [ref=e638]:
+              - generic [ref=e639]: 
+              - text: Partlycloudy · 20.8°C
+            - generic [ref=e640]:
+              - generic [ref=e641]: "#15"
+              - button "" [ref=e642] [cursor=pointer]
+        - generic [ref=e645]:
+          - generic [ref=e646]:
+            - img "Event image" [ref=e647] [cursor=pointer]
+            - generic [ref=e648]:
+              - generic [ref=e649]: 
+              - text: "1"
+          - generic [ref=e650]:
+            - heading " 06/16 08:47" [level=6] [ref=e651]:
+              - generic [ref=e652]: 
+              - text: 06/16 08:47
+            - paragraph [ref=e653]: "\"A cyclist and a selfie-taker are photobombing the street.\""
+            - generic [ref=e654]:
+              - generic [ref=e655]: 
+              - text: Cloudy · 18.4°C
+            - generic [ref=e656]:
+              - generic [ref=e657]: "#14"
+              - button "" [ref=e658] [cursor=pointer]
+        - generic [ref=e661]:
+          - generic [ref=e662]:
+            - img "Event image" [ref=e663] [cursor=pointer]
+            - generic [ref=e664]:
+              - generic [ref=e665]: 
+              - text: "1"
+          - generic [ref=e666]:
+            - heading " 06/14 16:05" [level=6] [ref=e667]:
+              - generic [ref=e668]: 
+              - text: 06/14 16:05
+            - paragraph [ref=e669]: "\"A guy with a bag is photobombing my surveillance feed.\""
+            - generic [ref=e670]:
+              - generic [ref=e671]: 
+              - text: Partlycloudy · 16.9°C
+            - generic [ref=e672]:
+              - generic [ref=e673]: "#13"
+              - button "" [ref=e674] [cursor=pointer]
+        - text:                            
+      - button " Load More" [ref=e677] [cursor=pointer]:
+        - generic [ref=e678]: 
+        - text: Load More
+    - text: 
+  - contentinfo [ref=e679]:
+    - paragraph [ref=e681]:
+      - text: WhoRang v1.0.169 ·
+      - link "API Docs" [ref=e682] [cursor=pointer]:
+        - /url: docs

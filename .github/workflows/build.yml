@@ -22,7 +22,7 @@ jobs:
       is_release: ${{ steps.check_release.outputs.is_release }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Get version
         id: get_version
@@ -72,7 +72,7 @@ jobs:
     needs: version-check
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -130,7 +130,7 @@ jobs:
             build_from: ghcr.io/home-assistant/aarch64-base-debian:bookworm
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -201,7 +201,7 @@ jobs:
     if: needs.version-check.outputs.is_release == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -251,7 +251,7 @@ jobs:
     if: needs.version-check.outputs.is_release == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.GHCR_PAT }}
           ref: main
